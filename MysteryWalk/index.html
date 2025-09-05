@@ -29,6 +29,17 @@
     <div align="center">
     <!-- ΕΔΩ ΠΕΡΙΓΡΑΦΩ ΤΗ ΣΚΗΝΗ -->
     <a-scene cursor="rayOrigin: mouse" background="color:cadetblue" ondblclick="this.requestFullscreen();" embedded> 
+
+    <a-assets>
+    <a-asset-item id="pathModel" src="assets/trail_path.glb"></a-asset-item>
+</a-assets>
+
+    <a-entity gltf-model="#pathModel" position="0 0 0" rotation="0 0 0" scale="1 1 1"></a-entity>
+        
+    <a-entity gltf-model="#pathModel" position="-5 0 -50" rotation="0 30 0" scale="1 1 1"></a-entity>
+    <a-entity gltf-model="#pathModel" position="5 0 -50" rotation="0 -30 0" scale="1 1 1"></a-entity>
+
+    <a-plane position="0 0 -10" rotation="-90 0 0" width="20" height="60" color="#654321"></a-plane>
         
    
    </a-scene>
