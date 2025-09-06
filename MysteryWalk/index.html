@@ -4,85 +4,58 @@
     <script src="https://cdn.jsdelivr.net/gh/c-frame/aframe-extras@7.5.4/dist/aframe-extras.min.js"></script>
     <script>
     // ΕΔΩ ΤΟΠΟΘΕΤΩ ΤΑ ΣΥΣΤΑΤΙΚΑ (COMPONENTS) ΠΟΥ ΕΧΩ ΔΗΜΙΟΥΡΓΗΣΕΙ
-        AFRAME.registerComponent('testing', {
+        
+ AFRAME.registerComponent('testing', {
             init: function () {
                 this.el.addEventListener('click', e => {
                     this.el.setAttribute('animation-mixer', { timeScale: 1 });
                 });
             }
         });
-  AFRAME.registerComponent('scatter-trees', {
-        schema: {
-            path: { type: 'selector' },
-            treeModels: { default: ['#SpookyTree1', '#SpookyTree2', '#SpookyTree3', '#SpookyTree4', '#SpookyTrees'] },
-            count: { type: 'int', default: 50 },
-            spawnDistance: { type: 'number', default: 15 },
-            treeScale: { type: 'number', default: 0.5 }
-        },
 
-init: function () {
-    this.camera = document.querySelector('[camera]') || document.querySelector('a-camera');
-    this.treePositions = [];
+        // Scatter trees immediately along a path
+        AFRAME.registerComponent('scatter-trees', {
+            schema: {
+                path: { type: 'selector' },
+                treeModels: { default: ['#SpookyTree1', '#SpookyTree2', '#SpookyTree3', '#SpookyTree4', '#SpookyTrees'] },
+                count: { type: 'int', default: 30 },
+                baseScale: { type: 'number', default: 0.5 },
+                scaleRandomness: { type: 'number', default: 0.3 } // +/- random scale
+            },
 
-    if (!this.data.path) {
-        console.error('scatter-trees: path not found!');
-        return;
-    }
-
-    const setupTrees = () => {
-        const pos = this.data.path.getAttribute('position');
-        const rot = this.data.path.getAttribute('rotation') || { x: 0, y: 0, z: 0 };
-        const yRad = THREE.Math.degToRad(rot.y);
-
-        for (let i = 0; i < this.data.count; i++) {
-            const sideOffset = (Math.random() > 0.5 ? 1 : -1) * (2 + Math.random() * 5);
-            const forwardOffset = (Math.random() - 0.5) * 10;
-            const extraSpread = (Math.random() - 0.5) * 2;
-
-            const x = pos.x + Math.cos(yRad) * forwardOffset + Math.sin(yRad) * sideOffset + extraSpread;
-            const z = pos.z + Math.sin(yRad) * forwardOffset - Math.cos(yRad) * sideOffset + extraSpread;
-            const y = pos.y;
-
-            this.treePositions.push({ x, y, z, spawned: false });
-        }
-    };
-
-    if (this.data.path.hasLoaded) {
-        setupTrees();
-    } else {
-        this.data.path.addEventListener('model-loaded', setupTrees);
-    }
-},
-
-        tick: function () {
-            if (!this.treePositions.length) return;
-
-            const camPos = this.camera.object3D.position;
-            const sceneEl = this.el.sceneEl;
-
-            this.treePositions.forEach(tree => {
-                if (!tree.spawned) {
-                    const dx = camPos.x - tree.x;
-                    const dz = camPos.z - tree.z;
-                    const distance = Math.sqrt(dx*dx + dz*dz);
-
-                    if (distance < this.data.spawnDistance) {
-                        const model = this.data.treeModels[Math.floor(Math.random() * this.data.treeModels.length)];
-                        const treeEl = document.createElement('a-entity');
-
-                        treeEl.setAttribute('gltf-model', model);
-                        treeEl.setAttribute('scale', `${this.data.treeScale} ${this.data.treeScale} ${this.data.treeScale}`);
-                        treeEl.setAttribute('position', { x: tree.x, y: tree.y, z: tree.z });
-
-                        sceneEl.appendChild(treeEl);
-                        tree.spawned = true;
-                    }
+            init: function () {
+                if (!this.data.path) {
+                    console.error('scatter-trees: path not found!');
+                    return;
                 }
-            });
-        }
-    });
-    </script>
 
+                const pos = this.data.path.getAttribute('position');
+                const rot = this.data.path.getAttribute('rotation') || { x:0, y:0, z:0 };
+                const yRad = THREE.Math.degToRad(rot.y);
+
+                for (let i = 0; i < this.data.count; i++) {
+                    const sideOffset = (Math.random() > 0.5 ? 1 : -1) * (2 + Math.random() * 5);
+                    const forwardOffset = (Math.random() - 0.5) * 10;
+                    const extraSpread = (Math.random() - 0.5) * 2;
+
+                    const x = pos.x + Math.cos(yRad) * forwardOffset + Math.sin(yRad) * sideOffset + extraSpread;
+                    const z = pos.z + Math.sin(yRad) * forwardOffset - Math.cos(yRad) * sideOffset + extraSpread;
+                    const y = pos.y;
+
+                    const model = this.data.treeModels[Math.floor(Math.random() * this.data.treeModels.length)];
+                    const treeEl = document.createElement('a-entity');
+                    treeEl.setAttribute('gltf-model', model);
+
+                    // Randomize scale around baseScale
+                    const randomScale = this.data.baseScale + (Math.random() * this.data.scaleRandomness - this.data.scaleRandomness / 2);
+                    treeEl.setAttribute('scale', `${randomScale} ${randomScale} ${randomScale}`);
+                    treeEl.setAttribute('position', { x, y, z });
+
+                    this.el.sceneEl.appendChild(treeEl);
+                }
+            }
+        });
+    </script>
         
     <style>
         h1 { text-align: center; }
@@ -99,7 +72,7 @@ init: function () {
     <hr />
     <div align="center">
     <!-- ΕΔΩ ΠΕΡΙΓΡΑΦΩ ΤΗ ΣΚΗΝΗ -->
-<a-scene cursor="rayOrigin: mouse" background="color:cadetblue" ondblclick="this.requestFullscreen();" embedded>
+  <a-scene cursor="rayOrigin: mouse" background="color:cadetblue" ondblclick="this.requestFullscreen();" embedded>
 
             <a-assets>
                 <a-asset-item id="pathModel" src="assets/trail_path.glb"></a-asset-item>
@@ -120,18 +93,18 @@ init: function () {
                      position="0 -0.66509 -2.86815">
             </a-plane>
 
-            <a-entity id="FirstPath" gltf-model="assets/trail_path.glb" 
-                      position="-0.93865 -0.38783 -0.36974" 
+            <a-entity id="FirstPath" gltf-model="assets/trail_path.glb"
+                      position="-0.93865 -0.38783 -0.36974"
                       rotation="-8.85 -21.23 0"></a-entity>
 
-            <a-entity id="SpookyPath" gltf-model="assets/trail_path.glb" 
-                      position="-5.32429 0.16 -8.70607" 
+            <a-entity id="SpookyPath" gltf-model="assets/trail_path.glb"
+                      position="-5.32429 0.16 -8.70607"
                       rotation="-1.75 48.42 0"
                       scatter-trees="path: #SpookyPath; count: 30">
             </a-entity>
 
-            <a-entity id="GoodPath" gltf-model="assets/trail_path.glb" 
-                      position="3.20235 0.05 -8.73084" 
+            <a-entity id="GoodPath" gltf-model="assets/trail_path.glb"
+                      position="3.20235 0.05 -8.73084"
                       rotation="-2.12 -70.23 0"></a-entity>
 
         </a-scene>
