@@ -4,39 +4,45 @@
     <script src="https://cdn.jsdelivr.net/gh/c-frame/aframe-extras@7.5.4/dist/aframe-extras.min.js"></script>
     <script>
     // ΕΔΩ ΤΟΠΟΘΕΤΩ ΤΑ ΣΥΣΤΑΤΙΚΑ (COMPONENTS) ΠΟΥ ΕΧΩ ΔΗΜΙΟΥΡΓΗΣΕΙ
-   AFRAME.registerComponent('scatter-trees', {
+AFRAME.registerComponent('scatter-trees', {
   schema: {
     treeModels: { default: ['#SpookyTree1','#SpookyTree2','#SpookyTree3','#SpookyTree4','#SpookyTrees'] },
     count: { type: 'int', default: 30 },
-    path: { type: 'selector' } // NEW: use the path entity's position
+    path: { type: 'selector' } // the path entity
   },
   init: function () {
     const scene = this.el.sceneEl;
     const pathEl = this.data.path;
 
-    // Get the path position
+    // Get the path position + rotation
     const pathPos = pathEl ? pathEl.getAttribute('position') : {x: 0, y: 0, z: 0};
+    const pathRot = pathEl ? pathEl.getAttribute('rotation') : {x: 0, y: 0, z: 0};
+    const angle = THREE.Math.degToRad(pathRot.y);
 
     for (let i = 0; i < this.data.count; i++) {
       const treeEl = document.createElement('a-entity');
       const modelId = this.data.treeModels[Math.floor(Math.random() * this.data.treeModels.length)];
       treeEl.setAttribute('gltf-model', modelId);
 
-      // Position trees around the path
-      const x = pathPos.x + (Math.random() - 0.5) * 12;
-      const z = pathPos.z + (Math.random() - 0.5) * 12;
-      const y = 0;
+      // Scatter left/right of the path
+      const side = (Math.random() > 0.5 ? 1 : -1) * (2 + Math.random() * 4); // left or right
+      const forward = (Math.random() - 0.5) * 0.5; // tiny forward/back variation
+
+      const x = pathPos.x + Math.cos(angle) * forward + Math.sin(angle) * side;
+      const z = pathPos.z + Math.sin(angle) * forward - Math.cos(angle) * side;
+      const y = pathPos.y;
 
       // Different base scales per model
       let baseScale = 0.5;
       if (modelId === '#SpookyTree1' || modelId === '#SpookyTree2') {
         baseScale = 0.3; // smaller for dead_tree + dead_tree2
       } else {
-        baseScale = 0.7; // bigger for the others
+        baseScale = 0.8; // bigger for others
       }
 
-      // Add randomness around base scale
-      const scale = baseScale + (Math.random() * 0.3 - 0.15);
+      // Randomness around base scale
+      const scale = baseScale + (Math.random() * 0.3 - 0.12);
+
       treeEl.setAttribute('scale', {x: scale, y: scale, z: scale});
       treeEl.setAttribute('position', {x, y, z});
 
@@ -44,7 +50,7 @@
     }
   }
 });
-</script>
+    </script>
         
     <style>
         h1 { text-align: center; }
