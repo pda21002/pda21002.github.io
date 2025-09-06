@@ -4,34 +4,47 @@
     <script src="https://cdn.jsdelivr.net/gh/c-frame/aframe-extras@7.5.4/dist/aframe-extras.min.js"></script>
     <script>
     // ΕΔΩ ΤΟΠΟΘΕΤΩ ΤΑ ΣΥΣΤΑΤΙΚΑ (COMPONENTS) ΠΟΥ ΕΧΩ ΔΗΜΙΟΥΡΓΗΣΕΙ
-    AFRAME.registerComponent('scatter-trees', {
-      schema: {
-        treeModels: { default: ['#SpookyTree1','#SpookyTree2','#SpookyTree3','#SpookyTree4','#SpookyTrees'] },
-        count: { type: 'int', default: 30 }
-      },
-      init: function () {
-        const scene = this.el.sceneEl;
+   AFRAME.registerComponent('scatter-trees', {
+  schema: {
+    treeModels: { default: ['#SpookyTree1','#SpookyTree2','#SpookyTree3','#SpookyTree4','#SpookyTrees'] },
+    count: { type: 'int', default: 30 },
+    path: { type: 'selector' } // NEW: use the path entity's position
+  },
+  init: function () {
+    const scene = this.el.sceneEl;
+    const pathEl = this.data.path;
 
-        for (let i = 0; i < this.data.count; i++) {
-          const treeEl = document.createElement('a-entity');
-          const modelId = this.data.treeModels[Math.floor(Math.random() * this.data.treeModels.length)];
-          treeEl.setAttribute('gltf-model', modelId);
+    // Get the path position
+    const pathPos = pathEl ? pathEl.getAttribute('position') : {x: 0, y: 0, z: 0};
 
-          // Random position around the SpookyPath area
-          const x = -5 + (Math.random() - 0.5) * 10;
-          const z = -8 + (Math.random() - 0.5) * 10;
-          const y = 0;
+    for (let i = 0; i < this.data.count; i++) {
+      const treeEl = document.createElement('a-entity');
+      const modelId = this.data.treeModels[Math.floor(Math.random() * this.data.treeModels.length)];
+      treeEl.setAttribute('gltf-model', modelId);
 
-          // Random scale (between 0.4 and 0.8)
-          const scale = 0.4 + Math.random() * 0.4;
-          treeEl.setAttribute('scale', { x: scale, y: scale, z: scale });
-          treeEl.setAttribute('position', { x, y, z });
+      // Position trees around the path
+      const x = pathPos.x + (Math.random() - 0.5) * 12;
+      const z = pathPos.z + (Math.random() - 0.5) * 12;
+      const y = 0;
 
-          scene.appendChild(treeEl);
-        }
+      // Different base scales per model
+      let baseScale = 0.5;
+      if (modelId === '#SpookyTree1' || modelId === '#SpookyTree2') {
+        baseScale = 0.3; // smaller for dead_tree + dead_tree2
+      } else {
+        baseScale = 0.7; // bigger for the others
       }
-    });
-  </script>
+
+      // Add randomness around base scale
+      const scale = baseScale + (Math.random() * 0.3 - 0.15);
+      treeEl.setAttribute('scale', {x: scale, y: scale, z: scale});
+      treeEl.setAttribute('position', {x, y, z});
+
+      scene.appendChild(treeEl);
+    }
+  }
+});
+</script>
         
     <style>
         h1 { text-align: center; }
