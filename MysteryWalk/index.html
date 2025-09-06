@@ -64,21 +64,24 @@
 
 AFRAME.registerComponent('scatter-trees', {
   schema: {
-    path: { type: 'selector' },
-    treeModels: { default: ['#SpookyTree1','#SpookyTree2','#SpookyTree3','#SpookyTree4','#SpookyTrees'] },
+    path: { type: 'selector' }, // the path entity
+    treeModels: { default: ['#SpookyTree1', '#SpookyTree2', '#SpookyTree3', '#SpookyTree4', '#SpookyTrees'] },
     count: { type: 'int', default: 50 },
-    spawnDistance: { type: 'number', default: 15 } // distance from camera to spawn
+    spawnDistance: { type: 'number', default: 15 }, // distance from camera to spawn
+    treeScale: { type: 'number', default: 0.5 }
   },
 
   init: function () {
+    // Find the camera
     this.camera = document.querySelector('[camera]') || document.querySelector('a-camera');
-    this.treePositions = [];
 
+    // Generate positions along the path
     const pos = this.data.path.getAttribute('position');
     const rot = this.data.path.getAttribute('rotation');
     const yRad = THREE.Math.degToRad(rot.y);
 
-    // Generate positions along path
+    this.treePositions = [];
+
     for (let i = 0; i < this.data.count; i++) {
       const sideOffset = (Math.random() > 0.5 ? 1 : -1) * (2 + Math.random() * 5);
       const forwardOffset = (Math.random() - 0.5) * 10;
@@ -96,6 +99,7 @@ AFRAME.registerComponent('scatter-trees', {
     const camPos = this.camera.object3D.position;
     const sceneEl = this.el.sceneEl;
 
+    // Spawn only trees close to the camera
     this.treePositions.forEach(tree => {
       if (!tree.spawned) {
         const dx = camPos.x - tree.x;
@@ -105,9 +109,12 @@ AFRAME.registerComponent('scatter-trees', {
         if (distance < this.data.spawnDistance) {
           const model = this.data.treeModels[Math.floor(Math.random() * this.data.treeModels.length)];
           const treeEl = document.createElement('a-entity');
+
+          // Safe attributes
           treeEl.setAttribute('gltf-model', model);
-          treeEl.setAttribute('scale', '0.5 0.5 0.5');
+          treeEl.setAttribute('scale', `${this.data.treeScale} ${this.data.treeScale} ${this.data.treeScale}`);
           treeEl.setAttribute('position', { x: tree.x, y: tree.y, z: tree.z });
+
           sceneEl.appendChild(treeEl);
           tree.spawned = true;
         }
