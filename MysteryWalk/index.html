@@ -61,50 +61,62 @@
     </div>
     <script>
     // ΕΔΩ ΔΗΜΙΟΥΡΓΩ ΠΟΛΛΑΠΛΑ ΑΝΤΙΓΡΑΦΑ ΜΙΑΣ ΟΝΤΟΤΗΤΑΣ
-        
-AFRAME.registerComponent('scatter-trees', {
+
+AFRAME.registerComponent('lazy-trees', {
   schema: {
     path: { type: 'selector' },
-    count: { type: 'int', default: 20 },
-    spread: { type: 'number', default: 5 }
+    treeModels: { default: ['#SpookyTree1','#SpookyTree2','#SpookyTree3','#SpookyTree4','#SpookyTrees'] },
+    count: { type: 'int', default: 50 },
+    spawnDistance: { type: 'number', default: 15 } // distance from camera to spawn
   },
+
   init: function () {
-    const trees = [
-      { id: '#SpookyTree1', scale: 0.3 },
-      { id: '#SpookyTree2', scale: 0.4 },
-      { id: '#SpookyTree3', scale: 0.6 },
-      { id: '#SpookyTree4', scale: 0.7 },
-      { id: '#SpookyTrees', scale: 0.6 }
-    ];
+    this.camera = document.querySelector('[camera]') || document.querySelector('a-camera');
+    this.treePositions = [];
 
-    const sceneEl = this.el.sceneEl;
-    const path = this.data.path;
-    if (!path) return; // safety check
-
-    const pos = path.getAttribute('position');
-    const rot = path.getAttribute('rotation');
+    const pos = this.data.path.getAttribute('position');
+    const rot = this.data.path.getAttribute('rotation');
     const yRad = THREE.Math.degToRad(rot.y);
 
+    // Generate positions along path
     for (let i = 0; i < this.data.count; i++) {
-      const treeChoice = trees[Math.floor(Math.random() * trees.length)];
-      const tree = document.createElement('a-entity');
-      tree.setAttribute('gltf-model', treeChoice.id);
-      tree.setAttribute('scale', `${treeChoice.scale} ${treeChoice.scale} ${treeChoice.scale}`);
-
-      const sideOffset = (Math.random() > 0.5 ? 1 : -1) * (2 + Math.random() * this.data.spread);
-      const forwardOffset = (Math.random() - 0.5) * 8;
+      const sideOffset = (Math.random() > 0.5 ? 1 : -1) * (2 + Math.random() * 5);
+      const forwardOffset = (Math.random() - 0.5) * 10;
       const extraSpread = (Math.random() - 0.5) * 2;
 
-      const worldX = pos.x + Math.cos(yRad) * forwardOffset + Math.sin(yRad) * sideOffset + extraSpread;
-      const worldZ = pos.z + Math.sin(yRad) * forwardOffset - Math.cos(yRad) * sideOffset + extraSpread;
-      const worldY = pos.y;
+      const x = pos.x + Math.cos(yRad) * forwardOffset + Math.sin(yRad) * sideOffset + extraSpread;
+      const z = pos.z + Math.sin(yRad) * forwardOffset - Math.cos(yRad) * sideOffset + extraSpread;
+      const y = pos.y;
 
-      tree.setAttribute('position', { x: worldX, y: worldY, z: worldZ });
-      sceneEl.appendChild(tree);
+      this.treePositions.push({ x, y, z, spawned: false });
     }
+  },
+
+  tick: function () {
+    const camPos = this.camera.object3D.position;
+    const sceneEl = this.el.sceneEl;
+
+    this.treePositions.forEach(tree => {
+      if (!tree.spawned) {
+        const dx = camPos.x - tree.x;
+        const dz = camPos.z - tree.z;
+        const distance = Math.sqrt(dx*dx + dz*dz);
+
+        if (distance < this.data.spawnDistance) {
+          const model = this.data.treeModels[Math.floor(Math.random() * this.data.treeModels.length)];
+          const treeEl = document.createElement('a-entity');
+          treeEl.setAttribute('gltf-model', model);
+          treeEl.setAttribute('scale', '0.5 0.5 0.5');
+          treeEl.setAttribute('position', { x: tree.x, y: tree.y, z: tree.z });
+          sceneEl.appendChild(treeEl);
+          tree.spawned = true;
+        }
+      }
+    });
   }
 });
 </script>
+
     <hr />
     <p><strong>Οδηγίες:<strong>...</p>
     <hr />
