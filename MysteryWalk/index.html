@@ -28,21 +28,22 @@
     <hr />
     <div align="center">
     <!-- ΕΔΩ ΠΕΡΙΓΡΑΦΩ ΤΗ ΣΚΗΝΗ -->
-    <a-scene cursor="rayOrigin: mouse" background="color:cadetblue" ondblclick="this.requestFullscreen();" embedded> 
+      <a-scene cursor="rayOrigin: mouse" background="color: cadetblue" ondblclick="this.requestFullscreen();" keyboard-shortcuts="" screenshot="" xr-mode-ui="" device-orientation-permission-ui="" raycaster="direction: 0.11089381452028127 -0.0967900274042305 -0.9891078063063852; origin: 0 1.6 0; useWorldCoordinates: true" aframe-inspector-removed-embedded="undefined"> 
 
     <a-assets>
     <a-asset-item id="pathModel" src="assets/trail_path.glb"></a-asset-item>
 </a-assets>
 
-    <a-entity gltf-model="#pathModel" position="0 0 0" rotation="0 0 0" scale="1.5 1 1"></a-entity>
+    <a-entity gltf-model="assets/trail_path.glb" position="-0.93865 -0.54 -0.36974" rotation="-9.96 -21.5 0"></a-entity>
         
-    <a-entity gltf-model="#pathModel" position="-5 0 0" rotation="0 45 0" scale="1.5 1 1"></a-entity>
-    <a-entity gltf-model="#pathModel" position="5 0 0" rotation="0 -45 0" scale="1.5 1 1"></a-entity>
+    <a-entity gltf-model="assets/trail_path.glb" position="-4.78429 0.1 -8.70607" rotation="0 45 0"></a-entity>
+    <a-entity gltf-model="assets/trail_path.glb" position="3.64235 0.05 -8.73084" rotation="0 -70.23 0"></a-entity>
 
-    <a-plane position="0 0 -10" rotation="-90 0 0" width="20" height="60" color="#654321"></a-plane>
+    <a-plane position="0 -0.22 -10" rotation="-90 0 0" width="20" height="60" color="#654321"></a-plane>
         
    
    </a-scene>
+
     </div>
     <script>
     // ΕΔΩ ΔΗΜΙΟΥΡΓΩ ΠΟΛΛΑΠΛΑ ΑΝΤΙΓΡΑΦΑ ΜΙΑΣ ΟΝΤΟΤΗΤΑΣ
@@ -56,3 +57,8 @@
 </body>
 
 </html>
+
+
+
+
+
