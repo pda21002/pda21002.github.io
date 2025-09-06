@@ -7,7 +7,7 @@
 AFRAME.registerComponent('scatter-trees', {
   schema: {
     treeModels: { default: ['#SpookyTree1','#SpookyTree2','#SpookyTree3','#SpookyTree4','#SpookyTrees'] },
-    count: { type: 'int', default: 30 },
+    count: { type: 'int', default: 15 },
     path: { type: 'selector' } // reference to your path entity
   },
   init: function () {
@@ -29,8 +29,8 @@ AFRAME.registerComponent('scatter-trees', {
       treeEl.setAttribute('gltf-model', modelId);
 
       // Scatter left/right relative to path rotation
-      const side = (Math.random() > 0.5 ? 1 : -1) * (2 + Math.random() * 4);
-      const forward = (Math.random() - 0.5) * 0.5;
+      const side = (Math.random() > 0.2 ? 1 : -1) * (2 + Math.random() * 3);
+      const forward = (Math.random() - 0.2) * 0.2;
 
       const x = pathPos.x + Math.cos(angle) * forward + Math.sin(angle) * side;
       const z = pathPos.z + Math.sin(angle) * forward - Math.cos(angle) * side;
@@ -39,11 +39,11 @@ AFRAME.registerComponent('scatter-trees', {
       // Scale per model
       let baseScale = 0.5;
       if (modelId === '#SpookyTree1' || modelId === '#SpookyTree2') {
-        baseScale = 0.3;
+        baseScale = 0.2;
       } else {
-        baseScale = 0.8;
+        baseScale = 0.6;
       }
-      const scale = baseScale + (Math.random() * 0.3 - 0.12);
+      const scale = baseScale + (Math.random() * 0.2 - 0.7);
 
       treeEl.setAttribute('scale', {x: scale, y: scale, z: scale});
       treeEl.setAttribute('position', {x, y, z});
@@ -100,7 +100,7 @@ AFRAME.registerComponent('scatter-trees', {
                   gltf-model="assets/trail_path.glb"
                   position="-5.32429 0.16 -8.70607"
                   rotation="-1.75 48.42 0"
-                  scatter-trees="path: #SpookyPath; count: 30">
+                  scatter-trees="path: #SpookyPath; count: 15">
         </a-entity>
 
         <a-entity id="GoodPath" gltf-model="assets/trail_path.glb"
