@@ -100,20 +100,10 @@ AFRAME.registerComponent('scatter-trees', {
       const worldY = pos.y;
 
       tree.setAttribute('position', { x: worldX, y: worldY, z: worldZ });
-
-      const safeDistance = 2;
-      const tooClose = this.data.otherPaths.some(other => {
-        const op = other.getAttribute('position');
-        const dx = op.x - worldX;
-        const dz = op.z - worldZ;
-        return Math.sqrt(dx*dx + dz*dz) < safeDistance;
-      });
-      if (!tooClose) {
-        sceneEl.appendChild(tree);
-        placedPositions.push({ x: worldX, z: worldZ });
-      }
+      sceneEl.appendChild(tree);
     }
   }
+    
 });
 
             
