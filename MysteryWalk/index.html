@@ -62,14 +62,13 @@
     <script>
     // ΕΔΩ ΔΗΜΙΟΥΡΓΩ ΠΟΛΛΑΠΛΑ ΑΝΤΙΓΡΑΦΑ ΜΙΑΣ ΟΝΤΟΤΗΤΑΣ
         
+<script>
 AFRAME.registerComponent('scatter-trees', {
   schema: {
     path: { type: 'selector' },
-    otherPaths: { type: 'array', default: [] }, // paths to avoid
     count: { type: 'int', default: 20 },
     spread: { type: 'number', default: 5 }
   },
-
   init: function () {
     const trees = [
       { id: '#SpookyTree1', scale: 0.3 },
@@ -81,6 +80,8 @@ AFRAME.registerComponent('scatter-trees', {
 
     const sceneEl = this.el.sceneEl;
     const path = this.data.path;
+    if (!path) return; // safety check
+
     const pos = path.getAttribute('position');
     const rot = path.getAttribute('rotation');
     const yRad = THREE.Math.degToRad(rot.y);
@@ -91,32 +92,20 @@ AFRAME.registerComponent('scatter-trees', {
       tree.setAttribute('gltf-model', treeChoice.id);
       tree.setAttribute('scale', `${treeChoice.scale} ${treeChoice.scale} ${treeChoice.scale}`);
 
-      // Random left/right of path
       const sideOffset = (Math.random() > 0.5 ? 1 : -1) * (2 + Math.random() * this.data.spread);
-      const forwardOffset = (Math.random() - 0.5) * 8; // along path
+      const forwardOffset = (Math.random() - 0.5) * 8;
       const extraSpread = (Math.random() - 0.5) * 2;
 
       const worldX = pos.x + Math.cos(yRad) * forwardOffset + Math.sin(yRad) * sideOffset + extraSpread;
       const worldZ = pos.z + Math.sin(yRad) * forwardOffset - Math.cos(yRad) * sideOffset + extraSpread;
       const worldY = pos.y;
 
-      // Check if too close to other paths
-      const safeDistance = 2;
-      let tooClose = false;
-      this.data.otherPaths.forEach(other => {
-        const op = other.getAttribute('position');
-        const dx = op.x - worldX;
-        const dz = op.z - worldZ;
-        if (Math.sqrt(dx*dx + dz*dz) < safeDistance) tooClose = true;
-      });
-
-      if (!tooClose) sceneEl.appendChild(tree);
+      tree.setAttribute('position', { x: worldX, y: worldY, z: worldZ });
+      sceneEl.appendChild(tree);
     }
   }
 });
-
 </script>
-
     <hr />
     <p><strong>Οδηγίες:<strong>...</p>
     <hr />
