@@ -48,7 +48,8 @@
         
 <a-entity id="SpookyPath" gltf-model="assets/trail_path.glb" 
           position="-5.32429 0.16 -8.70607" 
-          rotation="-1.75 48.42 0"></a-entity>
+          rotation="-1.75 48.42 0"
+        scatter-trees="path: #SpookyPath; count: 30"></a-entity>
 
 <a-entity id="GoodPath" gltf-model="assets/trail_path.glb" 
           position="3.20235 0.05 -8.73084" 
@@ -62,38 +63,21 @@
     // ΕΔΩ ΔΗΜΙΟΥΡΓΩ ΠΟΛΛΑΠΛΑ ΑΝΤΙΓΡΑΦΑ ΜΙΑΣ ΟΝΤΟΤΗΤΑΣ
 
 AFRAME.registerComponent('scatter-trees', {
-  schema: {
-    path: { type: 'selector' },  
-    count: { type: 'int', default: 20 } 
-  },
+  schema: { count: { type: 'int', default: 20 } },
   init: function () {
-    const trees = [
-      '#SpookyTree1',
-      '#SpookyTree2',
-      '#SpookyTree3',
-      '#SpookyTree4',
-      '#SpookyTrees'
-    ];
-
-    const path = this.data.path;
+    const trees = ['#SpookyTree1','#SpookyTree2','#SpookyTree3','#SpookyTree4','#SpookyTrees'];
     const sceneEl = this.el.sceneEl;
+    const pos = this.el.getAttribute('position'); 
 
-    for (let i = 0; i < this.data.count; i++) {
-      const treeModel = trees[Math.floor(Math.random() * trees.length)];
-
-      const pos = path.getAttribute('position');
-
-      const offsetX = (Math.random() > 0.5 ? 1 : -1) * (2 + Math.random() * 3);
-      const offsetZ = (Math.random() - 0.5) * 10; 
+    for (let i=0;i<this.data.count;i++){
+      const treeModel = trees[Math.floor(Math.random()*trees.length)];
+      const offsetX = (Math.random()>0.5 ? 1 : -1)*(2 + Math.random()*3);
+      const offsetZ = (Math.random()-0.5)*10;
 
       const tree = document.createElement('a-entity');
       tree.setAttribute('gltf-model', treeModel);
-      tree.setAttribute('scale', '0.5 0.5 0.5');
-      tree.setAttribute('position', {
-        x: pos.x + offsetX,
-        y: pos.y,
-        z: pos.z + offsetZ
-      });
+      tree.setAttribute('scale','0.5 0.5 0.5');
+      tree.setAttribute('position',{ x: pos.x+offsetX, y: pos.y, z: pos.z+offsetZ });
 
       sceneEl.appendChild(tree);
     }
