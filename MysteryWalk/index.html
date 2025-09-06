@@ -20,34 +20,39 @@
             treeScale: { type: 'number', default: 0.5 }
         },
 
-        init: function () {
-            this.camera = document.querySelector('[camera]') || document.querySelector('a-camera');
-            this.treePositions = [];
+init: function () {
+    this.camera = document.querySelector('[camera]') || document.querySelector('a-camera');
+    this.treePositions = [];
 
-            if (!this.data.path) {
-                console.error('scatter-trees: path not found!');
-                return;
-            }
+    if (!this.data.path) {
+        console.error('scatter-trees: path not found!');
+        return;
+    }
 
-            // Wait until path model is loaded
-            this.data.path.addEventListener('model-loaded', () => {
-                const pos = this.data.path.getAttribute('position');
-                const rot = this.data.path.getAttribute('rotation') || { x: 0, y: 0, z: 0 };
-                const yRad = THREE.Math.degToRad(rot.y);
+    const setupTrees = () => {
+        const pos = this.data.path.getAttribute('position');
+        const rot = this.data.path.getAttribute('rotation') || { x: 0, y: 0, z: 0 };
+        const yRad = THREE.Math.degToRad(rot.y);
 
-                for (let i = 0; i < this.data.count; i++) {
-                    const sideOffset = (Math.random() > 0.5 ? 1 : -1) * (2 + Math.random() * 5);
-                    const forwardOffset = (Math.random() - 0.5) * 10;
-                    const extraSpread = (Math.random() - 0.5) * 2;
+        for (let i = 0; i < this.data.count; i++) {
+            const sideOffset = (Math.random() > 0.5 ? 1 : -1) * (2 + Math.random() * 5);
+            const forwardOffset = (Math.random() - 0.5) * 10;
+            const extraSpread = (Math.random() - 0.5) * 2;
 
-                    const x = pos.x + Math.cos(yRad) * forwardOffset + Math.sin(yRad) * sideOffset + extraSpread;
-                    const z = pos.z + Math.sin(yRad) * forwardOffset - Math.cos(yRad) * sideOffset + extraSpread;
-                    const y = pos.y;
+            const x = pos.x + Math.cos(yRad) * forwardOffset + Math.sin(yRad) * sideOffset + extraSpread;
+            const z = pos.z + Math.sin(yRad) * forwardOffset - Math.cos(yRad) * sideOffset + extraSpread;
+            const y = pos.y;
 
-                    this.treePositions.push({ x, y, z, spawned: false });
-                }
-            });
-        },
+            this.treePositions.push({ x, y, z, spawned: false });
+        }
+    };
+
+    if (this.data.path.hasLoaded) {
+        setupTrees();
+    } else {
+        this.data.path.addEventListener('model-loaded', setupTrees);
+    }
+},
 
         tick: function () {
             if (!this.treePositions.length) return;
