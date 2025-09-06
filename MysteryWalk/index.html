@@ -62,27 +62,60 @@
     <script>
     // ΕΔΩ ΔΗΜΙΟΥΡΓΩ ΠΟΛΛΑΠΛΑ ΑΝΤΙΓΡΑΦΑ ΜΙΑΣ ΟΝΤΟΤΗΤΑΣ
 
-AFRAME.registerComponent('scatter-trees', {
-  schema: { count: { type: 'int', default: 20 } },
-  init: function () {
-    const trees = ['#SpookyTree1','#SpookyTree2','#SpookyTree3','#SpookyTree4','#SpookyTrees'];
+AFRAME.registerComponent('scatter-trees-path', {
+  schema: {
+    path: { type: 'selector' },
+    otherPaths: { type: 'array', default: [] },
+    count: { type: 'int', default: 20 }
+  },
+  init: function() {
+    const trees = [
+      { id: '#SpookyTree1', scale: 0.3 },
+      { id: '#SpookyTree2', scale: 0.4 },
+      { id: '#SpookyTree3', scale: 0.6 },
+      { id: '#SpookyTree4', scale: 0.7 },
+      { id: '#SpookyTrees', scale: 0.6 }
+    ];
     const sceneEl = this.el.sceneEl;
-    const pos = this.el.getAttribute('position'); 
+    const path = this.data.path;
+    const pos = path.getAttribute('position');
+    const rot = path.getAttribute('rotation');
 
-    for (let i=0;i<this.data.count;i++){
-      const treeModel = trees[Math.floor(Math.random()*trees.length)];
-      const offsetX = (Math.random()>0.5 ? 1 : -1)*(2 + Math.random()*3);
-      const offsetZ = (Math.random()-0.5)*10;
+    const yRad = THREE.Math.degToRad(rot.y);
 
+    const placedPositions = [];
+
+    for (let i = 0; i < this.data.count; i++) {
+      const treeChoice = trees[Math.floor(Math.random() * trees.length)];
       const tree = document.createElement('a-entity');
-      tree.setAttribute('gltf-model', treeModel);
-      tree.setAttribute('scale','0.5 0.5 0.5');
-      tree.setAttribute('position',{ x: pos.x+offsetX, y: pos.y, z: pos.z+offsetZ });
+      tree.setAttribute('gltf-model', treeChoice.id);
+      tree.setAttribute('scale', `${treeChoice.scale} ${treeChoice.scale} ${treeChoice.scale}`);
 
-      sceneEl.appendChild(tree);
+      let sideOffset = (Math.random() > 0.5 ? 1 : -1) * (2 + Math.random() * 4); 
+      let forwardOffset = (Math.random() - 0.5) * 8;
+      let extraSpread = (Math.random() - 0.5) * 4;
+
+      const worldX = pos.x + Math.cos(yRad) * forwardOffset + Math.sin(yRad) * sideOffset + extraSpread;
+      const worldZ = pos.z + Math.sin(yRad) * forwardOffset - Math.cos(yRad) * sideOffset + extraSpread;
+      const worldY = pos.y;
+
+      tree.setAttribute('position', { x: worldX, y: worldY, z: worldZ });
+
+      const safeDistance = 2;
+      const tooClose = this.data.otherPaths.some(other => {
+        const op = other.getAttribute('position');
+        const dx = op.x - worldX;
+        const dz = op.z - worldZ;
+        return Math.sqrt(dx*dx + dz*dz) < safeDistance;
+      });
+      if (!tooClose) {
+        sceneEl.appendChild(tree);
+        placedPositions.push({ x: worldX, z: worldZ });
+      }
     }
   }
 });
+
             
     </script>
     <hr />
