@@ -32,14 +32,24 @@
 
     <a-assets>
     <a-asset-item id="pathModel" src="assets/trail_path.glb"></a-asset-item>
+<a-plane 
+    src="assets/Ground024_8K-JPG_Color.jpg" 
+    normal-map="src: url(assets/Ground024_8K-JPG_NormalDX.jpg)" 
+    roughness-map="src: url(assets/Ground024_8K-JPG_Roughness.jpg)" 
+    displacement-map="src: url(assets/Ground024_8K-JPG_Displacement.jpg)" 
+    rotation="-90 0 0" 
+    width="50" 
+    height="50" 
+    repeat="10 10"
+    material="roughness: 1; metalness: 0;">
+</a-plane>
+        
 </a-assets>
 
     <a-entity gltf-model="assets/trail_path.glb" position="-0.93865 -0.54 -0.36974" rotation="-9.96 -21.5 0"></a-entity>
         
     <a-entity gltf-model="assets/trail_path.glb" position="-4.78429 0.1 -8.70607" rotation="0 45 0"></a-entity>
     <a-entity gltf-model="assets/trail_path.glb" position="3.64235 0.05 -8.73084" rotation="0 -70.23 0"></a-entity>
-
-    <a-plane position="0 -0.22 -10" rotation="-90 0 0" width="20" height="60" color="#654321"></a-plane>
         
    
    </a-scene>
