@@ -22,11 +22,14 @@ AFRAME.registerComponent('scatter-trees', {
     if (!pathEl) return console.error('scatter-trees: path not found!');
 
     // Wait for path model to load
-    if (!pathEl.hasLoaded) {
-      pathEl.addEventListener('model-loaded', () => this.spawnTrees(pathEl, scene));
-    } else {
-      this.spawnTrees(pathEl, scene);
-    }
+init: function() {
+    const scene = this.el.sceneEl;
+    const pathEl = this.data.path;
+    if (!pathEl) return console.error('scatter-trees: path not found!');
+
+    pathEl.addEventListener('model-loaded', () => this.spawnTrees(pathEl, scene));
+}
+
   },
 
   spawnTrees: function(pathEl, scene) {
