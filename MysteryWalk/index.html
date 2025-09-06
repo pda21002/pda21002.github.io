@@ -14,47 +14,47 @@
         });
 
         // Scatter trees immediately along a path
-        AFRAME.registerComponent('scatter-trees', {
-            schema: {
-                path: { type: 'selector' },
-                treeModels: { default: ['#SpookyTree1', '#SpookyTree2', '#SpookyTree3', '#SpookyTree4', '#SpookyTrees'] },
-                count: { type: 'int', default: 30 },
-                baseScale: { type: 'number', default: 0.5 },
-                scaleRandomness: { type: 'number', default: 0.3 } // +/- random scale
-            },
+AFRAME.registerComponent('scatter-trees', {
+  schema: {
+    path: { type: 'selector' },
+    treeModels: { default: ['#SpookyTree1', '#SpookyTree2', '#SpookyTree3', '#SpookyTree4', '#SpookyTrees'] },
+    count: { type: 'int', default: 30 },
+    baseScale: { type: 'number', default: 0.5 },
+    scaleRandomness: { type: 'number', default: 0.3 }
+  },
+  init: function() {
+    if (!this.data.path) return console.error('Path not found');
 
-            init: function () {
-                if (!this.data.path) {
-                    console.error('scatter-trees: path not found!');
-                    return;
-                }
+    const setupTrees = () => {
+      const pos = this.data.path.getAttribute('position');
+      const rot = this.data.path.getAttribute('rotation') || {x:0,y:0,z:0};
+      const yRad = THREE.Math.degToRad(rot.y);
 
-                const pos = this.data.path.getAttribute('position');
-                const rot = this.data.path.getAttribute('rotation') || { x:0, y:0, z:0 };
-                const yRad = THREE.Math.degToRad(rot.y);
+      for (let i = 0; i < this.data.count; i++) {
+        const side = (Math.random() > 0.5 ? 1 : -1) * (2 + Math.random()*5);
+        const forward = (Math.random() - 0.5) * 10;
+        const extra = (Math.random() - 0.5) * 2;
 
-                for (let i = 0; i < this.data.count; i++) {
-                    const sideOffset = (Math.random() > 0.5 ? 1 : -1) * (2 + Math.random() * 5);
-                    const forwardOffset = (Math.random() - 0.5) * 10;
-                    const extraSpread = (Math.random() - 0.5) * 2;
+        const x = pos.x + Math.cos(yRad)*forward + Math.sin(yRad)*side + extra;
+        const z = pos.z + Math.sin(yRad)*forward - Math.cos(yRad)*side + extra;
+        const y = pos.y;
 
-                    const x = pos.x + Math.cos(yRad) * forwardOffset + Math.sin(yRad) * sideOffset + extraSpread;
-                    const z = pos.z + Math.sin(yRad) * forwardOffset - Math.cos(yRad) * sideOffset + extraSpread;
-                    const y = pos.y;
+        const modelId = this.data.treeModels[Math.floor(Math.random()*this.data.treeModels.length)];
+        const treeEl = document.createElement('a-entity');
+        treeEl.setAttribute('gltf-model', modelId);
 
-                    const model = this.data.treeModels[Math.floor(Math.random() * this.data.treeModels.length)];
-                    const treeEl = document.createElement('a-entity');
-                    treeEl.setAttribute('gltf-model', model);
+        const scale = this.data.baseScale + (Math.random()*this.data.scaleRandomness - this.data.scaleRandomness/2);
+        treeEl.setAttribute('scale', {x:scale, y:scale, z:scale});
+        treeEl.setAttribute('position', {x,y,z});
+        this.el.sceneEl.appendChild(treeEl);
+      }
+    };
 
-                    // Randomize scale around baseScale
-                    const randomScale = this.data.baseScale + (Math.random() * this.data.scaleRandomness - this.data.scaleRandomness / 2);
-                    treeEl.setAttribute('scale', `${randomScale} ${randomScale} ${randomScale}`);
-                    treeEl.setAttribute('position', { x, y, z });
+    if (this.data.path.hasLoaded) setupTrees();
+    else this.data.path.addEventListener('model-loaded', setupTrees);
+  }
+});
 
-                    this.el.sceneEl.appendChild(treeEl);
-                }
-            }
-        });
     </script>
         
     <style>
