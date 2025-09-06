@@ -62,13 +62,15 @@
     <script>
     // ΕΔΩ ΔΗΜΙΟΥΡΓΩ ΠΟΛΛΑΠΛΑ ΑΝΤΙΓΡΑΦΑ ΜΙΑΣ ΟΝΤΟΤΗΤΑΣ
 
+<script>
 AFRAME.registerComponent('scatter-trees', {
   schema: {
     path: { type: 'selector' },
-    otherPaths: { type: 'array', default: [] },
-    count: { type: 'int', default: 20 }
+    count: { type: 'int', default: 20 }, // total trees to spawn
+    spread: { type: 'number', default: 5 } // max distance from path center
   },
-  init: function() {
+
+  init: function () {
     const trees = [
       { id: '#SpookyTree1', scale: 0.3 },
       { id: '#SpookyTree2', scale: 0.4 },
@@ -76,38 +78,39 @@ AFRAME.registerComponent('scatter-trees', {
       { id: '#SpookyTree4', scale: 0.7 },
       { id: '#SpookyTrees', scale: 0.6 }
     ];
+
     const sceneEl = this.el.sceneEl;
     const path = this.data.path;
+
     const pos = path.getAttribute('position');
     const rot = path.getAttribute('rotation');
-
     const yRad = THREE.Math.degToRad(rot.y);
-
-    const placedPositions = [];
 
     for (let i = 0; i < this.data.count; i++) {
       const treeChoice = trees[Math.floor(Math.random() * trees.length)];
+
       const tree = document.createElement('a-entity');
       tree.setAttribute('gltf-model', treeChoice.id);
       tree.setAttribute('scale', `${treeChoice.scale} ${treeChoice.scale} ${treeChoice.scale}`);
 
-      let sideOffset = (Math.random() > 0.5 ? 1 : -1) * (2 + Math.random() * 4); 
-      let forwardOffset = (Math.random() - 0.5) * 8;
-      let extraSpread = (Math.random() - 0.5) * 4;
+      // Randomly pick left or right side of path
+      const sideOffset = (Math.random() > 0.5 ? 1 : -1) * (2 + Math.random() * this.data.spread);
+      const forwardOffset = (Math.random() - 0.5) * 10; // spread along path
+      const extraSpread = (Math.random() - 0.5) * 2; // extra randomness
 
+      // Convert local offset to world coordinates
       const worldX = pos.x + Math.cos(yRad) * forwardOffset + Math.sin(yRad) * sideOffset + extraSpread;
       const worldZ = pos.z + Math.sin(yRad) * forwardOffset - Math.cos(yRad) * sideOffset + extraSpread;
       const worldY = pos.y;
 
       tree.setAttribute('position', { x: worldX, y: worldY, z: worldZ });
+
       sceneEl.appendChild(tree);
     }
   }
-    
 });
+</script>
 
-            
-    </script>
     <hr />
     <p><strong>Οδηγίες:<strong>...</p>
     <hr />
