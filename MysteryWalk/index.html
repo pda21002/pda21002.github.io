@@ -29,35 +29,23 @@
     <div align="center">
     <!-- ΕΔΩ ΠΕΡΙΓΡΑΦΩ ΤΗ ΣΚΗΝΗ -->
      <a-scene cursor="rayOrigin: mouse" background="color:cadetblue" ondblclick="this.requestFullscreen();" embedded>
-
     <a-assets>
     <a-asset-item id="pathModel" src="assets/trail_path.glb"></a-asset-item>
 
 </a-assets>
 
-    <a-plane 
-    src="assets/Ground024_8K-JPG_Color.jpg" 
-    normal-map="src: url(assets/Ground024_8K-JPG_NormalDX.jpg)" 
-         normal-MapRepeat: 30 30;
-    roughness-map="src: url(assets/Ground024_8K-JPG_Roughness.jpg)" 
-             roughness-MapRepeat: 30 30;
-    displacement-map="src: url(assets/Ground024_8K-JPG_Displacement.jpg)" 
-             displacement-MapRepeat: 30 30;
-    rotation="-90 0 0" 
-    width="40" 
-    height="40" 
-    repeat="30 30"
-    material="roughness: 0.5; metalness: 0;">
+    <a-plane src="assets/Ground024_8K-JPG_Color.jpg" normal-map="src: url(assets/Ground024_8K-JPG_NormalDX.jpg)" normal-maprepeat:="" 30="" 30;="" roughness-map="src: url(assets/Ground024_8K-JPG_Roughness.jpg)" roughness-maprepeat:="" displacement-map="src: url(assets/Ground024_8K-JPG_Displacement.jpg)" displacement-maprepeat:="" rotation="-90 0 0" width="40" height="40" repeat="30 30" material="roughness: 1; roughnessTextureOffset: 1 1" position="0 -0.66509 -2.86815">
 </a-plane>
         
 
-    <a-entity gltf-model="#pathModel" position="-0.93865 -0.54 -0.36974" rotation="-9.96 -21.5 0"></a-entity>
+    <a-entity gltf-model="assets/trail_path.glb" position="-0.93865 -0.38783 -0.36974" rotation="-8.85 -21.23 0"></a-entity>
         
-    <a-entity gltf-model="#pathModel" position="-4.78429 0.1 -8.70607" rotation="0 45 0"></a-entity>
-    <a-entity gltf-model="#pathModel" position="3.64235 0.05 -8.73084" rotation="0 -70.23 0"></a-entity>
+    <a-entity gltf-model="assets/trail_path.glb" position="-5.32429 0.16 -8.70607" rotation="-1.75 48.42 0"></a-entity>
+    <a-entity gltf-model="assets/trail_path.glb" position="3.20235 0.05 -8.73084" rotation="-2.12 -70.23 0"></a-entity>
         
    
    </a-scene>
+        
 
     </div>
     <script>
