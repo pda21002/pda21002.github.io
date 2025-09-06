@@ -5,53 +5,33 @@
     <script>
     // ΕΔΩ ΤΟΠΟΘΕΤΩ ΤΑ ΣΥΣΤΑΤΙΚΑ (COMPONENTS) ΠΟΥ ΕΧΩ ΔΗΜΙΟΥΡΓΗΣΕΙ
     AFRAME.registerComponent('scatter-trees', {
-      schema: { 
-        path: { type: 'selector' }, 
-        treeModels: { default: ['#SpookyTree1','#SpookyTree2','#SpookyTree3','#SpookyTree4','#SpookyTrees'] }, 
-        count: {type:'int', default:30}, 
-        baseScale:{type:'number', default:0.5}, 
-        scaleRandomness:{type:'number', default:0.3} 
+      schema: {
+        treeModels: { default: ['#SpookyTree1','#SpookyTree2','#SpookyTree3','#SpookyTree4','#SpookyTrees'] },
+        count: { type: 'int', default: 30 }
       },
-      init: function(){
+      init: function () {
         const scene = this.el.sceneEl;
-        const path = this.data.path;
 
-        if (!path) {
-          console.error("scatter-trees: path not found");
-          return;
+        for (let i = 0; i < this.data.count; i++) {
+          const treeEl = document.createElement('a-entity');
+          const modelId = this.data.treeModels[Math.floor(Math.random() * this.data.treeModels.length)];
+          treeEl.setAttribute('gltf-model', modelId);
+
+          // Random position around the SpookyPath area
+          const x = -5 + (Math.random() - 0.5) * 10;
+          const z = -8 + (Math.random() - 0.5) * 10;
+          const y = 0;
+
+          // Random scale (between 0.4 and 0.8)
+          const scale = 0.4 + Math.random() * 0.4;
+          treeEl.setAttribute('scale', { x: scale, y: scale, z: scale });
+          treeEl.setAttribute('position', { x, y, z });
+
+          scene.appendChild(treeEl);
         }
-
-        // Wait for the path model to load
-        path.addEventListener('model-loaded', () => {
-          const pos = path.getAttribute('position');
-          const rot = path.getAttribute('rotation') || {x:0,y:0,z:0};
-          const yRad = THREE.Math.degToRad(rot.y);
-
-          for(let i=0;i<this.data.count;i++){
-            // Random offsets along and beside the path
-            const side = (Math.random() > 0.5 ? 1:-1)*(2+Math.random()*5);
-            const forward = (Math.random()-0.5)*10;
-            const extra = (Math.random()-0.5)*2;
-            const x = pos.x + Math.cos(yRad)*forward + Math.sin(yRad)*side + extra;
-            const z = pos.z + Math.sin(yRad)*forward - Math.cos(yRad)*side + extra;
-            const y = pos.y;
-
-            // Create tree entity
-            const treeEl = document.createElement('a-entity');
-            const modelId = this.data.treeModels[Math.floor(Math.random()*this.data.treeModels.length)];
-            treeEl.setAttribute('gltf-model', modelId);
-
-            // Random scale around base scale
-            const scale = this.data.baseScale + (Math.random()*this.data.scaleRandomness - this.data.scaleRandomness/2);
-            treeEl.setAttribute('scale', {x:scale,y:scale,z:scale});
-            treeEl.setAttribute('position',{x,y,z});
-
-            scene.appendChild(treeEl);
-          }
-        });
       }
     });
-    </script>
+  </script>
         
     <style>
         h1 { text-align: center; }
@@ -104,7 +84,7 @@
         <a-entity id="GoodPath" gltf-model="assets/trail_path.glb"
                   position="3.20235 0.05 -8.73084"
                   rotation="-2.12 -70.23 0"></a-entity>
-
+        
     </a-scene>
     </div>
     <hr />
