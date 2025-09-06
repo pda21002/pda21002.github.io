@@ -4,20 +4,31 @@
     <script src="https://cdn.jsdelivr.net/gh/c-frame/aframe-extras@7.5.4/dist/aframe-extras.min.js"></script>
     <script>
     // ΕΔΩ ΤΟΠΟΘΕΤΩ ΤΑ ΣΥΣΤΑΤΙΚΑ (COMPONENTS) ΠΟΥ ΕΧΩ ΔΗΜΙΟΥΡΓΗΣΕΙ
-        
- AFRAME.registerComponent('scatter-trees', {
-      schema: { path: { type: 'selector' }, treeModels: { default: ['#SpookyTree1','#SpookyTree2','#SpookyTree3','#SpookyTree4','#SpookyTrees'] }, count: {type:'int', default:30}, baseScale:{type:'number', default:0.5}, scaleRandomness:{type:'number', default:0.3} },
+    AFRAME.registerComponent('scatter-trees', {
+      schema: { 
+        path: { type: 'selector' }, 
+        treeModels: { default: ['#SpookyTree1','#SpookyTree2','#SpookyTree3','#SpookyTree4','#SpookyTrees'] }, 
+        count: {type:'int', default:30}, 
+        baseScale:{type:'number', default:0.5}, 
+        scaleRandomness:{type:'number', default:0.3} 
+      },
       init: function(){
         const scene = this.el.sceneEl;
         const path = this.data.path;
 
-        // Wait for entire scene (assets) to load
-        scene.addEventListener('loaded', () => {
+        if (!path) {
+          console.error("scatter-trees: path not found");
+          return;
+        }
+
+        // Wait for the path model to load
+        path.addEventListener('model-loaded', () => {
           const pos = path.getAttribute('position');
           const rot = path.getAttribute('rotation') || {x:0,y:0,z:0};
           const yRad = THREE.Math.degToRad(rot.y);
 
           for(let i=0;i<this.data.count;i++){
+            // Random offsets along and beside the path
             const side = (Math.random() > 0.5 ? 1:-1)*(2+Math.random()*5);
             const forward = (Math.random()-0.5)*10;
             const extra = (Math.random()-0.5)*2;
@@ -25,10 +36,12 @@
             const z = pos.z + Math.sin(yRad)*forward - Math.cos(yRad)*side + extra;
             const y = pos.y;
 
+            // Create tree entity
             const treeEl = document.createElement('a-entity');
             const modelId = this.data.treeModels[Math.floor(Math.random()*this.data.treeModels.length)];
             treeEl.setAttribute('gltf-model', modelId);
 
+            // Random scale around base scale
             const scale = this.data.baseScale + (Math.random()*this.data.scaleRandomness - this.data.scaleRandomness/2);
             treeEl.setAttribute('scale', {x:scale,y:scale,z:scale});
             treeEl.setAttribute('position',{x,y,z});
@@ -38,10 +51,6 @@
         });
       }
     });
-window.addEventListener('DOMContentLoaded', () => {
-  const scene = document.querySelector('a-scene');
-  scene.setAttribute('scatter-trees', { path:'#SpookyPath', count:30 });
-});
     </script>
         
     <style>
@@ -59,54 +68,51 @@ window.addEventListener('DOMContentLoaded', () => {
     <hr />
     <div align="center">
     <!-- ΕΔΩ ΠΕΡΙΓΡΑΦΩ ΤΗ ΣΚΗΝΗ -->
-  <a-scene cursor="rayOrigin: mouse" background="color:cadetblue" ondblclick="this.requestFullscreen();" embedded>
+    <a-scene cursor="rayOrigin: mouse" background="color:cadetblue" ondblclick="this.requestFullscreen();" embedded>
 
-            <a-assets>
-                <a-asset-item id="pathModel" src="assets/trail_path.glb"></a-asset-item>
-                <a-asset-item id="SpookyTree1" src="assets/dead_tree2.glb"></a-asset-item>
-                <a-asset-item id="SpookyTree2" src="assets/dead_tree.glb"></a-asset-item>
-                <a-asset-item id="SpookyTree3" src="assets/old_tree2.glb"></a-asset-item>
-                <a-asset-item id="SpookyTree4" src="assets/old_tree.glb"></a-asset-item>
-                <a-asset-item id="SpookyTrees" src="assets/dead_trees_demo.glb"></a-asset-item>
-            </a-assets>
+        <a-assets>
+            <a-asset-item id="pathModel" src="assets/trail_path.glb"></a-asset-item>
+            <a-asset-item id="SpookyTree1" src="assets/dead_tree2.glb"></a-asset-item>
+            <a-asset-item id="SpookyTree2" src="assets/dead_tree.glb"></a-asset-item>
+            <a-asset-item id="SpookyTree3" src="assets/old_tree2.glb"></a-asset-item>
+            <a-asset-item id="SpookyTree4" src="assets/old_tree.glb"></a-asset-item>
+            <a-asset-item id="SpookyTrees" src="assets/dead_trees_demo.glb"></a-asset-item>
+        </a-assets>
 
-            <a-plane src="assets/Ground024_8K-JPG_Color.jpg"
-                     normal-map="src: url(assets/Ground024_8K-JPG_NormalDX.jpg)"
-                     roughness-map="src: url(assets/Ground024_8K-JPG_Roughness.jpg)"
-                     displacement-map="src: url(assets/Ground024_8K-JPG_Displacement.jpg)"
-                     rotation="-90 0 0" width="40" height="40"
-                     repeat="30 30"
-                     material="roughness: 1;"
-                     position="0 -0.66509 -2.86815">
-            </a-plane>
+        <a-plane src="assets/Ground024_8K-JPG_Color.jpg"
+                 normal-map="src: url(assets/Ground024_8K-JPG_NormalDX.jpg)"
+                 roughness-map="src: url(assets/Ground024_8K-JPG_Roughness.jpg)"
+                 displacement-map="src: url(assets/Ground024_8K-JPG_Displacement.jpg)"
+                 rotation="-90 0 0" width="40" height="40"
+                 repeat="30 30"
+                 material="roughness: 1;"
+                 position="0 -0.66509 -2.86815">
+        </a-plane>
 
-            <a-entity id="FirstPath" gltf-model="assets/trail_path.glb"
-                      position="-0.93865 -0.38783 -0.36974"
-                      rotation="-8.85 -21.23 0"></a-entity>
+        <a-entity id="FirstPath" gltf-model="assets/trail_path.glb"
+                  position="-0.93865 -0.38783 -0.36974"
+                  rotation="-8.85 -21.23 0"></a-entity>
 
-            <a-entity id="SpookyPath" gltf-model="assets/trail_path.glb"
-                      position="-5.32429 0.16 -8.70607"
-                      rotation="-1.75 48.42 0"
-                      scatter-trees="path: #SpookyPath; count: 30">
-            </a-entity>
+        <!-- Attach scatter-trees directly to SpookyPath -->
+        <a-entity id="SpookyPath" 
+                  gltf-model="assets/trail_path.glb"
+                  position="-5.32429 0.16 -8.70607"
+                  rotation="-1.75 48.42 0"
+                  scatter-trees="path: #SpookyPath; count: 30">
+        </a-entity>
 
-            <a-entity id="GoodPath" gltf-model="assets/trail_path.glb"
-                      position="3.20235 0.05 -8.73084"
-                      rotation="-2.12 -70.23 0"></a-entity>
+        <a-entity id="GoodPath" gltf-model="assets/trail_path.glb"
+                  position="3.20235 0.05 -8.73084"
+                  rotation="-2.12 -70.23 0"></a-entity>
 
-        </a-scene>
-        
-
+    </a-scene>
     </div>
     <hr />
     <p><strong>Οδηγίες:<strong>...</p>
     <hr />
     <p><strong>Credits:</strong></p>
 </body>
-
 </html>
-
-
 
 
 
