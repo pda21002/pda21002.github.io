@@ -4,47 +4,56 @@
     <script src="https://cdn.jsdelivr.net/gh/c-frame/aframe-extras@7.5.4/dist/aframe-extras.min.js"></script>
     <script>
     // ΕΔΩ ΤΟΠΟΘΕΤΩ ΤΑ ΣΥΣΤΑΤΙΚΑ (COMPONENTS) ΠΟΥ ΕΧΩ ΔΗΜΙΟΥΡΓΗΣΕΙ
+        
 AFRAME.registerComponent('scatter-trees', {
   schema: {
-    treeModels: { default: ['#SpookyTree1','#SpookyTree2','#SpookyTree3','#SpookyTree4','#SpookyTrees'] },
-    count: { type: 'int', default: 15 },
-    path: { type: 'selector' } // reference to your path entity
+    treeModels: { 
+      default: ['#SpookyTree1','#SpookyTree2','#SpookyTree3','#SpookyTree4','#SpookyTrees'] 
+    },
+    count: { type: 'int', default: 30 },
+    path: { type: 'selector' }, // the path entity
+    sideRange: { type: 'number', default: 5 },  // how far left/right from path
+    forwardRange: { type: 'number', default: 12 } // how far along path to scatter
   },
+
   init: function () {
     const scene = this.el.sceneEl;
     const pathEl = this.data.path;
 
-    if (!pathEl) {
-      console.warn('[scatter-trees] No path entity provided.');
-      return;
-    }
+    if (!pathEl) return console.error('scatter-trees: path not found');
 
-    const pathPos = pathEl.getAttribute('position') || {x: 0, y: 0, z: 0};
-    const pathRot = pathEl.getAttribute('rotation') || {x: 0, y: 0, z: 0};
-    const angle = THREE.MathUtils.degToRad(pathRot.y);
+    const pathPos = pathEl.getAttribute('position');
+    const pathRot = pathEl.getAttribute('rotation') || {x:0,y:0,z:0};
+    const angle = THREE.Math.degToRad(pathRot.y); // path's rotation in radians
 
     for (let i = 0; i < this.data.count; i++) {
       const treeEl = document.createElement('a-entity');
+
+      // pick a random tree model
       const modelId = this.data.treeModels[Math.floor(Math.random() * this.data.treeModels.length)];
       treeEl.setAttribute('gltf-model', modelId);
 
-      // Scatter left/right relative to path rotation
-      const side = (Math.random() > 0.2 ? 1 : -1) * (2 + Math.random() * 3);
-      const forward = (Math.random() - 0.2) * 0.2;
+      // SIDE offset: left/right from path center
+      const side = (Math.random() > 0.5 ? 1 : -1) * (1 + Math.random() * this.data.sideRange);
 
+      // FORWARD offset: along the path direction
+      const forward = Math.random() * this.data.forwardRange;
+
+      // Calculate final x/z relative to path rotation
       const x = pathPos.x + Math.cos(angle) * forward + Math.sin(angle) * side;
       const z = pathPos.z + Math.sin(angle) * forward - Math.cos(angle) * side;
-      const y = pathPos.y;
+      const y = pathPos.y; // keep same height as path
 
-      // Scale per model
+      // Scale per tree type
       let baseScale = 0.5;
       if (modelId === '#SpookyTree1' || modelId === '#SpookyTree2') {
-        baseScale = 0.2;
+        baseScale = 0.3; // smaller dead trees
       } else {
-        baseScale = 0.6;
+        baseScale = 0.6; // slightly bigger for others
       }
-      const scale = baseScale + (Math.random() * 0.2 - 0.7);
 
+      // Add randomness around base scale
+      const scale = baseScale + (Math.random() * 0.2 - 0.1);
       treeEl.setAttribute('scale', {x: scale, y: scale, z: scale});
       treeEl.setAttribute('position', {x, y, z});
 
@@ -52,8 +61,8 @@ AFRAME.registerComponent('scatter-trees', {
     }
   }
 });
+</script>
 
-    </script>
         
     <style>
         h1 { text-align: center; }
@@ -100,7 +109,7 @@ AFRAME.registerComponent('scatter-trees', {
                   gltf-model="assets/trail_path.glb"
                   position="-5.32429 0.16 -8.70607"
                   rotation="-1.75 48.42 0"
-                  scatter-trees="path: #SpookyPath; count: 15">
+                  scatter-trees="path: #SpookyPath; count: 30">
         </a-entity>
 
         <a-entity id="GoodPath" gltf-model="assets/trail_path.glb"
@@ -118,6 +127,3 @@ AFRAME.registerComponent('scatter-trees', {
     <p><strong>Credits:</strong></p>
 </body>
 </html>
-
-
-
