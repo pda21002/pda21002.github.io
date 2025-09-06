@@ -5,15 +5,14 @@
     <script>
     // ΕΔΩ ΤΟΠΟΘΕΤΩ ΤΑ ΣΥΣΤΑΤΙΚΑ (COMPONENTS) ΠΟΥ ΕΧΩ ΔΗΜΙΟΥΡΓΗΣΕΙ
         
-
 AFRAME.registerComponent('scatter-trees', {
   schema: {
-    path: { type: 'selector' }, // the path entity
+    path: { type: 'selector' },
     treeModels: { default: ['#SpookyTree1','#SpookyTree2','#SpookyTree3','#SpookyTree4','#SpookyTrees'] },
     count: { type: 'int', default: 30 },
-    minOffset: { type: 'number', default: 2 },  // min distance from path
-    maxOffset: { type: 'number', default: 5 },  // max distance from path
-    forwardRange: { type: 'number', default: 6 } // variation along the path
+    minOffset: { type: 'number', default: 2 },
+    maxOffset: { type: 'number', default: 5 },
+    forwardRange: { type: 'number', default: 6 }
   },
 
   init: function() {
@@ -21,20 +20,12 @@ AFRAME.registerComponent('scatter-trees', {
     const pathEl = this.data.path;
     if (!pathEl) return console.error('scatter-trees: path not found!');
 
-    // Wait for path model to load
-init: function() {
-    const scene = this.el.sceneEl;
-    const pathEl = this.data.path;
-    if (!pathEl) return console.error('scatter-trees: path not found!');
-
     pathEl.addEventListener('model-loaded', () => this.spawnTrees(pathEl, scene));
-}
-
   },
 
   spawnTrees: function(pathEl, scene) {
     const pathPos = pathEl.getAttribute('position');
-    const pathRot = pathEl.getAttribute('rotation') || { x:0, y:0, z:0 };
+    const pathRot = pathEl.getAttribute('rotation') || {x:0, y:0, z:0};
     const angle = THREE.Math.degToRad(pathRot.y);
 
     for (let i = 0; i < this.data.count; i++) {
@@ -42,27 +33,23 @@ init: function() {
       const modelId = this.data.treeModels[Math.floor(Math.random() * this.data.treeModels.length)];
       treeEl.setAttribute('gltf-model', modelId);
 
-      // Random offset from path (left/right)
       const side = (Math.random() > 0.5 ? 1 : -1) * (this.data.minOffset + Math.random() * (this.data.maxOffset - this.data.minOffset));
       const forward = (Math.random() - 0.5) * this.data.forwardRange;
 
-      // Calculate world position considering path rotation
       const x = pathPos.x + Math.cos(angle) * forward + Math.sin(angle) * side;
       const z = pathPos.z + Math.sin(angle) * forward - Math.cos(angle) * side;
       const y = pathPos.y;
 
-      // Scale based on tree type
       let baseScale = 0.5;
       if (modelId === '#SpookyTree1' || modelId === '#SpookyTree2') {
-        baseScale = 0.3; // smaller dead trees
+        baseScale = 0.3;
       } else {
-        baseScale = 0.6; // bigger for others
+        baseScale = 0.6;
       }
 
-      // Randomize slightly
       const scale = baseScale + (Math.random() * 0.2 - 0.1);
-      treeEl.setAttribute('scale', { x: scale, y: scale, z: scale });
-      treeEl.setAttribute('position', { x, y, z });
+      treeEl.setAttribute('scale', {x: scale, y: scale, z: scale});
+      treeEl.setAttribute('position', {x, y, z});
 
       scene.appendChild(treeEl);
     }
