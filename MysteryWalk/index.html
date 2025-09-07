@@ -5,57 +5,7 @@
 
   <script>
     // Component to scatter trees along a curve
-    AFRAME.registerComponent('scatter-trees', {
-      schema: {
-        curve: { type: 'selector' },
-        treeModels: { default: ['#SpookyTree1','#SpookyTree2','#SpookyTree3','#SpookyTree4','#SpookyTrees'] },
-        count: { type: 'int', default: 50 },
-        minOffset: { type: 'number', default: 1.5 },
-        maxOffset: { type: 'number', default: 4 }
-      },
-
-      init: function() {
-        const scene = this.el.sceneEl;
-        const curveEl = this.data.curve;
-        if (!curveEl) return console.error('scatter-trees: curve not found!');
-
-        // Wait until the curve is loaded
-        curveEl.addEventListener('curve-updated', () => this.spawnTrees(curveEl, scene));
-        this.spawnTrees(curveEl, scene); // also attempt immediately
-      },
-
-      spawnTrees: function(curveEl, scene) {
-        const curve = curveEl.components.curve;
-        if (!curve || !curve.points) return;
-
-        for (let i = 0; i < this.data.count; i++) {
-          const treeEl = document.createElement('a-entity');
-          const modelId = this.data.treeModels[Math.floor(Math.random() * this.data.treeModels.length)];
-          treeEl.setAttribute('gltf-model', modelId);
-
-          // Pick a random t along the curve
-          const t = Math.random();
-          const pos = curve.getPoint(t);
-
-          // Offset left/right perpendicular to curve tangent
-          const tangent = curve.getTangent(t);
-          const side = (Math.random() > 0.5 ? 1 : -1) * (this.data.minOffset + Math.random() * (this.data.maxOffset - this.data.minOffset));
-          const perpendicular = new THREE.Vector3(-tangent.z, 0, tangent.x).normalize();
-          pos.add(perpendicular.multiplyScalar(side));
-
-          // Slight Y variation
-          pos.y += 0;
-
-          // Scale based on tree type
-          let baseScale = (modelId === '#SpookyTree1' || modelId === '#SpookyTree2') ? 0.3 : 0.6;
-          const scale = baseScale + (Math.random() * 0.2 - 0.1);
-          treeEl.setAttribute('scale', { x: scale, y: scale, z: scale });
-          treeEl.setAttribute('position', pos);
-
-          scene.appendChild(treeEl);
-        }
-      }
-    });
+   
   </script>
 
   <style>
@@ -65,58 +15,18 @@
 <body>
   <a-scene cursor="rayOrigin: mouse" background="color: #87ceeb">
 
-    <a-assets>
-      <a-asset-item id="SpookyTree1" src="assets/dead_tree2.glb"></a-asset-item>
-      <a-asset-item id="SpookyTree2" src="assets/dead_tree.glb"></a-asset-item>
-      <a-asset-item id="SpookyTree3" src="assets/old_tree2.glb"></a-asset-item>
-      <a-asset-item id="SpookyTree4" src="assets/old_tree.glb"></a-asset-item>
-      <a-asset-item id="SpookyTrees" src="assets/dead_trees_demo.glb"></a-asset-item>
-    </a-assets>
+      <a-entity position="0 2 5">
+        <a-camera wasd-controls look-controls></a-camera>
+      </a-entity>
 
-    <!-- Ground -->
-    <a-plane rotation="-90 0 0" width="50" height="50" color="#228B22" repeat="30 30"></a-plane>
+      <a-entity light="type: directional; intensity: 1" position="5 10 5"></a-entity>
+      <a-entity light="type: ambient; intensity: 0.5"></a-entity>
 
-    <!-- Main straight path curve -->
-    <a-curve id="mainPath">
-      <a-curve-point position="0 0 0"></a-curve-point>
-      <a-curve-point position="0 0 -10"></a-curve-point>
-      <a-curve-point position="1 0 -20"></a-curve-point>
-    </a-curve>
 
-    <!-- Left branch curve -->
-    <a-curve id="leftBranch">
-      <a-curve-point position="0 0 -20"></a-curve-point>
-      <a-curve-point position="-5 0 -25"></a-curve-point>
-      <a-curve-point position="-8 0 -30"></a-curve-point>
-      <a-curve-point position="0 0 -35"></a-curve-point>
-    </a-curve>
+      <a-entity gltf-model="url(https://drive.google.com/file/d/1wVWbJmilW44tYzIogcJvj2eE-FY3EaAr/view?usp=drive_link)" position="0 0 0" scale="1 1 1"></a-entity>
 
-    <!-- Right branch curve -->
-    <a-curve id="rightBranch">
-      <a-curve-point position="0 0 -20"></a-curve-point>
-      <a-curve-point position="5 0 -25"></a-curve-point>
-      <a-curve-point position="8 0 -30"></a-curve-point>
-      <a-curve-point position="0 0 -35"></a-curve-point>
-    </a-curve>
-
-    <!-- Camera -->
-    <a-entity position="0 1.6 5">
-      <a-camera wasd-controls="acceleration: 20"></a-camera>
-    </a-entity>
-
-    <!-- Trees on left branch -->
-    <a-entity scatter-trees="curve: #leftBranch; count: 40"></a-entity>
-
-    <!-- You can add trees for right branch and main path later -->
-    <!-- <a-entity scatter-trees="curve: #rightBranch; count: 40; treeModels: #SpookyTree3,#SpookyTree4"></a-entity> -->
-    <!-- <a-entity scatter-trees="curve: #mainPath; count: 30; treeModels: #SpookyTree1,#SpookyTree2"></a-entity> -->
-
-    <!-- Optional: visualize curves -->
-    <a-entity curve-renderer="curve: #mainPath; color: gray"></a-entity>
-    <a-entity curve-renderer="curve: #leftBranch; color: green"></a-entity>
-    <a-entity curve-renderer="curve: #rightBranch; color: green"></a-entity>
-
-  </a-scene>
-</body>
+      <!-- Sky -->
+      <a-sky color="#87CEEB"></a-sky>
+    </a-scene>
+  </body>
 </html>
-
