@@ -77,8 +77,14 @@
         });
       }
 
-      const treeModels = ['#tree1', '#tree2'];
-      const grassModels = ['#grass1', '#flower1'];
+
+const treeModels = [
+  { model: '#tree1', baseScale: 1.5 },
+  { model: '#tree2', baseScale: 2.5 },
+  { model: '#tree3', baseScale: 1 }
+];
+      
+      const grassModels = ['#grass1', '#grass2', '#grass3', '#grass4', '#grass5', '#grass6'];
 
       // --- Spawn grass/flowers ---
       for (let i = 0; i < 300; i++) {
