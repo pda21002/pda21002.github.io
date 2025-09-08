@@ -11,7 +11,7 @@
   <a-scene cursor="rayOrigin: mouse" background="color: #87ceeb">
 
     <!-- Camera -->
-    <a-entity position="0 15 -5">
+    <a-entity position="0 15 -15">
       <a-camera wasd-controls look-controls></a-camera>
     </a-entity>
 
@@ -28,7 +28,7 @@
       <a-asset-item id="tree2" src="assets/linden_tree.glb"></a-asset-item>
       <a-asset-item id="grass4" src="assets/realistics_grass_10.glb"></a-asset-item>
       <a-asset-item id="grass5" src="assets/thistle.glb"></a-asset-item>
-            <a-asset-item id="tree3" src="assets/tree(2).glb"></a-asset-item>
+            <a-asset-item id="tree3" src="assets/tree2.glb"></a-asset-item>
       <a-asset-item id="grass6" src="assets/white_flower.glb"></a-asset-item>
     </a-assets> 
 
@@ -61,12 +61,22 @@
   const centerX = -73.11485;
   const centerZ = -297.28662;
   const groundY = -14.6;   // ground level
-  const groundRadius = 200; // how far to scatter
+  const groundRadius = 900; // how far to scatter
+
+const pathModelPosition = { x: 0, z: 0 };  // actual path model position in world
+const pathModelScale = 10; // your scale factor
+const pathRadius = 6 * pathModelScale; // approximate radius of path in world
+forbiddenZones.push({
+  x: pathModelPosition.x,
+  z: pathModelPosition.z,
+  r: pathRadius
+});
+  
 
   // Forbidden zones in world coordinates
-  const forbiddenZones = [
-    {x: centerX, z: centerZ, r: 60}, // around main path
-    {x: centerX - 5, z: centerZ + 20, r: 25}, // castle area
+const forbiddenZones = [
+  { x: 0, z: 0, r: 40 }, // main path (adjusted)
+  { x: -5, z: 20, r: 20 } // castle
   ];
 
   function isFree(x, z) {
@@ -79,18 +89,18 @@
 
   // Tree and grass models with baseScale
   const treeModels = [
-    { model: '#tree1', baseScale: 1.5 },
-    { model: '#tree2', baseScale: 2.5 },
-    { model: '#tree3', baseScale: 1 }
+    { model: '#tree1', baseScale: 5 },
+    { model: '#tree2', baseScale: 4 },
+    { model: '#tree3', baseScale: 4 }
   ];
 
   const grassModels = [
-    { model: '#grass1', baseScale: 0.5 },
-    { model: '#grass2', baseScale: 0.5 },
-    { model: '#grass3', baseScale: 0.4 },
-    { model: '#grass4', baseScale: 0.5 },
-    { model: '#grass5', baseScale: 0.45 },
-    { model: '#grass6', baseScale: 0.5 }
+    { model: '#grass1', baseScale: 4 },
+    { model: '#grass2', baseScale: 4 },
+    { model: '#grass3', baseScale: 4 },
+    { model: '#grass4', baseScale: 4 },
+    { model: '#grass5', baseScale: 4 },
+    { model: '#grass6', baseScale: 0.1 }
   ];
 
   // --- Spawn grass/flowers ---
