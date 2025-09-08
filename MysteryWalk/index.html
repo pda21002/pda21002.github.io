@@ -11,7 +11,7 @@
   <a-scene cursor="rayOrigin: mouse" background="color: #87ceeb">
 
     <!-- Camera -->
-    <a-entity position="5 15 50">
+    <a-entity position="5 15 150">
       <a-camera wasd-controls look-controls></a-camera>
     </a-entity>
 
@@ -19,16 +19,15 @@
     <a-assets>
       <a-asset-item id="pathModel" src="assets/PATH.glb"></a-asset-item>
 
-      <!-- You can add more models here -->
       <a-asset-item id="tree1" src="assets/cypress_tree.glb"></a-asset-item>
       <a-asset-item id="grass1" src="assets/fern_grass_01.glb"></a-asset-item>
       <a-asset-item id="grass2" src="assets/garden_flower_-_vegetation.glb"></a-asset-item>
       <a-asset-item id="grass3" src="assets/grass_04.glb"></a-asset-item>
-            <a-asset-item id="grass4" src="assets/grass_vegitation_mix.glb"></a-asset-item>
+      <a-asset-item id="grass4" src="assets/grass_vegitation_mix.glb"></a-asset-item>
       <a-asset-item id="tree2" src="assets/linden_tree.glb"></a-asset-item>
       <a-asset-item id="grass5" src="assets/realistics_grass_10.glb"></a-asset-item>
       <a-asset-item id="grass6" src="assets/thistle.glb"></a-asset-item>
-            <a-asset-item id="tree3" src="assets/tree2.glb"></a-asset-item>
+      <a-asset-item id="tree3" src="assets/tree2.glb"></a-asset-item>
       <a-asset-item id="grass7" src="assets/white_flower.glb"></a-asset-item>
     </a-assets> 
 
@@ -43,7 +42,7 @@
     </a-plane>
 
     <!-- GLB scene -->
-    <a-entity gltf-model="#pathModel" scale="10 10 10" position="0 -19.842 0"></a-entity>
+    <a-entity id="pathEntity" gltf-model="#pathModel" scale="10 10 10" position="0 -19.842 0"></a-entity>
 
     <!-- Containers -->
     <a-entity id="grass-container"></a-entity>
@@ -57,19 +56,20 @@
   const grassContainer = document.querySelector('#grass-container');
   const treeContainer = document.querySelector('#tree-container');
 
-  // Center of your ground / scene
-  const centerX = -73.11485;
-  const centerZ = -297.28662;
+  const pathEntity = document.querySelector('#pathEntity');
+  const pathPosition = pathEntity.getAttribute('position');
+
+  // Center of scatter now dynamically follows path
+  const centerX = pathPosition.x;
+  const centerZ = pathPosition.z;
   const groundY = -14.6;   // ground level
-  const groundRadius = 200; // how far to scatter
+  const groundRadius = 400; // scatter distance around path
 
-  
-const forbiddenZones = [
-  { x: centerX, z: centerZ, r: 60 }, // main path
-  { x: centerX - 5, z: centerZ + 20, r: 20 } // castle
-];
-
-  
+  // Forbidden zones
+  const forbiddenZones = [
+    { x: centerX, z: centerZ, r: 60 }, // main path
+    { x: centerX - 5, z: centerZ + 20, r: 20 } // castle
+  ];
 
   function isFree(x, z) {
     return !forbiddenZones.some(zone => {
@@ -79,11 +79,11 @@ const forbiddenZones = [
     });
   }
 
-  // Tree and grass models with baseScale
+  // Models
   const treeModels = [
     { model: '#tree1', baseScale: 40 },
-    { model: '#tree2', baseScale: 20 },
-    { model: '#tree3', baseScale: 20 }
+    { model: '#tree2', baseScale: 15 },
+    { model: '#tree3', baseScale: 12 }
   ];
 
   const grassModels = [
@@ -93,60 +93,58 @@ const forbiddenZones = [
     { model: '#grass4', baseScale: 10 },
     { model: '#grass5', baseScale: 0.4 },
     { model: '#grass6', baseScale: 0.1 },
-     { model: '#grass7', baseScale: 0.3 }
+    { model: '#grass7', baseScale: 0.3 }
   ];
 
-  // --- Spawn grass/flowers ---
-
-// --- Spawn grass/flowers ---
-const grassCount = 800; // more grass
-for (let i = 0; i < grassCount; i++) {
-  const angle = Math.random() * Math.PI * 2;
-  const distance = Math.random() * groundRadius;
-  const x = centerX + Math.cos(angle) * distance;
-  const z = centerZ + Math.sin(angle) * distance;
-
-  if (isFree(x, z)) {
-    const choice = grassModels[Math.floor(Math.random() * grassModels.length)];
-    const variation = 0.7 + Math.random() * 0.6; // ±30% roughly
-    const scale = choice.baseScale * variation;
-
-    const grass = document.createElement('a-entity');
-    grass.setAttribute('gltf-model', choice.model);
-    grass.setAttribute('scale', `${scale} ${scale} ${scale}`);
-    grass.setAttribute('position', `${x} ${groundY} ${z}`);
-    grass.setAttribute('rotation', `0 ${Math.random()*360} 0`);
-
-    grassContainer.appendChild(grass);
-  }
-}
-
-// --- Spawn trees ---
-const treeCount = 100; // more trees
-for (let i = 0; i < treeCount; i++) {
-  let x, z, attempts = 0;
-  do {
+  // Spawn grass
+  const grassCount = 400;
+  for (let i = 0; i < grassCount; i++) {
     const angle = Math.random() * Math.PI * 2;
     const distance = Math.random() * groundRadius;
-    x = centerX + Math.cos(angle) * distance;
-    z = centerZ + Math.sin(angle) * distance;
-    attempts++;
-  } while (!isFree(x, z) && attempts < 50);
+    const x = centerX + Math.cos(angle) * distance;
+    const z = centerZ + Math.sin(angle) * distance;
 
-  if (attempts < 50) {
-    const choice = treeModels[Math.floor(Math.random() * treeModels.length)];
-    const variation = 0.7 + Math.random() * 0.6; // ±30%
-    const scale = choice.baseScale * variation;
+    if (isFree(x, z)) {
+      const choice = grassModels[Math.floor(Math.random() * grassModels.length)];
+      const variation = 0.7 + Math.random() * 0.6; // ±30%
+      const scale = choice.baseScale * variation;
 
-    const tree = document.createElement('a-entity');
-    tree.setAttribute('gltf-model', choice.model);
-    tree.setAttribute('scale', `${scale} ${scale} ${scale}`);
-    tree.setAttribute('position', `${x} ${groundY} ${z}`);
-    tree.setAttribute('rotation', `0 ${Math.random()*360} 0`);
+      const grass = document.createElement('a-entity');
+      grass.setAttribute('gltf-model', choice.model);
+      grass.setAttribute('scale', `${scale} ${scale} ${scale}`);
+      grass.setAttribute('position', `${x} ${groundY} ${z}`);
+      grass.setAttribute('rotation', `0 ${Math.random()*360} 0`);
 
-    treeContainer.appendChild(tree);
+      grassContainer.appendChild(grass);
+    }
   }
-}
+
+  // Spawn trees
+  const treeCount = 100;
+  for (let i = 0; i < treeCount; i++) {
+    let x, z, attempts = 0;
+    do {
+      const angle = Math.random() * Math.PI * 2;
+      const distance = Math.random() * groundRadius;
+      x = centerX + Math.cos(angle) * distance;
+      z = centerZ + Math.sin(angle) * distance;
+      attempts++;
+    } while (!isFree(x, z) && attempts < 50);
+
+    if (attempts < 50) {
+      const choice = treeModels[Math.floor(Math.random() * treeModels.length)];
+      const variation = 0.7 + Math.random() * 0.6; // ±30%
+      const scale = choice.baseScale * variation;
+
+      const tree = document.createElement('a-entity');
+      tree.setAttribute('gltf-model', choice.model);
+      tree.setAttribute('scale', `${scale} ${scale} ${scale}`);
+      tree.setAttribute('position', `${x} ${groundY} ${z}`);
+      tree.setAttribute('rotation', `0 ${Math.random()*360} 0`);
+
+      treeContainer.appendChild(tree);
+    }
+  }
 </script>
 
   </a-scene>
