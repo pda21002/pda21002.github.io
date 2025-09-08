@@ -5,35 +5,78 @@
 
   <script>
   // Wait for the scene to load
-        document.querySelector('a-scene').addEventListener('loaded', function() {
-            // Add grass patches to hide floating objects
-            const grassContainer = document.querySelector('#grass-container');
-            const groundRadius = 30;
-            const grassCount = 150;
+document.querySelector('a-scene').addEventListener('loaded', function() {
+    const grassContainer = document.querySelector('#grass-container');
+    const treeContainer = document.querySelector('#tree-container');
+    const groundRadius = 40;
             
-            for (let i = 0; i < grassCount; i++) {
-                const angle = Math.random() * Math.PI * 2;
-                const distance = Math.random() * groundRadius;
-                
-                const x = Math.cos(angle) * distance;
-                const z = Math.sin(angle) * distance;
-                
-                // Create the grass patch
-                const grass = document.createElement('a-entity');
-                grass.setAttribute('position', `${x} 0.01 ${z}`);
-                
-                // Create grass blade
-                const blade = document.createElement('a-box');
-                blade.setAttribute('width', 0.1);
-                blade.setAttribute('height', 0.3 + Math.random() * 0.3);
-                blade.setAttribute('depth', 0.1);
-                blade.setAttribute('color', '#3C5');
-                blade.setAttribute('rotation', '0 0 0');
-                
-                grass.appendChild(blade);
-                grassContainer.appendChild(grass);
-            }
+    // Define forbidden zones around your GLB objects (x, z, radius)
+    const forbiddenZones = [
+        {x: -7.3989, z: 0.04509, r: 1.5},   // Castle
+        {x: 0, z: 0, r: 2.65},  // Path & trees
+        {x: -5.1287, z: -0.12678, r: 2.65},  // Path to castle
+    ];
+
+    function isFree(x, z) {
+        return !forbiddenZones.some(zone => {
+            const dx = x - zone.x;
+            const dz = z - zone.z;
+            return Math.sqrt(dx*dx + dz*dz) < zone.r;
         });
+    }
+
+    // --- Scatter grass ---
+    const grassCount = 300;
+    for (let i = 0; i < grassCount; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const distance = Math.random() * groundRadius;
+        const x = Math.cos(angle) * distance;
+        const z = Math.sin(angle) * distance;
+
+        const grass = document.createElement('a-entity');
+        grass.setAttribute('position', `${x} 0.01 ${z}`);
+
+        const blade = document.createElement('a-box');
+        blade.setAttribute('width', 0.1);
+        blade.setAttribute('height', 0.3 + Math.random() * 0.3);
+        blade.setAttribute('depth', 0.1);
+        blade.setAttribute('color', '#3C5');
+        blade.setAttribute('rotation', `0 ${Math.random() * 360} 0`);
+
+        grass.appendChild(blade);
+        grassContainer.appendChild(grass);
+    }
+
+    // --- Scatter extra trees ---
+    const treeCount = 30;
+    for (let i = 0; i < treeCount; i++) {
+        let x, z;
+        let attempts = 0;
+        do {
+            const angle = Math.random() * Math.PI * 2;
+            const distance = Math.random() * groundRadius;
+            x = Math.cos(angle) * distance;
+            z = Math.sin(angle) * distance;
+            attempts++;
+        } while (!isFree(x, z) && attempts < 50); // avoid infinite loops
+
+        if (attempts < 50) { // if found a free spot
+            const tree = document.createElement('a-entity');
+            tree.setAttribute('position', `${x} 0 ${z}`);
+            tree.setAttribute('geometry', 'primitive: cylinder; radius: 0.2; height: 2');
+            tree.setAttribute('material', 'color: #654321');
+
+            const leaves = document.createElement('a-sphere');
+            leaves.setAttribute('radius', 0.8 + Math.random() * 0.4);
+            leaves.setAttribute('position', '0 1.5 0');
+            leaves.setAttribute('material', 'color: #3C5');
+
+            tree.appendChild(leaves);
+            treeContainer.appendChild(tree);
+        }
+    }
+});
+  
 
   </script>
 
@@ -54,9 +97,9 @@
                  roughness-map="src: url(assets/Ground024_8K-JPG_Roughness.jpg)"
                  displacement-map="src: url(assets/Ground024_8K-JPG_Displacement.jpg)"
                  rotation="-90 0 0" width="40" height="40"
-                 repeat="30 30"
+                 repeat="40 40"
                  material="roughness: 1;"
-                 position="0 0 0">
+                position="-73.11485 -14.62706 -297.28662" scale="20 20 20">
         </a-plane>
     
       <!-- Camera -->
@@ -84,3 +127,6 @@
 </div>
   
 </html>
+
+
+
