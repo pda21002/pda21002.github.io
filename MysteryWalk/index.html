@@ -11,7 +11,7 @@
   <a-scene cursor="rayOrigin: mouse" background="color: #87ceeb">
 
     <!-- Camera -->
-    <a-entity position="10 15 80">
+    <a-entity position="15 15 40">
       <a-camera wasd-controls look-controls></a-camera>
     </a-entity>
 
@@ -56,9 +56,12 @@
 <script>
   const grassContainer = document.querySelector('#grass-container');
   const treeContainer = document.querySelector('#tree-container');
-  const groundY = -14.6;
-  const groundRadius = 400;
+  const pathEntity = document.querySelector('#path');
 
+  const groundY = -14.6;
+  const groundRadius = 400; // how far to scatter
+
+  // Tree and grass models
   const treeModels = [
     { model: '#tree1', baseScale: 40 },
     { model: '#tree2', baseScale: 15 },
@@ -75,87 +78,89 @@
     { model: '#grass7', baseScale: 0.3 }
   ];
 
-  const forbiddenZones = [];
+  // Function to check if a point is inside a bounding box
+  function pointInBox(x, z, box) {
+    return x >= box.minX && x <= box.maxX && z >= box.minZ && z <= box.maxZ;
+  }
 
-  // Wait for the path model to load
-  document.querySelector('[gltf-model="#pathModel"]').addEventListener('model-loaded', (e) => {
-    const model = e.detail.model;
-    const sceneObj = model.scene || model;
+  // Compute forbidden zones after model loads
+  let forbiddenZones = [];
+  pathEntity.addEventListener('model-loaded', () => {
+    const mesh = pathEntity.getObject3D('mesh');
+    if (!mesh) return;
 
-    // Traverse all child meshes to create a forbidden zone for each segment
-    sceneObj.traverse((child) => {
+    mesh.traverse(child => {
       if (child.isMesh) {
-        const box = new THREE.Box3().setFromObject(child);
-        const centerX = (box.min.x + box.max.x) / 2;
-        const centerZ = (box.min.z + box.max.z) / 2;
-        const size = new THREE.Vector3();
-        box.getSize(size);
-        const radius = Math.sqrt(size.x*size.x + size.z*size.z)/2 + 2; // extra padding
-        forbiddenZones.push({ x: centerX, z: centerZ, r: radius });
+        child.geometry.computeBoundingBox();
+        const box = child.geometry.boundingBox;
+        // Transform bounding box to world coordinates
+        const min = box.min.clone().applyMatrix4(child.matrixWorld);
+        const max = box.max.clone().applyMatrix4(child.matrixWorld);
+        forbiddenZones.push({
+          minX: min.x - 2, // buffer
+          maxX: max.x + 2,
+          minZ: min.z - 2,
+          maxZ: max.z + 2
+        });
       }
     });
 
-    // Utility functions
-    function randomPos() {
+    spawnVegetation();
+  });
+
+  function isFree(x, z) {
+    return !forbiddenZones.some(box => pointInBox(x, z, box));
+  }
+
+  function spawnVegetation() {
+    // --- Spawn grass ---
+    const grassCount = 350;
+    for (let i = 0; i < grassCount; i++) {
       const angle = Math.random() * Math.PI * 2;
       const distance = Math.random() * groundRadius;
-      const baseX = 0; // centerX for scatter
-      const baseZ = 0; // centerZ for scatter
-      return {
-        x: baseX + Math.cos(angle) * distance,
-        z: baseZ + Math.sin(angle) * distance
-      };
-    }
+      const x = Math.cos(angle) * distance;
+      const z = Math.sin(angle) * distance;
 
-    function isFree(x, z) {
-      return !forbiddenZones.some(zone => {
-        const dx = x - zone.x;
-        const dz = z - zone.z;
-        return Math.sqrt(dx*dx + dz*dz) < zone.r;
-      });
-    }
-
-    // Spawn grass
-    const grassCount = 400;
-    for (let i = 0; i < grassCount; i++) {
-      const pos = randomPos();
-      if (isFree(pos.x, pos.z)) {
+      if (isFree(x, z)) {
         const choice = grassModels[Math.floor(Math.random() * grassModels.length)];
-        const variation = 0.5 + Math.random() * 0.3;
+        const variation = Math.random() * 0.3;
         const scale = choice.baseScale * variation;
 
         const grass = document.createElement('a-entity');
         grass.setAttribute('gltf-model', choice.model);
         grass.setAttribute('scale', `${scale} ${scale} ${scale}`);
-        grass.setAttribute('position', `${pos.x} ${groundY} ${pos.z}`);
+        grass.setAttribute('position', `${x} ${groundY} ${z}`);
         grass.setAttribute('rotation', `0 ${Math.random()*360} 0`);
         grassContainer.appendChild(grass);
       }
     }
 
-    // Spawn trees
-    const treeCount = 100;
+    // --- Spawn trees ---
+    const treeCount = 60;
     for (let i = 0; i < treeCount; i++) {
-      let pos, attempts = 0;
+      let x, z, attempts = 0;
       do {
-        pos = randomPos();
+        const angle = Math.random() * Math.PI * 2;
+        const distance = Math.random() * groundRadius;
+        x = Math.cos(angle) * distance;
+        z = Math.sin(angle) * distance;
         attempts++;
-      } while (!isFree(pos.x, pos.z) && attempts < 50);
+      } while (!isFree(x, z) && attempts < 50);
 
       if (attempts < 50) {
         const choice = treeModels[Math.floor(Math.random() * treeModels.length)];
-        const variation = 0.5 + Math.random() * 0.3;
+        const variation = Math.random() * 0.2;
         const scale = choice.baseScale * variation;
 
         const tree = document.createElement('a-entity');
         tree.setAttribute('gltf-model', choice.model);
         tree.setAttribute('scale', `${scale} ${scale} ${scale}`);
-        tree.setAttribute('position', `${pos.x} ${groundY} ${pos.z}`);
+        tree.setAttribute('position', `${x} ${groundY} ${z}`);
         tree.setAttribute('rotation', `0 ${Math.random()*360} 0`);
         treeContainer.appendChild(tree);
       }
     }
-  });
+  }
 </script>
 
   </a-scene>
