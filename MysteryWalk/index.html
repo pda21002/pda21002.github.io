@@ -11,7 +11,7 @@
   <a-scene cursor="rayOrigin: mouse" background="color: #87ceeb">
 
     <!-- Camera -->
-    <a-entity position="5 15 150">
+    <a-entity position="5 15 100">
       <a-camera wasd-controls look-controls></a-camera>
     </a-entity>
 
@@ -57,21 +57,20 @@
 const grassContainer = document.querySelector('#grass-container');
 const treeContainer = document.querySelector('#tree-container');
 
-// Path / ground info
-const pathX = 0;      // your path GLB position
-const pathZ = 0;
-const pathRadius = 60; // approximate radius of path in world
-const groundY = -14.6;
-const groundRadius = 400; // scattering limit for trees/grass
+// Center of your ground / scene
+const groundY = -14.6;   // ground level
+const groundRadius = 400; // how far to scatter
 
-// Tree models with baseScale
+// Forbidden zones
+const forbiddenZones = []; // start empty, will add dynamically
+
+// Tree and grass models with baseScale
 const treeModels = [
-  { model: '#tree1', baseScale: 40, maxScale: 40 },
-  { model: '#tree2', baseScale: 15, maxScale: 20 },
-  { model: '#tree3', baseScale: 12, maxScale: 15 }
+  { model: '#tree1', baseScale: 40 },
+  { model: '#tree2', baseScale: 15 },
+  { model: '#tree3', baseScale: 12 }
 ];
 
-// Grass models with baseScale
 const grassModels = [
   { model: '#grass1', baseScale: 3 },
   { model: '#grass2', baseScale: 4 },
@@ -82,66 +81,93 @@ const grassModels = [
   { model: '#grass7', baseScale: 0.3 }
 ];
 
-// Check if position is outside forbidden zones
-function isFreeForTree(x, z) {
-  const dx = x - pathX;
-  const dz = z - pathZ;
-  return Math.sqrt(dx*dx + dz*dz) > pathRadius + 5; // 5 units buffer
+// Function to check if position is free
+function isFree(x, z) {
+  return !forbiddenZones.some(zone => {
+    const dx = x - zone.x;
+    const dz = z - zone.z;
+    return Math.sqrt(dx*dx + dz*dz) < zone.r;
+  });
 }
 
-// --- Spawn trees ---
-const treeCount = 100;
-for (let i = 0; i < treeCount; i++) {
-  let x, z, attempts = 0;
-  do {
+// Function to spawn grass
+function spawnGrass() {
+  const grassCount = 400;
+  for (let i = 0; i < grassCount; i++) {
     const angle = Math.random() * Math.PI * 2;
     const distance = Math.random() * groundRadius;
-    x = pathX + Math.cos(angle) * distance;
-    z = pathZ + Math.sin(angle) * distance;
-    attempts++;
-  } while (!isFreeForTree(x, z) && attempts < 50);
+    const x = angleCos(angle, distance);
+    const z = angleSin(angle, distance);
 
-  if (attempts < 50) {
-    const choice = treeModels[Math.floor(Math.random() * treeModels.length)];
-    const variation = 0.5 + Math.random() * 0.3; // max 30% variation
-    const scale = Math.min(choice.baseScale * variation, choice.maxScale);
+    if (isFree(x, z)) {
+      const choice = grassModels[Math.floor(Math.random() * grassModels.length)];
+      const variation = 0.5 + Math.random() * 0.3; // size variation
+      const scale = choice.baseScale * variation;
 
-    const tree = document.createElement('a-entity');
-    tree.setAttribute('gltf-model', choice.model);
-    tree.setAttribute('scale', `${scale} ${scale} ${scale}`);
-    tree.setAttribute('position', `${x} ${groundY} ${z}`);
-    tree.setAttribute('rotation', `0 ${Math.random()*360} 0`);
-    treeContainer.appendChild(tree);
+      const grass = document.createElement('a-entity');
+      grass.setAttribute('gltf-model', choice.model);
+      grass.setAttribute('scale', `${scale} ${scale} ${scale}`);
+      grass.setAttribute('position', `${x} ${groundY} ${z}`);
+      grass.setAttribute('rotation', `0 ${Math.random()*360} 0`);
+      grassContainer.appendChild(grass);
+    }
   }
 }
 
-// --- Spawn grass/flowers ---
-const grassCount = 400;
-for (let i = 0; i < grassCount; i++) {
-  const angle = Math.random() * Math.PI * 2;
-  const distance = Math.random() * groundRadius;
-  const x = pathX + Math.cos(angle) * distance;
-  const z = pathZ + Math.sin(angle) * distance;
+// Function to spawn trees
+function spawnTrees() {
+  const treeCount = 100;
+  for (let i = 0; i < treeCount; i++) {
+    let x, z, attempts = 0;
+    do {
+      const angle = Math.random() * Math.PI * 2;
+      const distance = Math.random() * groundRadius;
+      x = angleCos(angle, distance);
+      z = angleSin(angle, distance);
+      attempts++;
+    } while (!isFree(x, z) && attempts < 50);
 
-  const dx = x - pathX;
-  const dz = z - pathZ;
-  const distToPath = Math.sqrt(dx*dx + dz*dz);
+    if (attempts < 50) {
+      const choice = treeModels[Math.floor(Math.random() * treeModels.length)];
+      const variation = 0.5 + Math.random() * 0.3;
+      const scale = choice.baseScale * variation;
 
-  if (distToPath > pathRadius) { // outside path
-    const choice = grassModels[Math.floor(Math.random() * grassModels.length)];
-    const variation = 0.6 + Math.random() * 0.5; // ±30%
-    const scale = choice.baseScale * variation;
-
-    const grass = document.createElement('a-entity');
-    grass.setAttribute('gltf-model', choice.model);
-    grass.setAttribute('scale', `${scale} ${scale} ${scale}`);
-    grass.setAttribute('position', `${x} ${groundY} ${z}`);
-    grass.setAttribute('rotation', `0 ${Math.random()*360} 0`);
-
-    grassContainer.appendChild(grass);
+      const tree = document.createElement('a-entity');
+      tree.setAttribute('gltf-model', choice.model);
+      tree.setAttribute('scale', `${scale} ${scale} ${scale}`);
+      tree.setAttribute('position', `${x} ${groundY} ${z}`);
+      tree.setAttribute('rotation', `0 ${Math.random()*360} 0`);
+      treeContainer.appendChild(tree);
+    }
   }
 }
+
+// Wait for path model to load, then compute forbidden zone
+document.querySelector('[gltf-model="#pathModel"]').addEventListener('model-loaded', (e) => {
+  const model = e.detail.model;
+  const box = new THREE.Box3().setFromObject(model);
+
+  // Center of the model
+  const centerX = (box.min.x + box.max.x) / 2;
+  const centerZ = (box.min.z + box.max.z) / 2;
+
+  // Approximate radius (half the diagonal)
+  const size = new THREE.Vector3();
+  box.getSize(size);
+  const radius = Math.sqrt(size.x*size.x + size.z*size.z)/2;
+
+  forbiddenZones.push({ x: centerX, z: centerZ, r: radius + 5 }); // +5 buffer
+
+  // Now spawn grass and trees
+  spawnGrass();
+  spawnTrees();
+});
+
+// Simple helpers
+function angleCos(angle, distance) { return Math.cos(angle) * distance; }
+function angleSin(angle, distance) { return Math.sin(angle) * distance; }
 </script>
+
 
 
   </a-scene>
