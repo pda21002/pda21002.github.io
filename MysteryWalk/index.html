@@ -3,82 +3,6 @@
   <script src="https://aframe.io/releases/1.7.0/aframe.min.js"></script>
   <script src="https://cdn.jsdelivr.net/gh/c-frame/aframe-extras@7.5.4/dist/aframe-extras.min.js"></script>
 
-  <script>
-  // Wait for the scene to load
-document.querySelector('a-scene').addEventListener('loaded', function() {
-    const grassContainer = document.querySelector('#grass-container');
-    const treeContainer = document.querySelector('#tree-container');
-    const groundRadius = 40;
-            
-    // Define forbidden zones around your GLB objects (x, z, radius)
-    const forbiddenZones = [
-        {x: -7.3989, z: 0.04509, r: 1.5},   // Castle
-        {x: 0, z: 0, r: 2.65},  // Path & trees
-        {x: -5.1287, z: -0.12678, r: 2.65},  // Path to castle
-    ];
-
-    function isFree(x, z) {
-        return !forbiddenZones.some(zone => {
-            const dx = x - zone.x;
-            const dz = z - zone.z;
-            return Math.sqrt(dx*dx + dz*dz) < zone.r;
-        });
-    }
-
-    // --- Scatter grass ---
-    const grassCount = 300;
-    for (let i = 0; i < grassCount; i++) {
-        const angle = Math.random() * Math.PI * 2;
-        const distance = Math.random() * groundRadius;
-        const x = Math.cos(angle) * distance;
-        const z = Math.sin(angle) * distance;
-
-        const grass = document.createElement('a-entity');
-        grass.setAttribute('position', `${x} 0.01 ${z}`);
-
-        const blade = document.createElement('a-box');
-        blade.setAttribute('width', 0.1);
-        blade.setAttribute('height', 0.3 + Math.random() * 0.3);
-        blade.setAttribute('depth', 0.1);
-        blade.setAttribute('color', '#3C5');
-        blade.setAttribute('rotation', `0 ${Math.random() * 360} 0`);
-
-        grass.appendChild(blade);
-        grassContainer.appendChild(grass);
-    }
-
-    // --- Scatter extra trees ---
-    const treeCount = 30;
-    for (let i = 0; i < treeCount; i++) {
-        let x, z;
-        let attempts = 0;
-        do {
-            const angle = Math.random() * Math.PI * 2;
-            const distance = Math.random() * groundRadius;
-            x = Math.cos(angle) * distance;
-            z = Math.sin(angle) * distance;
-            attempts++;
-        } while (!isFree(x, z) && attempts < 50); // avoid infinite loops
-
-        if (attempts < 50) { // if found a free spot
-            const tree = document.createElement('a-entity');
-            tree.setAttribute('position', `${x} 0 ${z}`);
-            tree.setAttribute('geometry', 'primitive: cylinder; radius: 0.2; height: 2');
-            tree.setAttribute('material', 'color: #654321');
-
-            const leaves = document.createElement('a-sphere');
-            leaves.setAttribute('radius', 0.8 + Math.random() * 0.4);
-            leaves.setAttribute('position', '0 1.5 0');
-            leaves.setAttribute('material', 'color: #3C5');
-
-            tree.appendChild(leaves);
-            treeContainer.appendChild(tree);
-        }
-    }
-});
-  
-
-  </script>
 
   <style>
     a-scene { width: 100%; height: 80vh; }
@@ -86,6 +10,10 @@ document.querySelector('a-scene').addEventListener('loaded', function() {
 </head>
 <body>
   <a-scene cursor="rayOrigin: mouse" background="color: #87ceeb">
+
+          <a-entity position="0 5 3">
+        <a-camera wasd-controls look-controls></a-camera>
+      </a-entity>
 
             <a-assets>
             <a-asset-item id="pathModel" src="assets/PATH.glb"></a-asset-item>
@@ -102,10 +30,8 @@ document.querySelector('a-scene').addEventListener('loaded', function() {
                 position="-73.11485 -14.62706 -297.28662" scale="20 20 20">
         </a-plane>
     
-      <!-- Camera -->
-      <a-entity position="0 0 5">
-        <a-camera wasd-controls look-controls></a-camera>
-      </a-entity>
+    
+
 
       <!-- Lights -->
       <a-entity light="type: directional; intensity: 1" position="5 10 5"></a-entity>
@@ -120,9 +46,82 @@ document.querySelector('a-scene').addEventListener('loaded', function() {
                 <!-- Grass will be added via JavaScript -->
             </a-entity>
 
+    <a-entity id="tree-container"></a-entity>
+<script>
+  const grassContainer = document.querySelector('#grass-container');
+  const treeContainer = document.querySelector('#tree-container');
+  const groundRadius = 40;
+
+  const forbiddenZones = [
+      {x: -7.3989, z: 0.04509, r: 1.5},
+      {x: 0, z: 0, r: 2.65},
+      {x: -5.1287, z: -0.12678, r: 2.65},
+  ];
+
+  function isFree(x, z) {
+      return !forbiddenZones.some(zone => {
+          const dx = x - zone.x;
+          const dz = z - zone.z;
+          return Math.sqrt(dx*dx + dz*dz) < zone.r;
+      });
+  }
+
+  function spawnGrass() {
+      for (let i = 0; i < 300; i++) {
+          const angle = Math.random() * Math.PI * 2;
+          const distance = Math.random() * groundRadius;
+          const x = Math.cos(angle) * distance;
+          const z = Math.sin(angle) * distance;
+
+          const grass = document.createElement('a-box');
+          grass.setAttribute('width', 0.1);
+          grass.setAttribute('height', 0.3 + Math.random() * 0.3);
+          grass.setAttribute('depth', 0.1);
+          grass.setAttribute('color', '#3C5');
+          grass.setAttribute('rotation', `0 ${Math.random() * 360} 0`);
+          grass.setAttribute('position', `${x} 0.01 ${z}`);
+
+          grassContainer.appendChild(grass);
+      }
+  }
+
+  function spawnTrees() {
+      for (let i = 0; i < 30; i++) {
+          let x, z, attempts = 0;
+          do {
+              const angle = Math.random() * Math.PI * 2;
+              const distance = Math.random() * groundRadius;
+              x = Math.cos(angle) * distance;
+              z = Math.sin(angle) * distance;
+              attempts++;
+          } while (!isFree(x, z) && attempts < 50);
+
+          if (attempts < 50) {
+              const tree = document.createElement('a-cylinder');
+              tree.setAttribute('radius', 0.2);
+              tree.setAttribute('height', 2);
+              tree.setAttribute('color', '#654321');
+              tree.setAttribute('position', `${x} 1 ${z}`);
+
+              const leaves = document.createElement('a-sphere');
+              leaves.setAttribute('radius', 0.8 + Math.random() * 0.4);
+              leaves.setAttribute('position', `0 1.5 0`);
+              leaves.setAttribute('color', '#3C5');
+
+              tree.appendChild(leaves);
+              treeContainer.appendChild(tree);
+          }
+      }
+  }
+
+  spawnGrass();
+  spawnTrees();
+</script>
   
 
   </a-scene>
+
+  
 </body> 
 </div>
   
