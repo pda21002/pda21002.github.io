@@ -26,10 +26,10 @@
       <a-asset-item id="grass3" src="assets/grass_04.glb"></a-asset-item>
             <a-asset-item id="grass4" src="assets/grass_vegitation_mix.glb"></a-asset-item>
       <a-asset-item id="tree2" src="assets/linden_tree.glb"></a-asset-item>
-      <a-asset-item id="grass4" src="assets/realistics_grass_10.glb"></a-asset-item>
-      <a-asset-item id="grass5" src="assets/thistle.glb"></a-asset-item>
+      <a-asset-item id="grass5" src="assets/realistics_grass_10.glb"></a-asset-item>
+      <a-asset-item id="grass6" src="assets/thistle.glb"></a-asset-item>
             <a-asset-item id="tree3" src="assets/tree2.glb"></a-asset-item>
-      <a-asset-item id="grass6" src="assets/white_flower.glb"></a-asset-item>
+      <a-asset-item id="grass7" src="assets/white_flower.glb"></a-asset-item>
     </a-assets> 
 
     <!-- Ground -->
@@ -63,6 +63,13 @@
   const groundY = -14.6;   // ground level
   const groundRadius = 900; // how far to scatter
 
+
+  // Forbidden zones in world coordinates
+const forbiddenZones = [
+  { x: 0, z: 0, r: 40 }, // main path (adjusted)
+  { x: -5, z: 20, r: 20 } // castle
+  ];
+
 const pathModelPosition = { x: 0, z: 0 };  // actual path model position in world
 const pathModelScale = 10; // your scale factor
 const pathRadius = 6 * pathModelScale; // approximate radius of path in world
@@ -71,13 +78,9 @@ forbiddenZones.push({
   z: pathModelPosition.z,
   r: pathRadius
 });
-  
 
-  // Forbidden zones in world coordinates
-const forbiddenZones = [
-  { x: 0, z: 0, r: 40 }, // main path (adjusted)
-  { x: -5, z: 20, r: 20 } // castle
-  ];
+  
+  
 
   function isFree(x, z) {
     return !forbiddenZones.some(zone => {
