@@ -2,7 +2,7 @@
 <head>
   <script src="https://aframe.io/releases/1.7.0/aframe.min.js"></script>
   <script src="https://cdn.jsdelivr.net/gh/c-frame/aframe-extras@7.5.4/dist/aframe-extras.min.js"></script>
-
+  
   <style>
     a-scene { width: 100%; height: 80vh; }
   </style>
@@ -11,22 +11,29 @@
   <a-scene cursor="rayOrigin: mouse" background="color: #87ceeb">
 
     <!-- Camera -->
-    <a-entity position="-73 2 -297">
+    <a-entity position="-73 5 -310">
       <a-camera wasd-controls look-controls></a-camera>
     </a-entity>
 
     <!-- Assets -->
     <a-assets>
       <a-asset-item id="pathModel" src="assets/PATH.glb"></a-asset-item>
-      <a-asset-item id="treeModel" src="assets/TREE.glb"></a-asset-item>
-      <a-asset-item id="grassModel" src="assets/GRASS.glb"></a-asset-item>
+
+      <!-- You can add more models here -->
+      <a-asset-item id="tree1" src="assets/cypress_tree.glb"></a-asset-item>
+      <a-asset-item id="grass1" src="assets/fern_grass_01.glb"></a-asset-item>
+      <a-asset-item id="grass2" src="assets/garden_flower_-_vegetation.glb"></a-asset-item>
+      <a-asset-item id="grass3" src="assets/grass_04.glb"></a-asset-item>
+            <a-asset-item id="grass4" src="assets/grass_vegitation_mix.glb"></a-asset-item>
+      <a-asset-item id="tree2" src="assets/linden_tree.glb"></a-asset-item>
+      <a-asset-item id="grass4" src="assets/realistics_grass_10.glb"></a-asset-item>
+      <a-asset-item id="grass5" src="assets/thistle.glb"></a-asset-item>
+            <a-asset-item id="tree3" src="assets/tree(2).glb"></a-asset-item>
+      <a-asset-item id="grass6" src="assets/white_flower.glb"></a-asset-item>
     </a-assets> 
 
     <!-- Ground -->
     <a-plane src="assets/Ground024_8K-JPG_Color.jpg"
-             normal-map="src: url(assets/Ground024_8K-JPG_NormalDX.jpg)"
-             roughness-map="src: url(assets/Ground024_8K-JPG_Roughness.jpg)"
-             displacement-map="src: url(assets/Ground024_8K-JPG_Displacement.jpg)"
              rotation="-90 0 0"
              width="40" height="40"
              repeat="40 40"
@@ -36,12 +43,9 @@
     </a-plane>
 
     <!-- GLB scene -->
-    <a-entity gltf-model="#pathModel" 
-              scale="10 10 10" 
-              position="0 1 0">
-    </a-entity>
+    <a-entity gltf-model="#pathModel" scale="10 10 10" position="0 1 0"></a-entity>
 
-    <!-- Containers for imported grass & trees -->
+    <!-- Containers -->
     <a-entity id="grass-container"></a-entity>
     <a-entity id="tree-container"></a-entity>
 
@@ -49,19 +53,20 @@
     <a-entity light="type: directional; intensity: 1" position="5 10 5"></a-entity>
     <a-entity light="type: ambient; intensity: 0.5"></a-entity>
 
-    <!-- Spawn trees & grass -->
     <script>
       const grassContainer = document.querySelector('#grass-container');
       const treeContainer = document.querySelector('#tree-container');
 
-      const centerX = -73.11485;   // ground/GLB center
+      // Center of your ground / scene
+      const centerX = -73.11485;
       const centerZ = -297.28662;
-      const groundRadius = 40;
+      const groundY = -14.6;   // ground level
+      const groundRadius = 200; // how far to scatter
 
+      // Forbidden zones in world coordinates
       const forbiddenZones = [
-        {x: 0, z: 0, r: 15},        // Path & existing trees
-        {x: -7.3989, z: 0.04509, r: 10}, // Castle
-        {x: -5.1287, z: -0.12678, r: 10}, // Path to castle
+        {x: centerX, z: centerZ, r: 60}, // around main path
+        {x: centerX - 5, z: centerZ + 20, r: 25}, // castle area
       ];
 
       function isFree(x, z) {
@@ -72,26 +77,28 @@
         });
       }
 
-      // --- Spawn grass ---
-      const grassCount = 200;
-      for (let i = 0; i < grassCount; i++) {
+      const treeModels = ['#tree1', '#tree2'];
+      const grassModels = ['#grass1', '#flower1'];
+
+      // --- Spawn grass/flowers ---
+      for (let i = 0; i < 300; i++) {
         const angle = Math.random() * Math.PI * 2;
         const distance = Math.random() * groundRadius;
         const x = centerX + Math.cos(angle) * distance;
         const z = centerZ + Math.sin(angle) * distance;
 
-        const grass = document.createElement('a-entity');
-        grass.setAttribute('gltf-model', '#grassModel');
-        grass.setAttribute('scale', '1 1 1');
-        grass.setAttribute('position', `${x} 0 ${z}`);
-        grass.setAttribute('rotation', `0 ${Math.random()*360} 0`);
-
-        grassContainer.appendChild(grass);
+        if (isFree(x, z)) {
+          const grass = document.createElement('a-entity');
+          grass.setAttribute('gltf-model', grassModels[Math.floor(Math.random()*grassModels.length)]);
+          grass.setAttribute('scale', '0.5 0.5 0.5');
+          grass.setAttribute('position', `${x} ${groundY} ${z}`);
+          grass.setAttribute('rotation', `0 ${Math.random()*360} 0`);
+          grassContainer.appendChild(grass);
+        }
       }
 
       // --- Spawn trees ---
-      const treeCount = 30;
-      for (let i = 0; i < treeCount; i++) {
+      for (let i = 0; i < 50; i++) {
         let x, z, attempts = 0;
         do {
           const angle = Math.random() * Math.PI * 2;
@@ -103,16 +110,15 @@
 
         if (attempts < 50) {
           const tree = document.createElement('a-entity');
-          tree.setAttribute('gltf-model', '#treeModel');
-          tree.setAttribute('scale', '2 2 2');  // adjust to fit your GLB scene
-          tree.setAttribute('position', `${x} 0 ${z}`);
+          tree.setAttribute('gltf-model', treeModels[Math.floor(Math.random()*treeModels.length)]);
+          tree.setAttribute('scale', '2 2 2');
+          tree.setAttribute('position', `${x} ${groundY} ${z}`);
           tree.setAttribute('rotation', `0 ${Math.random()*360} 0`);
-
           treeContainer.appendChild(tree);
         }
       }
     </script>
-
   </a-scene>
 </body>
 </html>
+
