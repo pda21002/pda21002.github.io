@@ -12,9 +12,11 @@
             const choice = this.el.getAttribute('data-choice');
 
             if (choice === 'left') {
+              // Hide right branch
               document.querySelectorAll('.right-branch').forEach(el => el.setAttribute('visible', false));
               document.querySelectorAll('.right-wall').forEach(el => el.setAttribute('visible', true));
             } else if (choice === 'right') {
+              // Hide left branch
               document.querySelectorAll('.left-branch').forEach(el => el.setAttribute('visible', false));
               document.querySelectorAll('.left-wall').forEach(el => el.setAttribute('visible', true));
             }
@@ -23,7 +25,6 @@
             document.querySelector('#main-back-wall').setAttribute('visible', true);
 
             // Hide fork choice boxes
-            this.el.setAttribute('visible', false);
             document.querySelectorAll('.fork-choice').forEach(box => box.setAttribute('visible', false));
           });
         }
@@ -98,13 +99,17 @@
              position="2 1 7.5" depth="0.5" height="0.5" width="0.5" color="red"></a-box>
 
       <!-- ==== PLAYER WITH MOVEMENT AND COLLISIONS ==== -->
-      <a-entity id="rig" position="0 1.6 15" dynamic-body
-                movement-controls="speed:0.15; fly:false; constrainToNavMesh:false">
+      <a-entity id="rig" position="0 1.6 15" kinematic-body
+                movement-controls="speed:0.15; fly:false">
         <a-entity camera look-controls>
           <!-- hidden cursor for desktop clicks -->
           <a-cursor visible="false" rayOrigin="mouse"></a-cursor>
         </a-entity>
       </a-entity>
+
+    </a-scene>
+  </body>
+</html>
 
     </a-scene>
   </body>
