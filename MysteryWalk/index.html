@@ -12,16 +12,14 @@
             const choice = this.el.getAttribute('data-choice');
 
             if (choice === 'left') {
-              // Hide right branch
               document.querySelectorAll('.right-branch').forEach(el => el.setAttribute('visible', false));
               document.querySelectorAll('.right-wall').forEach(el => el.setAttribute('visible', true));
             } else if (choice === 'right') {
-              // Hide left branch
               document.querySelectorAll('.left-branch').forEach(el => el.setAttribute('visible', false));
               document.querySelectorAll('.left-wall').forEach(el => el.setAttribute('visible', true));
             }
 
-            // Block the main path behind the fork to prevent backtracking
+            // Block the main path behind fork
             document.querySelector('#main-back-wall').setAttribute('visible', true);
 
             // Hide fork choice boxes
@@ -42,41 +40,35 @@
       </a-assets>
 
       <!-- Ground -->
-      <a-plane rotation="-90 0 0" width="50" height="50" position="0 0 0"
-               material="src: #groundTexture; repeat: 20 20; shader: flat" static-body></a-plane>
+      <a-box position="0 0 0" width="50" depth="50" height="0.1"
+             material="src:#groundTexture; repeat:20 20; shader:flat" static-body></a-box>
 
-      <!-- ==== PATHS ==== -->
+      <!-- ==== PATHS (boxes instead of planes) ==== -->
       <!-- Main vertical path -->
-      <a-plane static-body src="#pathTexture" width="1.5" height="10"
-               rotation="-90 0 0" position="0 0.01 12"
-               material="src:#pathTexture; repeat:1 5; shader:flat"></a-plane>
+      <a-box static-body width="1.5" height="0.1" depth="10" position="0 0.05 12"
+             material="src:#pathTexture; repeat:1 5; shader:flat"></a-box>
 
-      <!-- Top horizontal connector (fork point) -->
-      <a-plane static-body src="#pathTexture" width="5" height="1.5"
-               rotation="-90 0 0" position="0 0.01 7.5"
-               material="src:#pathTexture; repeat:5 1; shader:flat"></a-plane>
+      <!-- Top horizontal connector (fork) -->
+      <a-box static-body width="5" height="0.1" depth="1.5" position="0 0.05 7.5"
+             material="src:#pathTexture; repeat:5 1; shader:flat"></a-box>
 
       <!-- Left vertical branch -->
-      <a-plane static-body class="left-branch" src="#pathTexture" width="1.5" height="8"
-               rotation="-90 0 0" position="-2 0.01 3"
-               material="src:#pathTexture; repeat:1 4; shader:flat"></a-plane>
+      <a-box static-body class="left-branch" width="1.5" height="0.1" depth="8" position="-2 0.05 3"
+             material="src:#pathTexture; repeat:1 4; shader:flat"></a-box>
 
       <!-- Right vertical branch -->
-      <a-plane static-body class="right-branch" src="#pathTexture" width="1.5" height="8"
-               rotation="-90 0 0" position="2 0.01 3"
-               material="src:#pathTexture; repeat:1 4; shader:flat"></a-plane>
+      <a-box static-body class="right-branch" width="1.5" height="0.1" depth="8" position="2 0.05 3"
+             material="src:#pathTexture; repeat:1 4; shader:flat"></a-box>
 
       <!-- Bottom horizontal connector (merge) -->
-      <a-plane static-body src="#pathTexture" width="5" height="1.5"
-               rotation="-90 0 0" position="0 0.01 -1"
-               material="src:#pathTexture; repeat:5 1; shader:flat"></a-plane>
+      <a-box static-body width="5" height="0.1" depth="1.5" position="0 0.05 -1"
+             material="src:#pathTexture; repeat:5 1; shader:flat"></a-box>
 
       <!-- Merge vertical path -->
-      <a-plane static-body src="#pathTexture" width="1.5" height="10"
-               rotation="-90 0 0" position="0 0.01 -6.5"
-               material="src:#pathTexture; repeat:1 5; shader:flat"></a-plane>
+      <a-box static-body width="1.5" height="0.1" depth="10" position="0 0.05 -6.5"
+             material="src:#pathTexture; repeat:1 5; shader:flat"></a-box>
 
-      <!-- ==== WALLS ==== -->
+      <!-- ==== PATH WALLS ==== -->
       <!-- Left branch walls -->
       <a-box static-body class="left-wall" width="0.5" height="3" depth="8" position="-3.25 1.5 3" opacity="0"></a-box>
       <a-box static-body class="left-wall" width="0.5" height="3" depth="8" position="-0.75 1.5 3" opacity="0"></a-box>
@@ -89,8 +81,8 @@
       <a-box id="main-back-wall" static-body width="5" height="3" depth="1" position="0 1.5 8" visible="false"></a-box>
 
       <!-- ==== NPC PLACEHOLDERS ==== -->
-      <a-entity gltf-model="assets/little_witch.glb" position="-2 0 -2" scale="1 1 1"></a-entity>
-      <a-entity gltf-model="assets/ghasklle.glb" position="2 0 -2" scale="1 1 1"></a-entity>
+      <a-box class="npc" position="-2 0.5 -2" width="0.5" height="1" depth="0.5" color="green"></a-box>
+      <a-box class="npc" position="2 0.5 -2" width="0.5" height="1" depth="0.5" color="purple"></a-box>
 
       <!-- ==== FORK CHOICE BOXES ==== -->
       <a-box class="fork-choice" id="fork-choice-left" data-choice="left" fork-choice
@@ -98,11 +90,13 @@
       <a-box class="fork-choice" id="fork-choice-right" data-choice="right" fork-choice
              position="2 1 7.5" depth="0.5" height="0.5" width="0.5" color="red"></a-box>
 
-      <!-- ==== PLAYER WITH MOVEMENT AND COLLISIONS ==== -->
-      <a-entity id="rig" position="0 1.6 15" kinematic-body
+      <!-- ==== CASTLE PLACEHOLDER ==== -->
+      <a-box id="castle" position="0 0.5 -15" width="2" height="2" depth="2" color="gold"></a-box>
+
+      <!-- ==== PLAYER (capsule with kinematic-body) ==== -->
+      <a-entity id="rig" position="0 0.5 15" kinematic-body
                 movement-controls="speed:0.15; fly:false">
         <a-entity camera look-controls>
-          <!-- hidden cursor for desktop clicks -->
           <a-cursor visible="false" rayOrigin="mouse"></a-cursor>
         </a-entity>
       </a-entity>
@@ -110,6 +104,7 @@
     </a-scene>
   </body>
 </html>
+
 
     </a-scene>
   </body>
