@@ -1,105 +1,94 @@
 <script>
-const grassContainer = document.querySelector('#grass-container');
-const treeContainer = document.querySelector('#tree-container');
+window.onload = () => {
+  const grassContainer = document.querySelector('#grass-container');
+  const treeContainer = document.querySelector('#tree-container');
 
-const groundY = -14.6;   // Ground height
-const groundRadius = 400; // How far to scatter
+  const groundY = -14.6;
+  const groundRadius = 200; // safer distance
 
-// Tree and grass models
-const treeModels = [
-  { model: '#tree1', baseScale: 40 },
-  { model: '#tree2', baseScale: 15 },
-  { model: '#tree3', baseScale: 12 }
-];
+  // Models
+  const treeModels = [
+    { model: '#tree1', baseScale: 40 },
+    { model: '#tree2', baseScale: 15 },
+    { model: '#tree3', baseScale: 12 }
+  ];
 
-const grassModels = [
-  { model: '#grass1', baseScale: 3 },
-  { model: '#grass2', baseScale: 4 },
-  { model: '#grass3', baseScale: 6 },
-  { model: '#grass4', baseScale: 10 },
-  { model: '#grass5', baseScale: 0.4 },
-  { model: '#grass6', baseScale: 0.1 },
-  { model: '#grass7', baseScale: 0.3 }
-];
+  const grassModels = [
+    { model: '#grass1', baseScale: 3 },
+    { model: '#grass2', baseScale: 4 },
+    { model: '#grass3', baseScale: 6 },
+    { model: '#grass4', baseScale: 10 },
+    { model: '#grass5', baseScale: 0.4 },
+    { model: '#grass6', baseScale: 0.1 },
+    { model: '#grass7', baseScale: 0.3 }
+  ];
 
-// Center of your scene / ground
-const centerX = -73.11485;
-const centerZ = -297.28662;
+  const centerX = -73.11485;
+  const centerZ = -297.28662;
 
-// Forbidden zones in world coordinates
-const forbiddenZones = [
-  // Beginning straight path
-  { minX: centerX + 0 - 5.3/2 - 1, maxX: centerX + 0 + 5.3/2 + 1, minZ: centerZ + 0 - 10.9/2 - 1, maxZ: centerZ + 0 + 10.9/2 + 1 },
-  // Horizontal branches section
-  { minX: centerX + -5.1287 - 5.3/2 - 1, maxX: centerX + -5.1287 + 5.3/2 + 1, minZ: centerZ + 27.849 - 10.9/2 - 1, maxZ: centerZ + 27.849 + 10.9/2 + 1 },
-  // Path from branches to castle
-  { minX: centerX + 0 - 5.3/2 - 1, maxX: centerX + 0 + 5.3/2 + 1, minZ: centerZ + 0 - 10.9/2 - 1, maxZ: centerZ + 0 + 10.9/2 + 1 },
-  // Castle
-  { minX: centerX + -7.3989 - 2.99/2 - 1, maxX: centerX + -7.3989 + 2.99/2 + 1, minZ: centerZ + 50.028 - 3.83/2 - 1, maxZ: centerZ + 50.028 + 3.83/2 + 1 }
-];
+  const forbiddenZones = [
+    { minX: centerX - 5.3/2 - 1, maxX: centerX + 5.3/2 + 1, minZ: centerZ - 10.9/2 - 1, maxZ: centerZ + 10.9/2 + 1 },
+    { minX: centerX - 5.1287 - 5.3/2 - 1, maxX: centerX - 5.1287 + 5.3/2 + 1, minZ: centerZ + 27.849 - 10.9/2 - 1, maxZ: centerZ + 27.849 + 10.9/2 + 1 },
+    { minX: centerX - 7.3989 - 2.99/2 - 1, maxX: centerX - 7.3989 + 2.99/2 + 1, minZ: centerZ + 50.028 - 3.83/2 - 1, maxZ: centerZ + 50.028 + 3.83/2 + 1 }
+  ];
 
-// Utility to check if point is inside a forbidden zone
-function pointInBox(x, z, box) {
-  return x >= box.minX && x <= box.maxX && z >= box.minZ && z <= box.maxZ;
-}
-
-function isFree(x, z) {
-  return !forbiddenZones.some(box => pointInBox(x, z, box));
-}
-
-// Spawn vegetation
-function spawnVegetation() {
-  // --- Grass ---
-  const grassCount = 350;
-  for (let i = 0; i < grassCount; i++) {
-    const angle = Math.random() * Math.PI * 2;
-    const distance = Math.random() * groundRadius;
-    const x = centerX + Math.cos(angle) * distance;
-    const z = centerZ + Math.sin(angle) * distance;
-
-    if (isFree(x, z)) {
-      const choice = grassModels[Math.floor(Math.random() * grassModels.length)];
-      const variation = 0.5 + Math.random() * 0.3;  // ±30%
-      const scale = choice.baseScale * variation;
-
-      const grass = document.createElement('a-entity');
-      grass.setAttribute('gltf-model', choice.model);
-      grass.setAttribute('scale', `${scale} ${scale} ${scale}`);
-      grass.setAttribute('position', `${x} ${groundY} ${z}`);
-      grass.setAttribute('rotation', `0 ${Math.random()*360} 0`);
-      grassContainer.appendChild(grass);
-    }
+  function pointInBox(x, z, box) {
+    return x >= box.minX && x <= box.maxX && z >= box.minZ && z <= box.maxZ;
   }
 
-  // --- Trees ---
-  const treeCount = 60;
-  for (let i = 0; i < treeCount; i++) {
-    let x, z, attempts = 0;
-    do {
+  function isFree(x, z) {
+    return !forbiddenZones.some(box => pointInBox(x, z, box));
+  }
+
+  function spawnVegetation() {
+    // Grass
+    for (let i = 0; i < 350; i++) {
       const angle = Math.random() * Math.PI * 2;
       const distance = Math.random() * groundRadius;
-      x = centerX + Math.cos(angle) * distance;
-      z = centerZ + Math.sin(angle) * distance;
-      attempts++;
-    } while (!isFree(x, z) && attempts < 50);
+      const x = centerX + Math.cos(angle) * distance;
+      const z = centerZ + Math.sin(angle) * distance;
 
-    if (attempts < 50) {
-      const choice = treeModels[Math.floor(Math.random() * treeModels.length)];
-      const variation = 0.5 + Math.random() * 0.2;  // ±20%
-      const scale = choice.baseScale * variation;
+      if (isFree(x, z)) {
+        const choice = grassModels[Math.floor(Math.random() * grassModels.length)];
+        const variation = 0.5 + Math.random() * 0.3;
+        const scale = choice.baseScale * variation;
 
-      const tree = document.createElement('a-entity');
-      tree.setAttribute('gltf-model', choice.model);
-      tree.setAttribute('scale', `${scale} ${scale} ${scale}`);
-      tree.setAttribute('position', `${x} ${groundY} ${z}`);
-      tree.setAttribute('rotation', `0 ${Math.random()*360} 0`);
-      treeContainer.appendChild(tree);
+        const grass = document.createElement('a-entity');
+        grass.setAttribute('gltf-model', choice.model);
+        grass.setAttribute('scale', `${scale} ${scale} ${scale}`);
+        grass.setAttribute('position', `${x} ${groundY} ${z}`);
+        grass.setAttribute('rotation', `0 ${Math.random()*360} 0`);
+        grassContainer.appendChild(grass);
+      }
+    }
+
+    // Trees
+    for (let i = 0; i < 60; i++) {
+      let x, z, attempts = 0;
+      do {
+        const angle = Math.random() * Math.PI * 2;
+        const distance = Math.random() * groundRadius;
+        x = centerX + Math.cos(angle) * distance;
+        z = centerZ + Math.sin(angle) * distance;
+        attempts++;
+      } while (!isFree(x, z) && attempts < 50);
+
+      if (attempts < 50) {
+        const choice = treeModels[Math.floor(Math.random() * treeModels.length)];
+        const variation = 0.5 + Math.random() * 0.2;
+        const scale = choice.baseScale * variation;
+
+        const tree = document.createElement('a-entity');
+        tree.setAttribute('gltf-model', choice.model);
+        tree.setAttribute('scale', `${scale} ${scale} ${scale}`);
+        tree.setAttribute('position', `${x} ${groundY} ${z}`);
+        tree.setAttribute('rotation', `0 ${Math.random()*360} 0`);
+        treeContainer.appendChild(tree);
+      }
     }
   }
-}
 
-// Spawn right away
-spawnVegetation();
+  spawnVegetation();
+};
 </script>
-
 
