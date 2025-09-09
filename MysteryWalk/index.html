@@ -1,8 +1,7 @@
 <html>
   <head>
-    <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/gh/n5ro/aframe-physics-system@v4.0.1/dist/aframe-physics-system.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/gh/c-frame/aframe-extras@v6.1.1/dist/aframe-extras.min.js"></script>
+  <script src="https://aframe.io/releases/1.7.0/aframe.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/gh/c-frame/aframe-extras@7.5.4/dist/aframe-extras.min.js"></script>
   </head>
   <body>
     <a-scene physics="gravity: -9.8">
@@ -18,64 +17,50 @@
                material="src: #groundTexture; repeat: 10 10; shader: flat">
       </a-plane>
 
-         <a-plane src="#pathTexture" material="shader: flat; side: double"
-               width="2" height="6"
-               rotation="-90 0 0"
-               position="0 0 10"
-               static-body>
+      <a-plane rotation="-90 0 0" width="40" height="40" position="0 0 0"
+               material="src: #groundTexture; repeat: 20 20; shader: flat">
       </a-plane>
 
-      <!-- Opening (/ \) -->
-      <a-plane src="#pathTexture" material="shader: flat; side: double"
-               width="2" height="3"
-               rotation="-90 25 0"
-               position="-2 0 7"
-               static-body>
+      <!-- ==== PATH (ASCII shape) ==== -->
+
+      <!-- Top vertical -->
+      <a-plane src="#pathTexture" width="2" height="6"
+               rotation="-90 0 0" position="0 0.01 9">
       </a-plane>
-      <a-plane src="#pathTexture" material="shader: flat; side: double"
-               width="2" height="3"
-               rotation="-90 -25 0"
-               position="2 0 7"
-               static-body>
+
+      <!-- Opening / \ -->
+      <a-plane src="#pathTexture" width="2" height="3"
+               rotation="-90 25 0" position="-2 0.01 6">
+      </a-plane>
+      <a-plane src="#pathTexture" width="2" height="3"
+               rotation="-90 -25 0" position="2 0.01 6">
       </a-plane>
 
       <!-- Middle vertical -->
-      <a-plane src="#pathTexture" material="shader: flat; side: double"
-               width="2" height="6"
-               rotation="-90 0 0"
-               position="0 0 3"
-               static-body>
+      <a-plane src="#pathTexture" width="2" height="6"
+               rotation="-90 0 0" position="0 0.01 3">
       </a-plane>
 
-      <!-- Closing (\ /) -->
-      <a-plane src="#pathTexture" material="shader: flat; side: double"
-               width="2" height="3"
-               rotation="-90 -25 0"
-               position="-2 0 0"
-               static-body>
+      <!-- Closing \ / -->
+      <a-plane src="#pathTexture" width="2" height="3"
+               rotation="-90 -25 0" position="-2 0.01 0">
       </a-plane>
-      <a-plane src="#pathTexture" material="shader: flat; side: double"
-               width="2" height="3"
-               rotation="-90 25 0"
-               position="2 0 0"
-               static-body>
+      <a-plane src="#pathTexture" width="2" height="3"
+               rotation="-90 25 0" position="2 0.01 0">
       </a-plane>
 
       <!-- Bottom vertical -->
-      <a-plane src="#pathTexture" material="shader: flat; side: double"
-               width="2" height="6"
-               rotation="-90 0 0"
-               position="0 0 -4"
-               static-body>
+      <a-plane src="#pathTexture" width="2" height="6"
+               rotation="-90 0 0" position="0 0.01 -3">
       </a-plane>
 
       <!-- Invisible walls -->
-      <a-box width="0.5" height="3" depth="30" position="-3 1.5 3" opacity="0" static-body></a-box>
-      <a-box width="0.5" height="3" depth="30" position="3 1.5 3" opacity="0" static-body></a-box>
+      <a-box width="0.5" height="3" depth="30" position="-3 1.5 3" opacity="0"></a-box>
+      <a-box width="0.5" height="3" depth="30" position="3 1.5 3" opacity="0"></a-box>
 
-      <!-- PLAYER RIG -->
-      <a-entity id="rig" movement-controls="speed: 0.15" position="0 1.6 12">
-        <a-entity camera look-controls></a-entity>
+      <!-- PLAYER -->
+      <a-entity id="rig" position="0 1.6 12" wasd-controls look-controls>
+        <a-entity camera></a-entity>
       </a-entity>
 
     </a-scene>
