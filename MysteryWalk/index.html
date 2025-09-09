@@ -2,35 +2,29 @@
   <head>
     <script src="https://aframe.io/releases/1.7.0/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/gh/c-frame/aframe-extras@7.5.4/dist/aframe-extras.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/n5ro/aframe-physics-system@v4.0.1/dist/aframe-physics-system.min.js"></script>
+    
     <script>
-      // Fork choice component
+      // Fork choice logic
       AFRAME.registerComponent('fork-choice', {
         init: function () {
           this.el.addEventListener('click', evt => {
-            const choice = evt.target.getAttribute('data-choice');
+            const choice = this.el.getAttribute('data-choice');
             if (choice === 'left') {
-              document.querySelectorAll('.right-branch').forEach(el=>{
-                el.setAttribute('visible', false);
-              });
-              document.querySelectorAll('.right-wall').forEach(el=>{
-                el.setAttribute('visible', true);
-              });
+              document.querySelectorAll('.right-branch').forEach(el => el.setAttribute('visible', false));
+              document.querySelectorAll('.right-wall').forEach(el => el.setAttribute('visible', true));
             } else if (choice === 'right') {
-              document.querySelectorAll('.left-branch').forEach(el=>{
-                el.setAttribute('visible', false);
-              });
-              document.querySelectorAll('.left-wall').forEach(el=>{
-                el.setAttribute('visible', true);
-              });
+              document.querySelectorAll('.left-branch').forEach(el => el.setAttribute('visible', false));
+              document.querySelectorAll('.left-wall').forEach(el => el.setAttribute('visible', true));
             }
-            this.el.setAttribute('visible', false); // hide choice boxes
+            this.el.setAttribute('visible', false); // hide fork choice box
           });
         }
       });
     </script>
   </head>
   <body>
-    <a-scene>
+    <a-scene physics="gravity: 0 -9.8 0">
 
       <!-- Assets -->
       <a-assets>
@@ -40,63 +34,70 @@
 
       <!-- Ground -->
       <a-plane rotation="-90 0 0" width="50" height="50" position="0 0 0"
-               material="src: #groundTexture; repeat: 20 20; shader: flat"></a-plane>
+               material="src: #groundTexture; repeat: 20 20; shader: flat" static-body></a-plane>
 
       <!-- ==== PATHS ==== -->
 
       <!-- Main vertical path -->
-      <a-plane class="collidable" src="#pathTexture" width="1.5" height="10"
-               rotation="-90 0 0" position="0 0.01 12" material="src:#pathTexture; repeat:1 5; shader:flat"></a-plane>
+      <a-plane static-body src="#pathTexture" width="1.5" height="10"
+               rotation="-90 0 0" position="0 0.01 12"
+               material="src:#pathTexture; repeat:1 5; shader:flat"></a-plane>
 
-      <!-- Horizontal connector at top (fork point) -->
-      <a-plane class="collidable" src="#pathTexture" width="5" height="1.5"
-               rotation="-90 0 0" position="0 0.01 7.5" material="src:#pathTexture; repeat:5 1; shader:flat"></a-plane>
+      <!-- Top horizontal connector (fork point) -->
+      <a-plane static-body src="#pathTexture" width="5" height="1.5"
+               rotation="-90 0 0" position="0 0.01 7.5"
+               material="src:#pathTexture; repeat:5 1; shader:flat"></a-plane>
 
-      <!-- Left branch (vertical, continues down) -->
-      <a-plane class="collidable left-branch" src="#pathTexture" width="1.5" height="8"
-               rotation="-90 0 0" position="-2 0.01 3" material="src:#pathTexture; repeat:1 4; shader:flat"></a-plane>
+      <!-- Left vertical branch -->
+      <a-plane static-body class="left-branch" src="#pathTexture" width="1.5" height="8"
+               rotation="-90 0 0" position="-2 0.01 3"
+               material="src:#pathTexture; repeat:1 4; shader:flat"></a-plane>
 
-      <!-- Right branch (vertical, continues down) -->
-      <a-plane class="collidable right-branch" src="#pathTexture" width="1.5" height="8"
-               rotation="-90 0 0" position="2 0.01 3" material="src:#pathTexture; repeat:1 4; shader:flat"></a-plane>
+      <!-- Right vertical branch -->
+      <a-plane static-body class="right-branch" src="#pathTexture" width="1.5" height="8"
+               rotation="-90 0 0" position="2 0.01 3"
+               material="src:#pathTexture; repeat:1 4; shader:flat"></a-plane>
 
       <!-- Bottom horizontal connector (merge) -->
-      <a-plane class="collidable" src="#pathTexture" width="5" height="1.5"
-               rotation="-90 0 0" position="0 0.01 -1" material="src:#pathTexture; repeat:5 1; shader:flat"></a-plane>
+      <a-plane static-body src="#pathTexture" width="5" height="1.5"
+               rotation="-90 0 0" position="0 0.01 -1"
+               material="src:#pathTexture; repeat:5 1; shader:flat"></a-plane>
 
       <!-- Merge vertical path -->
-      <a-plane class="collidable" src="#pathTexture" width="1.5" height="10"
-               rotation="-90 0 0" position="0 0.01 -6.5" material="src:#pathTexture; repeat:1 5; shader:flat"></a-plane>
+      <a-plane static-body src="#pathTexture" width="1.5" height="10"
+               rotation="-90 0 0" position="0 0.01 -6.5"
+               material="src:#pathTexture; repeat:1 5; shader:flat"></a-plane>
 
-      <!-- ==== WALLS FOR COLLISION ==== -->
+      <!-- ==== WALLS (to prevent leaving path) ==== -->
       <!-- Left branch walls -->
-      <a-box class="collidable left-wall" width="0.5" height="3" depth="8" position="-3.25 1.5 3" opacity="0"></a-box>
-      <a-box class="collidable left-wall" width="0.5" height="3" depth="8" position="-0.75 1.5 3" opacity="0"></a-box>
+      <a-box static-body class="left-wall" width="0.5" height="3" depth="8" position="-3.25 1.5 3" opacity="0"></a-box>
+      <a-box static-body class="left-wall" width="0.5" height="3" depth="8" position="-0.75 1.5 3" opacity="0"></a-box>
 
       <!-- Right branch walls -->
-      <a-box class="collidable right-wall" width="0.5" height="3" depth="8" position="3.25 1.5 3" opacity="0"></a-box>
-      <a-box class="collidable right-wall" width="0.5" height="3" depth="8" position="0.75 1.5 3" opacity="0"></a-box>
+      <a-box static-body class="right-wall" width="0.5" height="3" depth="8" position="3.25 1.5 3" opacity="0"></a-box>
+      <a-box static-body class="right-wall" width="0.5" height="3" depth="8" position="0.75 1.5 3" opacity="0"></a-box>
 
-      <!-- You can add walls for main path and merge similarly -->
+      <!-- You can add similar walls for main path and merge if needed -->
 
-      <!-- ==== NPCs (placeholders, replace models as needed) ==== -->
+      <!-- ==== NPC placeholders ==== -->
       <a-entity gltf-model="assets/little_witch.glb" position="-2 0 -2" scale="1 1 1"></a-entity>
       <a-entity gltf-model="assets/ghasklle.glb" position="2 0 -2" scale="1 1 1"></a-entity>
 
-      <!-- ==== FORK CHOICE BOXES (at top horizontal fork) ==== -->
+      <!-- ==== FORK CHOICE BOXES ==== -->
       <a-box id="fork-choice-left" data-choice="left" fork-choice
              position="-2 1 7.5" depth="0.5" height="0.5" width="0.5" color="blue"></a-box>
       <a-box id="fork-choice-right" data-choice="right" fork-choice
              position="2 1 7.5" depth="0.5" height="0.5" width="0.5" color="red"></a-box>
 
-      <!-- ==== PLAYER ==== -->
-      <a-entity id="rig" position="0 1.6 15" movement-controls="speed:0.1"
-                aabb-collider="objects: .collidable">
+      <!-- ==== PLAYER WITH PHYSICS ==== -->
+      <a-entity id="rig" position="0 1.6 15" dynamic-body>
         <a-entity camera look-controls>
-          <a-cursor></a-cursor>
+          <!-- cursor needed for clicks -->
+          <a-cursor rayOrigin="mouse"></a-cursor>
         </a-entity>
       </a-entity>
 
     </a-scene>
   </body>
 </html>
+
