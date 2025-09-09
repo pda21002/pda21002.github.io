@@ -14,49 +14,43 @@
 
       <!-- Decorative ground (no collision) -->
       <a-plane rotation="-90 0 0" width="40" height="40" position="0 -0.01 0"
-               material="src: #groundTexture; repeat: 10 10; shader: flat">
+               material="src: #groundTexture; repeat: 30 30; shader: flat">
       </a-plane>
 
-      <a-plane rotation="-90 0 0" width="40" height="40" position="0 0 0"
-               material="src: #groundTexture; repeat: 20 20; shader: flat">
+        <a-plane src="#pathTexture" width="3" height="8"
+               rotation="-90 0 0" position="0 0.01 10"
+               material="src: #pathTexture; repeat: 1 4; shader: flat">
       </a-plane>
 
-      <!-- ==== PATH (ASCII shape) ==== -->
-
-      <!-- Top vertical -->
-      <a-plane src="#pathTexture" width="2" height="6"
-               rotation="-90 0 0" position="0 0.01 9">
+      <!-- Fork - left branch -->
+      <a-plane src="#pathTexture" width="3" height="6"
+               rotation="-90 30 0" position="-3 0.01 4"
+               material="src: #pathTexture; repeat: 1 2; shader: flat">
       </a-plane>
 
-      <!-- Opening / \ -->
-      <a-plane src="#pathTexture" width="2" height="3"
-               rotation="-90 25 0" position="-2 0.01 6">
-      </a-plane>
-      <a-plane src="#pathTexture" width="2" height="3"
-               rotation="-90 -25 0" position="2 0.01 6">
+      <!-- Fork - right branch -->
+      <a-plane src="#pathTexture" width="3" height="6"
+               rotation="-90 -30 0" position="3 0.01 4"
+               material="src: #pathTexture; repeat: 1 2; shader: flat">
       </a-plane>
 
-      <!-- Middle vertical -->
-      <a-plane src="#pathTexture" width="2" height="6"
-               rotation="-90 0 0" position="0 0.01 3">
+      <!-- Merge - left side -->
+      <a-plane src="#pathTexture" width="3" height="6"
+               rotation="-90 -30 0" position="-1.5 0.01 -2"
+               material="src: #pathTexture; repeat: 1 2; shader: flat">
       </a-plane>
 
-      <!-- Closing \ / -->
-      <a-plane src="#pathTexture" width="2" height="3"
-               rotation="-90 -25 0" position="-2 0.01 0">
-      </a-plane>
-      <a-plane src="#pathTexture" width="2" height="3"
-               rotation="-90 25 0" position="2 0.01 0">
+      <!-- Merge - right side -->
+      <a-plane src="#pathTexture" width="3" height="6"
+               rotation="-90 30 0" position="1.5 0.01 -2"
+               material="src: #pathTexture; repeat: 1 2; shader: flat">
       </a-plane>
 
-      <!-- Bottom vertical -->
-      <a-plane src="#pathTexture" width="2" height="6"
-               rotation="-90 0 0" position="0 0.01 -3">
+      <!-- Bottom vertical after merge -->
+      <a-plane src="#pathTexture" width="3" height="8"
+               rotation="-90 0 0" position="0 0.01 -8"
+               material="src: #pathTexture; repeat: 1 4; shader: flat">
       </a-plane>
-
-      <!-- Invisible walls -->
-      <a-box width="0.5" height="3" depth="30" position="-3 1.5 3" opacity="0"></a-box>
-      <a-box width="0.5" height="3" depth="30" position="3 1.5 3" opacity="0"></a-box>
 
       <!-- PLAYER -->
       <a-entity id="rig" position="0 1.6 12" wasd-controls look-controls>
