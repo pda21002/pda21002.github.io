@@ -12,28 +12,28 @@
     <!-- Player capsule -->
     <a-entity id="player"
               position="10 4 60"
-              kinematic-body
+              kinematic-body="mass: 1; linearDamping: 0.9; angularDamping: 1"
               geometry="primitive: capsule; radius: 0.5; height: 1.6"
               material="visible: false">
       <a-camera wasd-controls look-controls position="0 0.8 0"></a-camera>
     </a-entity>
 
-    <!-- Collision GLB (invisible, only for physics) -->
-    <a-entity id="path-collider"
-              gltf-model="assets/collision.glb"
-              scale="10 10 10"
-              position="0 -19.842 0"
-              static-body>
-    </a-entity>
-
-    <!-- Visual GLB (for display only) -->
+    <!-- Visual PATH -->
     <a-entity id="path-visual"
               gltf-model="assets/PATH.glb"
               scale="10 10 10"
               position="0 -19.842 0">
     </a-entity>
 
-    <!-- Optional ground (visual only, no collision) -->
+    <!-- Simplified collision mesh (invisible) -->
+    <a-entity id="path-collider"
+              gltf-model="assets/PATH_COLLIDER.glb"
+              scale="10 10 10"
+              position="0 -19.842 0"
+              static-body>
+    </a-entity>
+
+    <!-- Optional Ground visual -->
     <a-plane src="assets/Ground024_8K-JPG_Color.jpg"
              rotation="-90 0 0"
              width="800" height="800"
