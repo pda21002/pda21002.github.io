@@ -1,37 +1,65 @@
 <html>
   <head>
     <script src="https://aframe.io/releases/1.7.0/aframe.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/gh/c-frame/aframe-extras@7.5.4/dist/aframe-extras.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/gh/n5ro/aframe-physics-system@v4.0.1/dist/aframe-physics-system.min.js"></script>
-
     <script>
-      // Fork choice logic
-      AFRAME.registerComponent('fork-choice', {
-        init: function () {
-          this.el.addEventListener('click', evt => {
-            const choice = this.el.getAttribute('data-choice');
+      AFRAME.registerComponent('player-movement', {
+        init: function() {
+          this.rig = document.getElementById('rig');
+          this.currentBounds = {xMin:-0.75, xMax:0.75, zMin:2, zMax:12}; // main path
+          this.forkChosen = false;
 
-            if (choice === 'left') {
-              document.querySelectorAll('.right-branch').forEach(el => el.setAttribute('visible', false));
-              document.querySelectorAll('.right-wall').forEach(el => el.setAttribute('visible', true));
-            } else if (choice === 'right') {
-              document.querySelectorAll('.left-branch').forEach(el => el.setAttribute('visible', false));
-              document.querySelectorAll('.left-wall').forEach(el => el.setAttribute('visible', true));
-            }
-
-            // Block backtracking
-            document.querySelector('#main-back-wall').setAttribute('visible', true);
-
-            // Hide fork boxes
-            document.querySelectorAll('.fork-choice').forEach(box => box.setAttribute('visible', false));
+          // Fork choice click
+          document.querySelectorAll('.fork-choice').forEach(box => {
+            box.addEventListener('click', evt => {
+              const choice = box.getAttribute('data-choice');
+              if (choice === 'left') {
+                this.currentBounds = {xMin:-3.25, xMax:-0.75, zMin:-5, zMax:2}; // left branch
+                document.querySelectorAll('.right-branch').forEach(el => el.setAttribute('visible', false));
+              } else if (choice === 'right') {
+                this.currentBounds = {xMin:0.75, xMax:3.25, zMin:-5, zMax:2}; // right branch
+                document.querySelectorAll('.left-branch').forEach(el => el.setAttribute('visible', false));
+              }
+              this.forkChosen = true;
+              document.querySelectorAll('.fork-choice').forEach(b => b.setAttribute('visible', false));
+            });
           });
+        },
+        tick: function() {
+          let pos = this.rig.getAttribute('position');
+
+          // Movement controls (wasd/arrows)
+          const speed = 0.1;
+          if (this.keyW) pos.z -= speed;
+          if (this.keyS) pos.z += speed;
+          if (this.keyA) pos.x -= speed;
+          if (this.keyD) pos.x += speed;
+
+          // Clamp position to current path bounds
+          pos.x = Math.max(this.currentBounds.xMin, Math.min(this.currentBounds.xMax, pos.x));
+          pos.z = Math.max(this.currentBounds.zMin, Math.min(this.currentBounds.zMax, pos.z));
+
+          this.rig.setAttribute('position', pos);
+        },
+        events: {
+          keydown: function(e) {
+            if(e.key === "w" || e.key === "ArrowUp") this.keyW = true;
+            if(e.key === "s" || e.key === "ArrowDown") this.keyS = true;
+            if(e.key === "a" || e.key === "ArrowLeft") this.keyA = true;
+            if(e.key === "d" || e.key === "ArrowRight") this.keyD = true;
+          },
+          keyup: function(e) {
+            if(e.key === "w" || e.key === "ArrowUp") this.keyW = false;
+            if(e.key === "s" || e.key === "ArrowDown") this.keyS = false;
+            if(e.key === "a" || e.key === "ArrowLeft") this.keyA = false;
+            if(e.key === "d" || e.key === "ArrowRight") this.keyD = false;
+          }
         }
       });
     </script>
   </head>
 
   <body>
-    <a-scene physics="gravity:0 -9.8 0">
+    <a-scene>
 
       <!-- Assets -->
       <a-assets>
@@ -40,68 +68,41 @@
       </a-assets>
 
       <!-- Ground -->
-      <a-box position="0 0 0" width="50" depth="50" height="0.1"
-             material="src:#groundTexture; repeat:20 20; shader:flat" static-body></a-box>
+      <a-plane rotation="-90 0 0" width="50" height="50"
+               material="src:#groundTexture; repeat:20 20; shader:flat"></a-plane>
 
-      <!-- ==== PATHS ==== -->
-      <!-- Main vertical path -->
-      <a-box static-body width="1.5" height="0.1" depth="10" position="0 0.05 12"
+      <!-- Paths -->
+      <a-box width="1.5" height="0.05" depth="10" position="0 0.025 12"
+             material="src:#pathTexture; repeat:1 5; shader:flat"></a-box>
+      <a-box width="5" height="0.05" depth="1.5" position="0 0.025 7.5"
+             material="src:#pathTexture; repeat:5 1; shader:flat"></a-box>
+      <a-box class="left-branch" width="1.5" height="0.05" depth="8" position="-2 0.025 3"
+             material="src:#pathTexture; repeat:1 4; shader:flat"></a-box>
+      <a-box class="right-branch" width="1.5" height="0.05" depth="8" position="2 0.025 3"
+             material="src:#pathTexture; repeat:1 4; shader:flat"></a-box>
+      <a-box width="5" height="0.05" depth="1.5" position="0 0.025 -1"
+             material="src:#pathTexture; repeat:5 1; shader:flat"></a-box>
+      <a-box width="1.5" height="0.05" depth="10" position="0 0.025 -6.5"
              material="src:#pathTexture; repeat:1 5; shader:flat"></a-box>
 
-      <!-- Fork horizontal connector -->
-      <a-box static-body width="5" height="0.1" depth="1.5" position="0 0.05 7.5"
-             material="src:#pathTexture; repeat:5 1; shader:flat"></a-box>
+      <!-- Fork choice boxes -->
+      <a-box class="fork-choice" data-choice="left" position="-2 0.5 7.5" depth="0.5" height="0.5" width="0.5" color="blue"></a-box>
+      <a-box class="fork-choice" data-choice="right" position="2 0.5 7.5" depth="0.5" height="0.5" width="0.5" color="red"></a-box>
 
-      <!-- Left vertical branch -->
-      <a-box static-body class="left-branch" width="1.5" height="0.1" depth="8" position="-2 0.05 3"
-             material="src:#pathTexture; repeat:1 4; shader:flat"></a-box>
-
-      <!-- Right vertical branch -->
-      <a-box static-body class="right-branch" width="1.5" height="0.1" depth="8" position="2 0.05 3"
-             material="src:#pathTexture; repeat:1 4; shader:flat"></a-box>
-
-      <!-- Merge horizontal connector -->
-      <a-box static-body width="5" height="0.1" depth="1.5" position="0 0.05 -1"
-             material="src:#pathTexture; repeat:5 1; shader:flat"></a-box>
-
-      <!-- Merge vertical path -->
-      <a-box static-body width="1.5" height="0.1" depth="10" position="0 0.05 -6.5"
-             material="src:#pathTexture; repeat:1 5; shader:flat"></a-box>
-
-      <!-- ==== PATH WALLS ==== -->
-      <!-- Left branch walls -->
-      <a-box static-body class="left-wall" width="0.5" height="3" depth="8" position="-3.25 1.5 3" opacity="0"></a-box>
-      <a-box static-body class="left-wall" width="0.5" height="3" depth="8" position="-0.75 1.5 3" opacity="0"></a-box>
-
-      <!-- Right branch walls -->
-      <a-box static-body class="right-wall" width="0.5" height="3" depth="8" position="3.25 1.5 3" opacity="0"></a-box>
-      <a-box static-body class="right-wall" width="0.5" height="3" depth="8" position="0.75 1.5 3" opacity="0"></a-box>
-
-      <!-- Back wall to prevent backtracking -->
-      <a-box id="main-back-wall" static-body width="5" height="3" depth="1" position="0 1.5 8" visible="false"></a-box>
-
-      <!-- ==== FORK CHOICE BOXES ==== -->
-      <a-box class="fork-choice" id="fork-choice-left" data-choice="left" fork-choice
-             position="-2 1 7.5" depth="0.5" height="0.5" width="0.5" color="blue"></a-box>
-      <a-box class="fork-choice" id="fork-choice-right" data-choice="right" fork-choice
-             position="2 1 7.5" depth="0.5" height="0.5" width="0.5" color="red"></a-box>
-
-      <!-- ==== NPC PLACEHOLDERS ==== -->
+      <!-- NPC placeholders -->
       <a-box class="npc" position="-2 0.5 -2" width="0.5" height="1" depth="0.5" color="green"></a-box>
       <a-box class="npc" position="2 0.5 -2" width="0.5" height="1" depth="0.5" color="purple"></a-box>
 
-      <!-- ==== CASTLE PLACEHOLDER ==== -->
+      <!-- Castle -->
       <a-box id="castle" position="0 0.5 -15" width="2" height="2" depth="2" color="gold"></a-box>
 
-      <!-- ==== PLAYER WITH COLLISIONS ==== -->
-      <a-entity id="rig" position="0 0.5 15" kinematic-body
-                movement-controls="speed:0.15; fly:false">
+      <!-- Player -->
+      <a-entity id="rig" position="0 0.5 15" player-movement>
         <a-entity camera look-controls>
-          <a-cursor visible="false" rayOrigin="mouse"></a-cursor>
+          <a-cursor color="yellow" rayOrigin="mouse"></a-cursor>
         </a-entity>
       </a-entity>
 
     </a-scene>
   </body>
 </html>
-
