@@ -1,36 +1,39 @@
 <html>
 <head>
   <script src="https://aframe.io/releases/1.7.0/aframe.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/aframe-physics-system@4.0.1/dist/aframe-physics-system.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/gh/n5ro/aframe-physics-system/dist/aframe-physics-system.min.js"></script>
   <style>
     a-scene { width: 100%; height: 80vh; }
   </style>
 </head>
 <body>
-  <!-- One scene only -->
   <a-scene physics="gravity: -9.8" background="color: #87ceeb">
 
-    <!-- Player capsule with camera -->
+    <!-- Player capsule -->
     <a-entity id="player"
-              position="11 2 50"
-              geometry="primitive: capsule; height: 1.8; radius: 0.4"
-              material="color: red; opacity: 0.2; transparent: true"
-              dynamic-body="shape: capsule; mass: 5; linearDamping: 0.9; angularDamping: 1">
-      <a-camera position="0 1.6 0" wasd-controls look-controls></a-camera>
+              position="10 4 60"
+              kinematic-body
+              geometry="primitive: capsule; radius: 0.5; height: 1.6"
+              material="visible: false">
+      <a-camera wasd-controls look-controls position="0 0.8 0"></a-camera>
     </a-entity>
 
-    <!-- Assets -->
-    <a-assets>
-      <a-asset-item id="pathModel" src="assets/PATH.glb"></a-asset-item>
-    </a-assets>
-
-    <!-- GLB scene (static collision) -->
+    <!-- GLB path as static collider -->
     <a-entity id="path"
-              gltf-model="#pathModel"
+              gltf-model="assets/PATH.glb"
               scale="10 10 10"
               position="0 -19.842 0"
               static-body>
     </a-entity>
+
+    <!-- Ground (optional visual) -->
+    <a-plane src="assets/Ground024_8K-JPG_Color.jpg"
+             rotation="-90 0 0"
+             width="800" height="800"
+             repeat="40 40"
+             material="roughness: 1;"
+             position="-73.11485 -14.62706 -297.28662">
+    </a-plane>
 
     <!-- Lights -->
     <a-entity light="type: directional; intensity: 1" position="5 10 5"></a-entity>
@@ -39,3 +42,4 @@
   </a-scene>
 </body>
 </html>
+
