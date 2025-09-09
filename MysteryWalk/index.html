@@ -56,7 +56,7 @@
 <script>
   const grassContainer = document.querySelector('#grass-container');
   const treeContainer = document.querySelector('#tree-container');
-  const pathEntity = document.querySelector('#path');
+
 
   const groundY = -14.6;
   const groundRadius = 400; // how far to scatter
@@ -78,35 +78,22 @@
     { model: '#grass7', baseScale: 0.3 }
   ];
 
-  // Function to check if a point is inside a bounding box
-  function pointInBox(x, z, box) {
-    return x >= box.minX && x <= box.maxX && z >= box.minZ && z <= box.maxZ;
-  }
+// Define forbidden zones manually based on Blender data
+const forbiddenZones = [
+  // Beginning straight path
+  { minX: 0 - 5.3/2 - 1, maxX: 0 + 5.3/2 + 1, minZ: 0 - 10.9/2 - 1, maxZ: 0 + 10.9/2 + 1 },
+  // Horizontal branches section
+  { minX: -5.1287 - 5.3/2 - 1, maxX: -5.1287 + 5.3/2 + 1, minZ: 27.849 - 10.9/2 - 1, maxZ: 27.849 + 10.9/2 + 1 },
+  // Path from branches to castle
+  { minX: 0 - 5.3/2 - 1, maxX: 0 + 5.3/2 + 1, minZ: 0 - 10.9/2 - 1, maxZ: 0 + 10.9/2 + 1 },
+  // Castle
+  { minX: -7.3989 - 2.99/2 - 1, maxX: -7.3989 + 2.99/2 + 1, minZ: 50.028 - 3.83/2 - 1, maxZ: 50.028 + 3.83/2 + 1 }
+];
 
-  // Compute forbidden zones after model loads
-  let forbiddenZones = [];
-  pathEntity.addEventListener('model-loaded', () => {
-    const mesh = pathEntity.getObject3D('mesh');
-    if (!mesh) return;
-
-    mesh.traverse(child => {
-      if (child.isMesh) {
-        child.geometry.computeBoundingBox();
-        const box = child.geometry.boundingBox;
-        // Transform bounding box to world coordinates
-        const min = box.min.clone().applyMatrix4(child.matrixWorld);
-        const max = box.max.clone().applyMatrix4(child.matrixWorld);
-        forbiddenZones.push({
-          minX: min.x - 2, // buffer
-          maxX: max.x + 2,
-          minZ: min.z - 2,
-          maxZ: max.z + 2
-        });
-      }
-    });
-
-    spawnVegetation();
-  });
+// Utility function to check if a point is inside a forbidden box
+function pointInBox(x, z, box) {
+  return x >= box.minX && x <= box.maxX && z >= box.minZ && z <= box.maxZ;
+}
 
   function isFree(x, z) {
     return !forbiddenZones.some(box => pointInBox(x, z, box));
