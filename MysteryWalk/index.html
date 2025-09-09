@@ -22,87 +22,69 @@
     </script>
   </head>
   <body>
-    <a-scene>
+<a-scene>
 
-      <!-- Assets -->
-      <a-assets>
-        <img id="groundTexture" src="assets/grass.jpg">
-        <img id="pathTexture" src="assets/stone.png">
-      </a-assets>
+  <!-- Assets -->
+  <a-assets>
+    <img id="groundTexture" src="assets/grass.jpg">
+    <img id="pathTexture" src="assets/stone.png">
+  </a-assets>
 
-      <!-- Ground -->
-      <a-plane rotation="-90 0 0" width="50" height="50" position="0 0 0"
-               material="src: #groundTexture; repeat: 20 20; shader: flat">
-      </a-plane>
+  <!-- Ground -->
+  <a-plane rotation="-90 0 0" width="50" height="50" position="0 0 0"
+           material="src: #groundTexture; repeat: 20 20; shader: flat"></a-plane>
 
-      <!-- ==== PATH === -->
+  <!-- ==== PATHS WITH COLLISION ==== -->
+  <!-- main vertical path -->
+  <a-plane class="collidable" src="#pathTexture" width="3" height="15"
+           rotation="-90 0 0" position="0 0.01 10"
+           material="src: #pathTexture; repeat: 1 5; shader: flat"></a-plane>
 
-      <!-- Main path -->
-      <a-plane src="#pathTexture" width="3" height="15"
-               rotation="-90 0 0" position="0 0.01 10"
-               material="src: #pathTexture; repeat: 1 5; shader: flat">
-      </a-plane>
+  <!-- horizontal connector -->
+  <a-plane class="collidable" src="#pathTexture" width="15" height="3"
+           rotation="-90 0 0" position="0 0.01 2.5"
+           material="src: #pathTexture; repeat: 5 1; shader: flat"></a-plane>
 
-      <!-- Left branch -->
-      <a-plane src="#pathTexture" width="3" height="15"
-               rotation="-90 0 0" position="-6 0.01 -5"
-               material="src: #pathTexture; repeat: 1 5; shader: flat">
-      </a-plane>
+  <!-- left vertical branch -->
+  <a-plane class="collidable" src="#pathTexture" width="3" height="15"
+           rotation="-90 0 0" position="-6 0.01 -5"
+           material="src: #pathTexture; repeat: 1 5; shader: flat"></a-plane>
 
-      <!-- Right branch -->
-      <a-plane src="#pathTexture" width="3" height="15"
-               rotation="-90 0 0" position="6 0.01 -5"
-               material="src: #pathTexture; repeat: 1 5; shader: flat">
-      </a-plane>
+  <!-- right vertical branch -->
+  <a-plane class="collidable" src="#pathTexture" width="3" height="15"
+           rotation="-90 0 0" position="6 0.01 -5"
+           material="src: #pathTexture; repeat: 1 5; shader: flat"></a-plane>
 
-      <!-- Merge path -->
-      <a-plane src="#pathTexture" width="3" height="15"
-               rotation="-90 0 0" position="0 0.01 -20"
-               material="src: #pathTexture; repeat: 1 5; shader: flat">
-      </a-plane>
+  <!-- merge vertical path -->
+  <a-plane class="collidable" src="#pathTexture" width="3" height="15"
+           rotation="-90 0 0" position="0 0.01 -20"
+           material="src: #pathTexture; repeat: 1 5; shader: flat"></a-plane>
 
-      <!-- ==== INVISIBLE WALLS === -->
+  <!-- ==== WALLS FOR COLLISION ==== -->
+  <a-box class="collidable" width="0.5" height="3" depth="15" position="-2 1.5 10" opacity="0"></a-box>
+  <a-box class="collidable" width="0.5" height="3" depth="15" position="2 1.5 10" opacity="0"></a-box>
+  <!-- more walls for branches & merge as needed -->
 
-      <!-- Main path walls -->
-      <a-box id="main-left-wall" width="0.5" height="3" depth="15" position="-2 1.5 10" opacity="0"></a-box>
-      <a-box id="main-right-wall" width="0.5" height="3" depth="15" position="2 1.5 10" opacity="0"></a-box>
+  <!-- ==== NPCS ==== -->
+  <a-entity gltf-model="assets/little_witch.glb" position="-6 0 -5" scale="1 1 1"></a-entity>
+  <a-entity gltf-model="assets/ghasklle.glb" position="6 0 -5" scale="1 1 1"></a-entity>
 
-      <!-- Left branch walls -->
-      <a-box id="left-wall" width="0.5" height="3" depth="15" position="-4.5 1.5 -5" opacity="0"></a-box>
-      <a-box id="left-wall-right" width="0.5" height="3" depth="15" position="-7.5 1.5 -5" opacity="0"></a-box>
+  <!-- ==== FORK CHOICE BOXES ==== -->
+  <a-box id="fork-choice-left" data-choice="left" fork-choice
+         position="-6 2 -5" depth="1" height="1" width="1" color="blue"></a-box>
+  <a-box id="fork-choice-right" data-choice="right" fork-choice
+         position="6 2 -5" depth="1" height="1" width="1" color="red"></a-box>
 
-      <!-- Right branch walls -->
-      <a-box id="right-wall" width="0.5" height="3" depth="15" position="4.5 1.5 -5" opacity="0"></a-box>
-      <a-box id="right-wall-left" width="0.5" height="3" depth="15" position="7.5 1.5 -5" opacity="0"></a-box>
+  <!-- ==== PLAYER WITH COLLISION AND CURSOR ==== -->
+  <a-entity id="rig" position="0 1.6 20" 
+            movement-controls="speed:0.1" 
+            aabb-collider="objects: .collidable">
+    <a-entity camera look-controls>
+      <a-cursor></a-cursor>
+    </a-entity>
+  </a-entity>
 
-      <!-- Merge path walls -->
-      <a-box id="merge-left-wall" width="0.5" height="3" depth="15" position="-2 1.5 -20" opacity="0"></a-box>
-      <a-box id="merge-right-wall" width="0.5" height="3" depth="15" position="2 1.5 -20" opacity="0"></a-box>
+</a-scene>
 
-      <!-- ==== NPC PLACEHOLDERS === -->
-      <a-entity src="assets/little_witch.glb" position="-6 0.5 -5"></a-entity>
-      <a-entity src="assets/ghasklle.glb" position="6 0.5 -5"></a-entity>
-
-      <!-- ==== CASTLE PLACEHOLDER === -->
-      <a-entity id="castle" position="0 0 -35"></a-entity>
-
-      <!-- ==== TREE PLACEHOLDERS === -->
-      <a-box position="-10 0.5 0" depth="2" height="3" width="2" color="green"></a-box>
-      <a-box position="10 0.5 0" depth="2" height="3" width="2" color="green"></a-box>
-      <a-box position="-8 0.5 -10" depth="2" height="3" width="2" color="green"></a-box>
-      <a-box position="8 0.5 -10" depth="2" height="3" width="2" color="green"></a-box>
-
-      <!-- ==== FORK CHOICE PANEL === -->
-      <a-box id="fork-choice-left" data-choice="left" fork-choice
-             position="-6 2 -5" depth="1" height="1" width="1" color="blue"></a-box>
-      <a-box id="fork-choice-right" data-choice="right" fork-choice
-             position="6 2 -5" depth="1" height="1" width="1" color="red"></a-box>
-
-      <!-- ==== PLAYER === -->
-      <a-entity id="rig" position="0 1.6 20" wasd-controls look-controls>
-        <a-entity camera></a-entity>
-      </a-entity>
-
-    </a-scene>
   </body>
 </html>
