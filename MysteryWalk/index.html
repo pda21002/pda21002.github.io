@@ -2,59 +2,62 @@
   <head>
     <script src="https://aframe.io/releases/1.7.0/aframe.min.js"></script>
     <script>
-      AFRAME.registerComponent('player-movement', {
-        init: function() {
-          this.rig = document.getElementById('rig');
-          this.currentBounds = {xMin:-0.75, xMax:0.75, zMin:2, zMax:12}; // main path
-          this.forkChosen = false;
+AFRAME.registerComponent('player-movement', {
+  init: function() {
+    this.rig = document.getElementById('rig');
+    this.currentBounds = {xMin:-0.75, xMax:0.75, zMin:2, zMax:12};
+    this.forkChosen = false;
 
-          // Fork choice click
-          document.querySelectorAll('.fork-choice').forEach(box => {
-            box.addEventListener('click', evt => {
-              const choice = box.getAttribute('data-choice');
-              if (choice === 'left') {
-                this.currentBounds = {xMin:-3.25, xMax:-0.75, zMin:-5, zMax:2}; // left branch
-                document.querySelectorAll('.right-branch').forEach(el => el.setAttribute('visible', false));
-              } else if (choice === 'right') {
-                this.currentBounds = {xMin:0.75, xMax:3.25, zMin:-5, zMax:2}; // right branch
-                document.querySelectorAll('.left-branch').forEach(el => el.setAttribute('visible', false));
-              }
-              this.forkChosen = true;
-              document.querySelectorAll('.fork-choice').forEach(b => b.setAttribute('visible', false));
-            });
-          });
-        },
-        tick: function() {
-          let pos = this.rig.getAttribute('position');
+    this.keyW = this.keyA = this.keyS = this.keyD = false;
 
-          // Movement controls (wasd/arrows)
-          const speed = 0.1;
-          if (this.keyW) pos.z -= speed;
-          if (this.keyS) pos.z += speed;
-          if (this.keyA) pos.x -= speed;
-          if (this.keyD) pos.x += speed;
-
-          // Clamp position to current path bounds
-          pos.x = Math.max(this.currentBounds.xMin, Math.min(this.currentBounds.xMax, pos.x));
-          pos.z = Math.max(this.currentBounds.zMin, Math.min(this.currentBounds.zMax, pos.z));
-
-          this.rig.setAttribute('position', pos);
-        },
-        events: {
-          keydown: function(e) {
-            if(e.key === "w" || e.key === "ArrowUp") this.keyW = true;
-            if(e.key === "s" || e.key === "ArrowDown") this.keyS = true;
-            if(e.key === "a" || e.key === "ArrowLeft") this.keyA = true;
-            if(e.key === "d" || e.key === "ArrowRight") this.keyD = true;
-          },
-          keyup: function(e) {
-            if(e.key === "w" || e.key === "ArrowUp") this.keyW = false;
-            if(e.key === "s" || e.key === "ArrowDown") this.keyS = false;
-            if(e.key === "a" || e.key === "ArrowLeft") this.keyA = false;
-            if(e.key === "d" || e.key === "ArrowRight") this.keyD = false;
-          }
+    // Fork choice click
+    document.querySelectorAll('.fork-choice').forEach(box => {
+      box.addEventListener('click', evt => {
+        const choice = box.getAttribute('data-choice');
+        if (choice === 'left') {
+          this.currentBounds = {xMin:-3.25, xMax:-0.75, zMin:-5, zMax:2};
+          document.querySelectorAll('.right-branch').forEach(el => el.setAttribute('visible', false));
+        } else if (choice === 'right') {
+          this.currentBounds = {xMin:0.75, xMax:3.25, zMin:-5, zMax:2};
+          document.querySelectorAll('.left-branch').forEach(el => el.setAttribute('visible', false));
         }
+        this.forkChosen = true;
+        document.querySelectorAll('.fork-choice').forEach(b => b.setAttribute('visible', false));
       });
+    });
+
+    // Keyboard listeners
+    window.addEventListener('keydown', e => {
+      if(e.key === "w" || e.key === "ArrowUp") this.keyW = true;
+      if(e.key === "s" || e.key === "ArrowDown") this.keyS = true;
+      if(e.key === "a" || e.key === "ArrowLeft") this.keyA = true;
+      if(e.key === "d" || e.key === "ArrowRight") this.keyD = true;
+    });
+    window.addEventListener('keyup', e => {
+      if(e.key === "w" || e.key === "ArrowUp") this.keyW = false;
+      if(e.key === "s" || e.key === "ArrowDown") this.keyS = false;
+      if(e.key === "a" || e.key === "ArrowLeft") this.keyA = false;
+      if(e.key === "d" || e.key === "ArrowRight") this.keyD = false;
+    });
+  },
+
+  tick: function() {
+    let pos = this.rig.getAttribute('position');
+    const speed = 0.1;
+
+    if(this.keyW) pos.z -= speed;
+    if(this.keyS) pos.z += speed;
+    if(this.keyA) pos.x -= speed;
+    if(this.keyD) pos.x += speed;
+
+    // Clamp to bounds
+    pos.x = Math.max(this.currentBounds.xMin, Math.min(this.currentBounds.xMax, pos.x));
+    pos.z = Math.max(this.currentBounds.zMin, Math.min(this.currentBounds.zMax, pos.z));
+
+    this.rig.setAttribute('position', pos);
+  }
+});
+
     </script>
   </head>
 
