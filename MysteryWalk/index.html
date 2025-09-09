@@ -19,10 +19,10 @@
               document.querySelectorAll('.left-wall').forEach(el => el.setAttribute('visible', true));
             }
 
-            // Block the main path behind fork
+            // Block backtracking
             document.querySelector('#main-back-wall').setAttribute('visible', true);
 
-            // Hide fork choice boxes
+            // Hide fork boxes
             document.querySelectorAll('.fork-choice').forEach(box => box.setAttribute('visible', false));
           });
         }
@@ -43,12 +43,12 @@
       <a-box position="0 0 0" width="50" depth="50" height="0.1"
              material="src:#groundTexture; repeat:20 20; shader:flat" static-body></a-box>
 
-      <!-- ==== PATHS (boxes instead of planes) ==== -->
+      <!-- ==== PATHS ==== -->
       <!-- Main vertical path -->
       <a-box static-body width="1.5" height="0.1" depth="10" position="0 0.05 12"
              material="src:#pathTexture; repeat:1 5; shader:flat"></a-box>
 
-      <!-- Top horizontal connector (fork) -->
+      <!-- Fork horizontal connector -->
       <a-box static-body width="5" height="0.1" depth="1.5" position="0 0.05 7.5"
              material="src:#pathTexture; repeat:5 1; shader:flat"></a-box>
 
@@ -60,7 +60,7 @@
       <a-box static-body class="right-branch" width="1.5" height="0.1" depth="8" position="2 0.05 3"
              material="src:#pathTexture; repeat:1 4; shader:flat"></a-box>
 
-      <!-- Bottom horizontal connector (merge) -->
+      <!-- Merge horizontal connector -->
       <a-box static-body width="5" height="0.1" depth="1.5" position="0 0.05 -1"
              material="src:#pathTexture; repeat:5 1; shader:flat"></a-box>
 
@@ -80,20 +80,20 @@
       <!-- Back wall to prevent backtracking -->
       <a-box id="main-back-wall" static-body width="5" height="3" depth="1" position="0 1.5 8" visible="false"></a-box>
 
-      <!-- ==== NPC PLACEHOLDERS ==== -->
-      <a-box class="npc" position="-2 0.5 -2" width="0.5" height="1" depth="0.5" color="green"></a-box>
-      <a-box class="npc" position="2 0.5 -2" width="0.5" height="1" depth="0.5" color="purple"></a-box>
-
       <!-- ==== FORK CHOICE BOXES ==== -->
       <a-box class="fork-choice" id="fork-choice-left" data-choice="left" fork-choice
              position="-2 1 7.5" depth="0.5" height="0.5" width="0.5" color="blue"></a-box>
       <a-box class="fork-choice" id="fork-choice-right" data-choice="right" fork-choice
              position="2 1 7.5" depth="0.5" height="0.5" width="0.5" color="red"></a-box>
 
+      <!-- ==== NPC PLACEHOLDERS ==== -->
+      <a-box class="npc" position="-2 0.5 -2" width="0.5" height="1" depth="0.5" color="green"></a-box>
+      <a-box class="npc" position="2 0.5 -2" width="0.5" height="1" depth="0.5" color="purple"></a-box>
+
       <!-- ==== CASTLE PLACEHOLDER ==== -->
       <a-box id="castle" position="0 0.5 -15" width="2" height="2" depth="2" color="gold"></a-box>
 
-      <!-- ==== PLAYER (capsule with kinematic-body) ==== -->
+      <!-- ==== PLAYER WITH COLLISIONS ==== -->
       <a-entity id="rig" position="0 0.5 15" kinematic-body
                 movement-controls="speed:0.15; fly:false">
         <a-entity camera look-controls>
@@ -105,7 +105,3 @@
   </body>
 </html>
 
-
-    </a-scene>
-  </body>
-</html>
