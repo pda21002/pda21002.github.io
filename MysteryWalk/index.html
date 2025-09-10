@@ -84,10 +84,9 @@
 
 <!-- Single script at the end -->
 <script>
-  // 1. Register player-movement component
+  // 1. Player movement component
   AFRAME.registerComponent('player-movement', {
     init: function() {
-      const rig = document.getElementById('rig');
       this.currentBounds = { xMin: -0.75, xMax: 0.75, zMin: -15, zMax: 16.75 };
       this.choiceMade = false;
       this.keys = { w:false, a:false, s:false, d:false, ArrowUp:false, ArrowDown:false, ArrowLeft:false, ArrowRight:false };
@@ -96,62 +95,60 @@
       window.addEventListener('keyup', e => { if(this.keys[e.key]!==undefined) this.keys[e.key]=false; });
 
       // Fork menu clicks
-    // Fork menu clicks
-document.querySelectorAll('.fork-menu-button').forEach(btn=>{
-  btn.addEventListener('click', ()=>{
-    const choice = btn.getAttribute('data-choice');
-    this.choiceMade = true;
-    document.getElementById('forkMenu').setAttribute('visible', false);
+      document.querySelectorAll('.fork-menu-button').forEach(btn=>{
+        btn.addEventListener('click', ()=>{
+          const choice = btn.getAttribute('data-choice');
+          this.choiceMade = true;
+          document.getElementById('forkMenu').setAttribute('visible', false);
 
-    // Set path bounds based on choice
-    if(choice==='left'){
-      this.currentBounds = {xMin:-3.0, xMax:-2.0, zMin:-10, zMax:8.75};
-    } else if(choice==='middle'){
-      this.currentBounds = {xMin:-0.75, xMax:0.75, zMin:-10, zMax:8.75};
-    } else if(choice==='right'){
-      this.currentBounds = {xMin:2.0, xMax:3.0, zMin:-10, zMax:8.75};
-    }
+          // Set path bounds based on choice
+          if(choice==='left'){
+            this.currentBounds = { xMin:-3.0, xMax:-2.0, zMin:-10, zMax:8.75 };
+          } else if(choice==='middle'){
+            this.currentBounds = { xMin:-0.75, xMax:0.75, zMin:-10, zMax:8.75 };
+          } else if(choice==='right'){
+            this.currentBounds = { xMin:2.0, xMax:3.0, zMin:-10, zMax:8.75 };
+          }
 
-    // Invisible walls for unchosen paths
-    ['left','middle','right'].forEach(path=>{
-      if(path!==choice){
-        let wall = document.createElement('a-box');
-        wall.setAttribute('position', path==='left'?'-2.8 0.5 8.5':path==='right'?'2.8 0.5 8.5':'0 0.5 8.5');
-        wall.setAttribute('width','1.5'); wall.setAttribute('height','2'); wall.setAttribute('depth','0.5');
-        wall.setAttribute('opacity','0'); wall.setAttribute('color','#000');
-        document.querySelector('a-scene').appendChild(wall);
+          // Invisible walls for unchosen paths
+          ['left','middle','right'].forEach(path=>{
+            if(path!==choice){
+              let wall = document.createElement('a-box');
+              wall.setAttribute('position', path==='left'?'-2.8 0.5 8.5':path==='right'?'2.8 0.5 8.5':'0 0.5 8.5');
+              wall.setAttribute('width','1.5'); wall.setAttribute('height','2'); wall.setAttribute('depth','0.5');
+              wall.setAttribute('opacity','0'); wall.setAttribute('color','#000');
+              document.querySelector('a-scene').appendChild(wall);
+            }
+          });
+        });
+      });
+    },
+
+    tick: function() {
+      const rig = this.el;
+      let pos = rig.getAttribute('position');
+      const speed = 0.03;
+
+      // Show fork menu at the fork
+      if(!this.choiceMade && pos.z <= 8.75){
+        pos.z = 8.75;
+        rig.setAttribute('position', pos);
+        document.getElementById('forkMenu').setAttribute('visible', true);
+        return;
       }
-    });
-  });
-});
 
-// In tick() movement:
-tick: function() {
-  const rig = this.el;
-  let pos = rig.getAttribute('position');
-  const speed = 0.03;
+      // Move player
+      if(this.keys.w || this.keys.ArrowUp) pos.z -= speed;
+      if(this.keys.s || this.keys.ArrowDown) pos.z += speed;
+      if(this.keys.a || this.keys.ArrowLeft) pos.x -= speed;
+      if(this.keys.d || this.keys.ArrowRight) pos.x += speed;
 
-  // Show fork menu at the fork
-  if(!this.choiceMade && pos.z <= 8.75){
-    pos.z = 8.75;
-    rig.setAttribute('position', pos);
-    document.getElementById('forkMenu').setAttribute('visible', true);
-    return;
-  }
+      // Clamp player within current path bounds
+      pos.x = Math.max(this.currentBounds.xMin, Math.min(this.currentBounds.xMax, pos.x));
+      pos.z = Math.max(this.currentBounds.zMin, Math.min(this.currentBounds.zMax, pos.z));
 
-  // Move player
-  if(this.keys.w || this.keys.ArrowUp) pos.z -= speed;
-  if(this.keys.s || this.keys.ArrowDown) pos.z += speed;
-  if(this.keys.a || this.keys.ArrowLeft) pos.x -= speed;
-  if(this.keys.d || this.keys.ArrowRight) pos.x += speed;
-
-  // Clamp player within current path bounds
-  pos.x = Math.max(this.currentBounds.xMin, Math.min(this.currentBounds.xMax, pos.x));
-  pos.z = Math.max(this.currentBounds.zMin, Math.min(this.currentBounds.zMax, pos.z));
-
-  rig.setAttribute('position', pos);
-}
-
+      rig.setAttribute('position', pos);
+    }
   });
 
   // 2. Tree scattering
@@ -160,14 +157,19 @@ tick: function() {
 
   function inPath(x,z){
     const pathBounds=[
-      {x:0,z:[9,17]},{x:[-3.5,3.5],z:[8,10]},{x:-2.8,z:[-6,9]},
-      {x:0,z:[-6,9]},{x:2.8,z:[-6,9]},{x:[-3.5,3.5],z:[-7,-6]},
+      {x:0,z:[9,17]},
+      {x:[-3.5,3.5],z:[8,10]},
+      {x:-2.8,z:[-6,9]},
+      {x:0,z:[-6,9]},
+      {x:2.8,z:[-6,9]},
+      {x:[-3.5,3.5],z:[-7,-6]},
       {x:0,z:[-15,-10]}
     ];
     return pathBounds.some(b=>{
       if(Array.isArray(b.x)&&Array.isArray(b.z)) return x>=b.x[0]&&x<=b.x[1]&&z>=b.z[0]&&z<=b.z[1];
       if(Array.isArray(b.x)) return x>=b.x[0]&&x<=b.x[1]&&z>=b.z[0]&&z<=b.z[1];
       if(Array.isArray(b.z)) return Math.abs(x-b.x)<1 && z>=b.z[0]&&z<=b.z[1];
+      return false;
     });
   }
 
@@ -176,16 +178,17 @@ tick: function() {
     let z=(Math.random()-0.5)*50;
     if(inPath(x,z)) continue;
     const type = treeTypes[Math.floor(Math.random()*treeTypes.length)];
-    const scaleFactor = 0.2 + Math.random()*0.2;
-    const rotY=Math.random()*360;
-    let tree=document.createElement('a-entity');
+    const scaleFactor = 0.2 + Math.random()*0.2; // small trees
+    const rotY = Math.random()*360;
+    let tree = document.createElement('a-entity');
     tree.setAttribute('gltf-model', `#${type}`);
     tree.setAttribute('position', `${x} 0 ${z}`);
-    tree.setAttribute('scale', `${scale} ${scale} ${scale}`);
+    tree.setAttribute('scale', `${scaleFactor} ${scaleFactor} ${scaleFactor}`);
     tree.setAttribute('rotation', `0 ${rotY} 0`);
     trees.appendChild(tree);
   }
 </script>
+
 
 </a-scene>
 
