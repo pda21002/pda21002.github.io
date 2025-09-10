@@ -1,111 +1,111 @@
 <html>
   <head>
-    <script src="https://aframe.io/releases/1.7.0/aframe.min.js"></script>
+    <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
+    <script src="https://c-frame.github.io/aframe-physics-system/dist/aframe-physics-system.js"></script>
     <script>
-AFRAME.registerComponent('player-movement', {
-  init: function() {
-    this.rig = document.getElementById('rig');
-    this.currentBounds = {xMin:-0.75, xMax:0.75, zMin:2, zMax:12};
-    this.forkChosen = false;
+      // --- Player movement system ---
+      AFRAME.registerComponent("player-controls", {
+        init: function () {
+          this.speed = 0.03; // smoother, smaller steps
+          this.keys = {};
+          window.addEventListener("keydown", e => this.keys[e.code] = true);
+          window.addEventListener("keyup", e => this.keys[e.code] = false);
+        },
+        tick: function () {
+          const el = this.el;
+          const pos = el.getAttribute("position");
 
-    this.keyW = this.keyA = this.keyS = this.keyD = false;
+          if (this.keys["ArrowUp"]) pos.z -= this.speed;
+          if (this.keys["ArrowDown"]) pos.z += this.speed;
+          if (this.keys["ArrowLeft"]) pos.x -= this.speed;
+          if (this.keys["ArrowRight"]) pos.x += this.speed;
 
-    // Fork choice click
-    document.querySelectorAll('.fork-choice').forEach(box => {
-      box.addEventListener('click', evt => {
-        const choice = box.getAttribute('data-choice');
-        if (choice === 'left') {
-          this.currentBounds = {xMin:-3.25, xMax:-0.75, zMin:-5, zMax:2};
-          document.querySelectorAll('.right-branch').forEach(el => el.setAttribute('visible', false));
-        } else if (choice === 'right') {
-          this.currentBounds = {xMin:0.75, xMax:3.25, zMin:-5, zMax:2};
-          document.querySelectorAll('.left-branch').forEach(el => el.setAttribute('visible', false));
+          el.setAttribute("position", pos);
         }
-        this.forkChosen = true;
-        document.querySelectorAll('.fork-choice').forEach(b => b.setAttribute('visible', false));
       });
-    });
 
-    // Keyboard listeners
-    window.addEventListener('keydown', e => {
-      if(e.key === "w" || e.key === "ArrowUp") this.keyW = true;
-      if(e.key === "s" || e.key === "ArrowDown") this.keyS = true;
-      if(e.key === "a" || e.key === "ArrowLeft") this.keyA = true;
-      if(e.key === "d" || e.key === "ArrowRight") this.keyD = true;
-    });
-    window.addEventListener('keyup', e => {
-      if(e.key === "w" || e.key === "ArrowUp") this.keyW = false;
-      if(e.key === "s" || e.key === "ArrowDown") this.keyS = false;
-      if(e.key === "a" || e.key === "ArrowLeft") this.keyA = false;
-      if(e.key === "d" || e.key === "ArrowRight") this.keyD = false;
-    });
-  },
+      // --- Fork choice system ---
+      AFRAME.registerComponent("fork-choice", {
+        init: function () {
+          this.el.addEventListener("mousedown", evt => {
+            const choice = this.el.getAttribute("data-choice");
+            console.log("Choice made:", choice);
 
-  tick: function() {
-    let pos = this.rig.getAttribute('position');
-    const speed = 0.1;
+            // Spawn invisible wall behind player to block backtracking
+            const wall = document.createElement("a-box");
+            wall.setAttribute("width", "10");
+            wall.setAttribute("height", "3");
+            wall.setAttribute("depth", "0.5");
+            wall.setAttribute("color", "red");
+            wall.setAttribute("opacity", "0");
+            wall.setAttribute("static-body", "");
+            wall.setAttribute("position", "0 1.5 -5");
+            document.querySelector("a-scene").appendChild(wall);
 
-    if(this.keyW) pos.z -= speed;
-    if(this.keyS) pos.z += speed;
-    if(this.keyA) pos.x -= speed;
-    if(this.keyD) pos.x += speed;
-
-    // Clamp to bounds
-    pos.x = Math.max(this.currentBounds.xMin, Math.min(this.currentBounds.xMax, pos.x));
-    pos.z = Math.max(this.currentBounds.zMin, Math.min(this.currentBounds.zMax, pos.z));
-
-    this.rig.setAttribute('position', pos);
-  }
-});
-
+            // Hide choice boxes after click
+            this.el.parentNode.setAttribute("visible", "false");
+          });
+        }
+      });
     </script>
   </head>
-
   <body>
-    <a-scene>
-
-      <!-- Assets -->
-      <a-assets>
-        <img id="groundTexture" src="assets/grass.jpg">
-        <img id="pathTexture" src="assets/stone.png">
-      </a-assets>
+    <a-scene physics="debug: false">
 
       <!-- Ground -->
-      <a-plane rotation="-90 0 0" width="50" height="50"
-               material="src:#groundTexture; repeat:20 20; shader:flat"></a-plane>
+      <a-plane static-body rotation="-90 0 0" width="60" height="60" color="green"></a-plane>
 
-      <!-- Paths -->
-      <a-box width="1.5" height="0.05" depth="10" position="0 0.025 12"
-             material="src:#pathTexture; repeat:1 5; shader:flat"></a-box>
-      <a-box width="5" height="0.05" depth="1.5" position="0 0.025 7.5"
-             material="src:#pathTexture; repeat:5 1; shader:flat"></a-box>
-      <a-box class="left-branch" width="1.5" height="0.05" depth="8" position="-2 0.025 3"
-             material="src:#pathTexture; repeat:1 4; shader:flat"></a-box>
-      <a-box class="right-branch" width="1.5" height="0.05" depth="8" position="2 0.025 3"
-             material="src:#pathTexture; repeat:1 4; shader:flat"></a-box>
-      <a-box width="5" height="0.05" depth="1.5" position="0 0.025 -1"
-             material="src:#pathTexture; repeat:5 1; shader:flat"></a-box>
-      <a-box width="1.5" height="0.05" depth="10" position="0 0.025 -6.5"
-             material="src:#pathTexture; repeat:1 5; shader:flat"></a-box>
+      <!-- === PATHS === -->
+      <!-- Middle vertical path -->
+      <a-box static-body width="3" height="0.1" depth="20" position="0 0.05 -10" color="saddlebrown"></a-box>
 
-      <!-- Fork choice boxes -->
-      <a-box class="fork-choice" data-choice="left" position="-2 0.5 7.5" depth="0.5" height="0.5" width="0.5" color="blue"></a-box>
-      <a-box class="fork-choice" data-choice="right" position="2 0.5 7.5" depth="0.5" height="0.5" width="0.5" color="red"></a-box>
+      <!-- Left vertical path -->
+      <a-box static-body width="3" height="0.1" depth="20" position="-10 0.05 -10" color="saddlebrown"></a-box>
 
-      <!-- NPC placeholders -->
-      <a-box class="npc" position="-2 0.5 -2" width="0.5" height="1" depth="0.5" color="green"></a-box>
-      <a-box class="npc" position="2 0.5 -2" width="0.5" height="1" depth="0.5" color="purple"></a-box>
+      <!-- Right vertical path -->
+      <a-box static-body width="3" height="0.1" depth="20" position="10 0.05 -10" color="saddlebrown"></a-box>
 
-      <!-- Castle -->
-      <a-box id="castle" position="0 0.5 -15" width="2" height="2" depth="2" color="gold"></a-box>
+      <!-- Top horizontal connector -->
+      <a-box static-body width="20" height="0.1" depth="3" position="0 0.05 -20" color="saddlebrown"></a-box>
 
-      <!-- Player -->
-      <a-entity id="rig" position="0 0.5 15" player-movement>
-        <a-entity camera look-controls>
-          <a-cursor color="yellow" rayOrigin="mouse"></a-cursor>
-        </a-entity>
+      <!-- Bottom horizontal connector -->
+      <a-box static-body width="20" height="0.1" depth="3" position="0 0.05 0" color="saddlebrown"></a-box>
+
+      <!-- === INVISIBLE WALLS (keep player in lanes) === -->
+      <!-- Middle lane -->
+      <a-box static-body width="0.5" height="3" depth="20" position="-1.75 1.5 -10" opacity="0"></a-box>
+      <a-box static-body width="0.5" height="3" depth="20" position="1.75 1.5 -10" opacity="0"></a-box>
+
+      <!-- Left lane -->
+      <a-box static-body width="0.5" height="3" depth="20" position="-11.75 1.5 -10" opacity="0"></a-box>
+      <a-box static-body width="0.5" height="3" depth="20" position="-8.25 1.5 -10" opacity="0"></a-box>
+
+      <!-- Right lane -->
+      <a-box static-body width="0.5" height="3" depth="20" position="8.25 1.5 -10" opacity="0"></a-box>
+      <a-box static-body width="0.5" height="3" depth="20" position="11.75 1.5 -10" opacity="0"></a-box>
+
+      <!-- === FORK CHOICE BOXES === -->
+      <a-entity position="0 1.5 0">
+        <a-box data-choice="left" fork-choice position="-10 0 -0.5" depth="0.5" height="1" width="1" color="blue"></a-box>
+        <a-box data-choice="middle" fork-choice position="0 0 -0.5" depth="0.5" height="1" width="1" color="yellow"></a-box>
+        <a-box data-choice="right" fork-choice position="10 0 -0.5" depth="0.5" height="1" width="1" color="red"></a-box>
       </a-entity>
 
+      <!-- === NPC placeholders === -->
+      <a-box position="-10 0.5 -15" depth="1" height="2" width="1" color="purple"></a-box>
+      <a-box position="10 0.5 -15" depth="1" height="2" width="1" color="orange"></a-box>
+      <a-box position="0 0.5 -25" depth="1" height="2" width="1" color="pink"></a-box>
+
+      <!-- === Castle placeholder === -->
+      <a-box position="0 2 -35" depth="10" height="6" width="10" color="gray"></a-box>
+
+      <!-- === PLAYER === -->
+      <a-entity id="player" position="0 1.6 5" player-controls>
+        <a-camera></a-camera>
+        <a-sphere dynamic-body radius="0.25" position="0 -1 0" visible="false"></a-sphere>
+      </a-entity>
     </a-scene>
   </body>
 </html>
+
+
