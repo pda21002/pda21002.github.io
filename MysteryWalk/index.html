@@ -5,36 +5,33 @@
 AFRAME.registerComponent('player-movement', {
   init: function() {
     this.rig = document.getElementById('rig');
-    this.currentBounds = {xMin:-0.75, xMax:0.75, zMin:2, zMax:12}; // start corridor
+    this.currentBounds = {xMin:-0.75, xMax:0.75, zMin:2, zMax:12}; // corridor start
     this.forkChosen = false;
 
     this.keyW = this.keyA = this.keyS = this.keyD = false;
 
-    // Fork choice click
+    // Fork choice
     document.querySelectorAll('.fork-choice').forEach(box => {
       box.addEventListener('click', evt => {
+        if (this.forkChosen) return; // prevent re-choosing
         const choice = box.getAttribute('data-choice');
 
         if (choice === 'left') {
           this.currentBounds = {xMin:-3.25, xMax:-0.75, zMin:-5, zMax:2};
-          document.querySelectorAll('.middle-branch,.right-branch').forEach(el => el.setAttribute('visible', false));
         } 
         else if (choice === 'middle') {
           this.currentBounds = {xMin:-0.75, xMax:0.75, zMin:-5, zMax:2};
-          document.querySelectorAll('.left-branch,.right-branch').forEach(el => el.setAttribute('visible', false));
         }
         else if (choice === 'right') {
           this.currentBounds = {xMin:0.75, xMax:3.25, zMin:-5, zMax:2};
-          document.querySelectorAll('.left-branch,.middle-branch').forEach(el => el.setAttribute('visible', false));
         }
 
         this.forkChosen = true;
-        // Hide all fork choice boxes
         document.querySelectorAll('.fork-choice').forEach(b => b.setAttribute('visible', false));
 
-        // Place invisible wall to block going back
+        // Place invisible wall *at the fork* so you can’t backtrack
         const wall = document.createElement('a-box');
-        wall.setAttribute('position', '0 0.75 9');
+        wall.setAttribute('position', '0 0.75 9'); 
         wall.setAttribute('width', '6');
         wall.setAttribute('height', '3');
         wall.setAttribute('depth', '0.2');
@@ -61,15 +58,15 @@ AFRAME.registerComponent('player-movement', {
 
   tick: function() {
     let pos = this.rig.getAttribute('position');
-    const speed = 0.05; // smoother & smaller steps
+    const speed = 0.025; // slower, smoother movement
 
-    // Absolute (world-based) movement
+    // Absolute world-based movement
     if(this.keyW) pos.z -= speed;
     if(this.keyS) pos.z += speed;
     if(this.keyA) pos.x -= speed;
     if(this.keyD) pos.x += speed;
 
-    // Clamp to path bounds
+    // Clamp within chosen path
     pos.x = Math.max(this.currentBounds.xMin, Math.min(this.currentBounds.xMax, pos.x));
     pos.z = Math.max(this.currentBounds.zMin, Math.min(this.currentBounds.zMax, pos.z));
 
@@ -81,7 +78,6 @@ AFRAME.registerComponent('player-movement', {
 
   <body>
     <a-scene>
-
       <!-- Assets -->
       <a-assets>
         <img id="groundTexture" src="assets/grass.jpg">
@@ -92,7 +88,6 @@ AFRAME.registerComponent('player-movement', {
       <a-plane rotation="-90 0 0" width="50" height="50"
                material="src:#groundTexture; repeat:20 20; shader:flat"></a-plane>
 
-      <!-- Paths -->
       <!-- Beginning straight -->
       <a-box width="1.5" height="0.05" depth="10" position="0 0.025 12"
              material="src:#pathTexture; repeat:1 5; shader:flat"></a-box>
@@ -119,19 +114,14 @@ AFRAME.registerComponent('player-movement', {
       <!-- Castle -->
       <a-box id="castle" position="0 1 -15" width="2" height="2" depth="2" color="gold"></a-box>
 
-      <!-- Fork choice boxes (single choice spot) -->
+      <!-- Fork choice boxes (all at fork point) -->
       <a-box class="fork-choice" data-choice="left" position="-2 0.5 7.5" depth="0.5" height="0.5" width="0.5" color="blue"></a-box>
       <a-box class="fork-choice" data-choice="middle" position="0 0.5 7.5" depth="0.5" height="0.5" width="0.5" color="green"></a-box>
       <a-box class="fork-choice" data-choice="right" position="2 0.5 7.5" depth="0.5" height="0.5" width="0.5" color="red"></a-box>
 
-      <!-- NPC placeholders -->
-      <a-box class="npc" position="-2 0.5 -2" width="0.5" height="1" depth="0.5" color="green"></a-box>
-      <a-box class="npc" position="2 0.5 -2" width="0.5" height="1" depth="0.5" color="purple"></a-box>
-
-      <!-- Player rig -->
+      <!-- Player -->
       <a-entity id="rig" position="0 0.5 15" player-movement>
         <a-entity camera look-controls>
-          <!-- cursor with no visible circle -->
           <a-cursor rayOrigin="mouse" material="opacity:0"></a-cursor>
         </a-entity>
       </a-entity>
