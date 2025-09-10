@@ -64,8 +64,6 @@ AFRAME.registerComponent('player-movement', {
         this.choiceMade = true;
         this.frozen = false;
         document.getElementById('forkMenu').setAttribute('visible', false);
-
-        // Restore look-controls
         this.rig.querySelector('[camera]').setAttribute('look-controls','enabled',true);
       });
     });
@@ -73,7 +71,7 @@ AFRAME.registerComponent('player-movement', {
 
   tick: function() {
     let pos = this.rig.getAttribute('position');
-    const moveSpeed = 0.02;
+    const moveSpeed = 0.015; // slower, smooth speed
 
     // Freeze for choice
     if(!this.choiceMade && pos.z <= 8.75){
@@ -81,8 +79,8 @@ AFRAME.registerComponent('player-movement', {
         this.frozen = true;
         document.getElementById('forkMenu').setAttribute('visible', true);
         this.rig.querySelector('[camera]').setAttribute('look-controls','enabled',false);
-        pos.x = 0; pos.z = 8.75; // straight ahead
-        this.rig.setAttribute('rotation','0 0 0'); // face forward
+        pos.x = 0; pos.z = 8.75; // freeze straight ahead
+        this.rig.setAttribute('rotation','0 0 0'); 
       }
       return;
     }
@@ -90,7 +88,7 @@ AFRAME.registerComponent('player-movement', {
     if(this.frozen) return;
 
     // Movement input
-    let dx = 0, dz = 0;
+    let dx=0, dz=0;
     if(this.keys.w || this.keys.ArrowUp) dz -= moveSpeed;
     if(this.keys.s || this.keys.ArrowDown) dz += moveSpeed;
     if(this.keys.a || this.keys.ArrowLeft) dx -= moveSpeed;
@@ -103,23 +101,19 @@ AFRAME.registerComponent('player-movement', {
     let newX = pos.x + dx;
     let newZ = pos.z + dz;
 
-    // Path boundaries (only allow chosen path, bump into unchosen paths)
+    // Path boundaries
     const paths = {
       left:{xMin:-3.0, xMax:-2.0, zMin:-10, zMax:8.75},
       middle:{xMin:-0.75, xMax:0.75, zMin:-10, zMax:8.75},
       right:{xMin:2.0, xMax:3.0, zMin:-10, zMax:8.75}
     };
 
-    // First, allow last horizontal and final path
     const lastH = {xMin:-3.5, xMax:3.5, zMin:-6.25, zMax:-6.25+1.5};
     const finalPath = {xMin:-0.75, xMax:0.75, zMin:-10.75, zMax:-2.75};
 
-    // Helper: check if position is inside a path
-    function inside(path,pX,pZ){
-      return pX>=path.xMin && pX<=path.xMax && pZ>=path.zMin && pZ<=path.zMax;
-    }
+    function inside(path,pX,pZ){ return pX>=path.xMin && pX<=path.xMax && pZ>=path.zMin && pZ<=path.zMax; }
 
-    // Only move if inside allowed path
+    // Only allow move if inside chosen path or last/final paths
     let allowed = false;
     if(this.chosenPath && inside(paths[this.chosenPath],newX,newZ)) allowed=true;
     if(inside(lastH,newX,newZ)) allowed=true;
@@ -152,13 +146,24 @@ function inPath(x,z){
 }
 
 // Scatter many trees
-for(let i=0;i<300;i++){
+for(let i=0;i<500;i++){  // many more trees
   let x = (Math.random()-0.5)*50;
   let z = (Math.random()-0.5)*50;
+
+  // Denser small trees between the 3 paths
+  let between = (x>-3 && x<3) && (z>=-6 && z<=8);
+  if(between){
+    if(Math.random()<0.6) continue; // more density
+  }
+
   if(inPath(x,z)) continue;
+
   const type = treeTypes[Math.floor(Math.random()*treeTypes.length)];
-  let scale = 0.005 + Math.random()*0.01; // smaller trees for tight spacing
-  if(type==='tree4') scale*=15;
+  let scale;
+  if(between) scale = 0.005 + Math.random()*0.008; // smaller between paths
+  else scale = 0.015 + Math.random()*0.02; // bigger outside
+  if(type==='tree4') scale *= (between?15:30);
+
   let rotY = Math.random()*360;
   let tree = document.createElement('a-entity');
   tree.setAttribute('gltf-model',`#${type}`);
