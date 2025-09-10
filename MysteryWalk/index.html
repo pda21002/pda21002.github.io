@@ -1,109 +1,94 @@
 <html>
   <head>
-    <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
-    <script src="https://c-frame.github.io/aframe-physics-system/dist/aframe-physics-system.js"></script>
-    <script>
-      // --- Player movement system ---
-      AFRAME.registerComponent("player-controls", {
-        init: function () {
-          this.speed = 0.03; // smoother, smaller steps
-          this.keys = {};
-          window.addEventListener("keydown", e => this.keys[e.code] = true);
-          window.addEventListener("keyup", e => this.keys[e.code] = false);
-        },
-        tick: function () {
-          const el = this.el;
-          const pos = el.getAttribute("position");
-
-          if (this.keys["ArrowUp"]) pos.z -= this.speed;
-          if (this.keys["ArrowDown"]) pos.z += this.speed;
-          if (this.keys["ArrowLeft"]) pos.x -= this.speed;
-          if (this.keys["ArrowRight"]) pos.x += this.speed;
-
-          el.setAttribute("position", pos);
-        }
-      });
-
-      // --- Fork choice system ---
-      AFRAME.registerComponent("fork-choice", {
-        init: function () {
-          this.el.addEventListener("mousedown", evt => {
-            const choice = this.el.getAttribute("data-choice");
-            console.log("Choice made:", choice);
-
-            // Spawn invisible wall behind player to block backtracking
-            const wall = document.createElement("a-box");
-            wall.setAttribute("width", "10");
-            wall.setAttribute("height", "3");
-            wall.setAttribute("depth", "0.5");
-            wall.setAttribute("color", "red");
-            wall.setAttribute("opacity", "0");
-            wall.setAttribute("static-body", "");
-            wall.setAttribute("position", "0 1.5 -5");
-            document.querySelector("a-scene").appendChild(wall);
-
-            // Hide choice boxes after click
-            this.el.parentNode.setAttribute("visible", "false");
-          });
-        }
-      });
-    </script>
+    <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+    <script src="https://cdn.rawgit.com/donmccurdy/aframe-physics-system/v4.0.1/dist/aframe-physics-system.min.js"></script>
   </head>
   <body>
-    <a-scene physics="debug: false">
+    <a-scene physics="gravity: 0 -9.8 0">
+      
+      <!-- Lighting -->
+      <a-entity light="type: ambient; intensity: 1"></a-entity>
+      <a-entity light="type: directional; intensity: 0.6" position="0 5 5"></a-entity>
 
-      <!-- Ground -->
-      <a-plane static-body rotation="-90 0 0" width="60" height="60" color="green"></a-plane>
-
-      <!-- === PATHS === -->
-      <!-- Middle vertical path -->
-      <a-box static-body width="3" height="0.1" depth="20" position="0 0.05 -10" color="saddlebrown"></a-box>
-
-      <!-- Left vertical path -->
-      <a-box static-body width="3" height="0.1" depth="20" position="-10 0.05 -10" color="saddlebrown"></a-box>
-
-      <!-- Right vertical path -->
-      <a-box static-body width="3" height="0.1" depth="20" position="10 0.05 -10" color="saddlebrown"></a-box>
-
-      <!-- Top horizontal connector -->
-      <a-box static-body width="20" height="0.1" depth="3" position="0 0.05 -20" color="saddlebrown"></a-box>
-
-      <!-- Bottom horizontal connector -->
-      <a-box static-body width="20" height="0.1" depth="3" position="0 0.05 0" color="saddlebrown"></a-box>
-
-      <!-- === INVISIBLE WALLS (keep player in lanes) === -->
-      <!-- Middle lane -->
-      <a-box static-body width="0.5" height="3" depth="20" position="-1.75 1.5 -10" opacity="0"></a-box>
-      <a-box static-body width="0.5" height="3" depth="20" position="1.75 1.5 -10" opacity="0"></a-box>
-
-      <!-- Left lane -->
-      <a-box static-body width="0.5" height="3" depth="20" position="-11.75 1.5 -10" opacity="0"></a-box>
-      <a-box static-body width="0.5" height="3" depth="20" position="-8.25 1.5 -10" opacity="0"></a-box>
-
-      <!-- Right lane -->
-      <a-box static-body width="0.5" height="3" depth="20" position="8.25 1.5 -10" opacity="0"></a-box>
-      <a-box static-body width="0.5" height="3" depth="20" position="11.75 1.5 -10" opacity="0"></a-box>
-
-      <!-- === FORK CHOICE BOXES === -->
-      <a-entity position="0 1.5 0">
-        <a-box data-choice="left" fork-choice position="-10 0 -0.5" depth="0.5" height="1" width="1" color="blue"></a-box>
-        <a-box data-choice="middle" fork-choice position="0 0 -0.5" depth="0.5" height="1" width="1" color="yellow"></a-box>
-        <a-box data-choice="right" fork-choice position="10 0 -0.5" depth="0.5" height="1" width="1" color="red"></a-box>
+      <!-- Player (camera rig + collisions + movement) -->
+      <a-entity id="player" position="0 1.6 8" 
+                movement-controls="fly: false; speed: 0.05"
+                kinematic-body>
+        <a-camera wasd-controls="acceleration: 10; fly: false; enableKeyboard: true"></a-camera>
       </a-entity>
 
-      <!-- === NPC placeholders === -->
-      <a-box position="-10 0.5 -15" depth="1" height="2" width="1" color="purple"></a-box>
-      <a-box position="10 0.5 -15" depth="1" height="2" width="1" color="orange"></a-box>
-      <a-box position="0 0.5 -25" depth="1" height="2" width="1" color="pink"></a-box>
+      <!-- Beginning straight path -->
+      <a-plane static-body position="0 0 -2" rotation="-90 0 0" width="2" height="8" 
+               material="src: #path; repeat: 4 16"></a-plane>
 
-      <!-- === Castle placeholder === -->
-      <a-box position="0 2 -35" depth="10" height="6" width="10" color="gray"></a-box>
+      <!-- Fork junction -->
+      <a-plane static-body position="0 0 -8" rotation="-90 0 0" width="6" height="2" 
+               material="src: #path; repeat: 12 4"></a-plane>
 
-      <!-- === PLAYER === -->
-      <a-entity id="player" position="0 1.6 5" player-controls>
-        <a-camera></a-camera>
-        <a-sphere dynamic-body radius="0.25" position="0 -1 0" visible="false"></a-sphere>
-      </a-entity>
+      <!-- Branches -->
+      <a-plane id="branch-left" static-body position="-2 0 -14" rotation="-90 0 0" width="2" height="12" 
+               material="src: #path; repeat: 4 24"></a-plane>
+
+      <a-plane id="branch-middle" static-body position="0 0 -14" rotation="-90 0 0" width="2" height="12" 
+               material="src: #path; repeat: 4 24"></a-plane>
+
+      <a-plane id="branch-right" static-body position="2 0 -14" rotation="-90 0 0" width="2" height="12" 
+               material="src: #path; repeat: 4 24"></a-plane>
+
+      <!-- Reconnection horizontal -->
+      <a-plane static-body position="0 0 -20" rotation="-90 0 0" width="6" height="2" 
+               material="src: #path; repeat: 12 4"></a-plane>
+
+      <!-- Ending straight path -->
+      <a-plane static-body position="0 0 -26" rotation="-90 0 0" width="2" height="8" 
+               material="src: #path; repeat: 4 16"></a-plane>
+
+      <!-- Choice boxes (only at fork point) -->
+      <a-box id="choice-left" position="-2 1 -8" depth="0.5" height="0.5" width="0.5" color="red"></a-box>
+      <a-box id="choice-middle" position="0 1 -8" depth="0.5" height="0.5" width="0.5" color="green"></a-box>
+      <a-box id="choice-right" position="2 1 -8" depth="0.5" height="0.5" width="0.5" color="blue"></a-box>
+
+      <!-- Ground for collisions -->
+      <a-plane static-body position="0 -0.01 0" rotation="-90 0 0" width="50" height="50" color="#5c8a3e"></a-plane>
+
+      <!-- Path texture -->
+      <a-assets>
+        <img id="path" src="https://i.imgur.com/uyP2H9V.jpg">
+      </a-assets>
+
+      <script>
+        // Handle choices
+        const player = document.querySelector("#player");
+        const choices = {
+          left: document.querySelector("#choice-left"),
+          middle: document.querySelector("#choice-middle"),
+          right: document.querySelector("#choice-right"),
+        };
+
+        function blockBacktracking() {
+          // Place an invisible wall behind the fork after choosing
+          const wall = document.createElement("a-box");
+          wall.setAttribute("position", "0 1 -7");
+          wall.setAttribute("width", "6");
+          wall.setAttribute("height", "3");
+          wall.setAttribute("depth", "0.5");
+          wall.setAttribute("static-body", "");
+          wall.setAttribute("visible", "false");
+          document.querySelector("a-scene").appendChild(wall);
+        }
+
+        Object.keys(choices).forEach(key => {
+          choices[key].addEventListener("click", () => {
+            console.log("Chose:", key);
+            blockBacktracking();
+            // Remove other boxes so only one choice is made
+            Object.keys(choices).forEach(k => {
+              if (k !== key) choices[k].remove();
+            });
+          });
+        });
+      </script>
+
     </a-scene>
   </body>
 </html>
