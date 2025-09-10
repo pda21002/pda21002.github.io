@@ -3,8 +3,8 @@
   <script src="https://aframe.io/releases/1.7.0/aframe.min.js"></script>
 </head>
 <body>
-<a-scene cursor="rayOrigin: mouse" raycaster="objects: .fork-menu-button"
-         keyboard-shortcuts="" screenshot="" xr-mode-ui="">
+<a-scene cursor="rayOrigin: mouse" raycaster="objects: .fork-menu-button" keyboard-shortcuts="" screenshot="" xr-mode-ui="">
+
   <!-- Assets -->
   <a-assets>
     <img id="groundTexture" src="assets/grass.jpg">
@@ -16,26 +16,18 @@
   </a-assets>
 
   <!-- Ground -->
-  <a-plane rotation="-90 0 0" width="50" height="50"
-           material="repeat: 20 20; shader: flat; src: #groundTexture"></a-plane>
+  <a-plane rotation="-90 0 0" width="50" height="50" material="repeat: 20 20; shader: flat; src: #groundTexture"></a-plane>
 
   <!-- Paths -->
-  <a-box width="1.5" height="0.05" depth="8" position="0 0.025 12.75"
-         material="repeat:1 4; shader:flat; src:#pathTexture"></a-box>
-  <a-box width="7" height="0.05" depth="1.5" position="0 0.03943 8.75"
-         material="repeat:7 1; shader:flat; src:#pathTexture"></a-box>
-  <a-box class="left-branch" width="1.5" height="0.05" depth="14"
-         position="-2.76655 0.025 1.00951" material="repeat:1 7; shader:flat; src:#pathTexture"></a-box>
-  <a-box class="middle-branch" width="1.5" height="0.05" depth="14"
-         position="0 0.025 1.03888" material="repeat:1 7; shader:flat; src:#pathTexture"></a-box>
-  <a-box class="right-branch" width="1.5" height="0.05" depth="14"
-         position="2.737 0.025 1.01381" material="repeat:1 7; shader:flat; src:#pathTexture"></a-box>
-  <a-box width="7" height="0.05" depth="1.5" position="0 0.03169 -6.25"
-         material="repeat:7 1; shader:flat; src:#pathTexture"></a-box>
-  <a-box width="1.5" height="0.05" depth="8" position="0 0.025 -10.75"
-         material="repeat:1 4; shader:flat; src:#pathTexture"></a-box>
+  <a-box width="1.5" height="0.05" depth="8" position="0 0.025 12.75" material="repeat: 1 4; shader: flat; src: #pathTexture"></a-box>
+  <a-box width="7" height="0.05" depth="1.5" position="0 0.03943 8.75" material="repeat: 7 1; shader: flat; src: #pathTexture"></a-box>
+  <a-box class="left-branch" width="1.5" height="0.05" depth="14" position="-2.76655 0.025 1.00951" material="repeat: 1 7; shader: flat; src: #pathTexture"></a-box>
+  <a-box class="middle-branch" width="1.5" height="0.05" depth="14" position="0 0.025 1.03888" material="repeat: 1 7; shader: flat; src: #pathTexture"></a-box>
+  <a-box class="right-branch" width="1.5" height="0.05" depth="14" position="2.737 0.025 1.01381" material="repeat: 1 7; shader: flat; src: #pathTexture"></a-box>
+  <a-box width="7" height="0.05" depth="1.5" position="0 0.03169 -6.25" material="repeat: 7 1; shader: flat; src: #pathTexture"></a-box>
+  <a-box width="1.5" height="0.05" depth="8" position="0 0.025 -10.75" material="repeat: 1 4; shader: flat; src: #pathTexture"></a-box>
 
-  <!-- Fork Menu -->
+  <!-- Fork menu (HUD) -->
   <a-entity id="forkMenu" visible="false" position="0 1.5 6">
     <a-box class="fork-menu-button" data-choice="left" position="-2 0 0" width="1" height="0.5" depth="0.2" color="blue"></a-box>
     <a-box class="fork-menu-button" data-choice="middle" width="1" height="0.5" depth="0.2" color="yellow"></a-box>
@@ -50,122 +42,131 @@
     <a-entity camera look-controls></a-entity>
   </a-entity>
 
-  <!-- Trees -->
+  <!-- Tree placeholders -->
   <a-entity id="trees"></a-entity>
 
-  <script>
-  AFRAME.registerComponent('player-movement', {
-    init: function() {
-      this.rig = this.el;
-      this.choiceMade = false;
-      this.frozen = false;
-      this.currentBounds = {xMin:-0.75, xMax:0.75, zMin:-15, zMax:16.75};
+<script>
+AFRAME.registerComponent('player-movement', {
+  init: function() {
+    const rig = this.el;
+    this.currentBounds = {xMin:-0.75, xMax:0.75, zMin:-15, zMax:16.75};
+    this.choiceMade = false;
+    this.frozen = false;
 
-      this.keys = { w:false, a:false, s:false, d:false, ArrowUp:false, ArrowDown:false, ArrowLeft:false, ArrowRight:false };
-      window.addEventListener('keydown', e=>{ if(this.keys[e.key]!==undefined)this.keys[e.key]=true; });
-      window.addEventListener('keyup', e=>{ if(this.keys[e.key]!==undefined)this.keys[e.key]=false; });
+    this.keys = {w:false,a:false,s:false,d:false,ArrowUp:false,ArrowDown:false,ArrowLeft:false,ArrowRight:false};
+    window.addEventListener('keydown', e => { if(this.keys[e.key]!==undefined) this.keys[e.key]=true; });
+    window.addEventListener('keyup', e => { if(this.keys[e.key]!==undefined) this.keys[e.key]=false; });
 
-      // Fork menu click
-      document.querySelectorAll('.fork-menu-button').forEach(btn=>{
-        btn.addEventListener('click', ()=>{
-          const choice = btn.getAttribute('data-choice');
-          this.choiceMade = true;
-          this.frozen = false;
-          document.getElementById('forkMenu').setAttribute('visible', false);
-          this.rig.querySelector('[camera]').setAttribute('look-controls','enabled',true);
+    document.querySelectorAll('.fork-menu-button').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const choice = btn.getAttribute('data-choice');
+        this.choiceMade = true;
+        document.getElementById('forkMenu').setAttribute('visible', false);
 
-          // Tight bounds
-          if(choice==='left') this.currentBounds={xMin:-3, xMax:-2, zMin:-10, zMax:8.75};
-          else if(choice==='middle') this.currentBounds={xMin:-0.75, xMax:0.75, zMin:-10, zMax:8.75};
-          else this.currentBounds={xMin:2, xMax:3, zMin:-10, zMax:8.75};
+        if(choice==='left') this.currentBounds = {xMin:-3.0, xMax:-2.0, zMin:-10, zMax:8.75};
+        else if(choice==='middle') this.currentBounds = {xMin:-0.75, xMax:0.75, zMin:-10, zMax:8.75};
+        else this.currentBounds = {xMin:2.0, xMax:3.0, zMin:-10, zMax:8.75};
 
-          // Invisible walls for unchosen paths
-          ['left','middle','right'].forEach(path=>{
-            if(path!==choice){
-              let wall = document.createElement('a-box');
-              let xpos = path==='left'?-2.8:path==='right'?2.8:0;
-              wall.setAttribute('position', `${xpos} 0.5 1`);
-              wall.setAttribute('width', '1.5');
-              wall.setAttribute('height','2');
-              wall.setAttribute('depth','14');
-              wall.setAttribute('opacity','0');
-              document.querySelector('a-scene').appendChild(wall);
-            }
-          });
+        ['left','middle','right'].forEach(path => {
+          if(path!==choice){
+            let wall = document.createElement('a-box');
+            wall.setAttribute('position', path==='left'?'-2.8 0.5 1':'path'==='right'?'2.8 0.5 1':'0 0.5 1');
+            wall.setAttribute('width','1.5');
+            wall.setAttribute('height','2');
+            wall.setAttribute('depth','14'); // full branch length
+            wall.setAttribute('opacity','0');
+            wall.setAttribute('color','#000');
+            document.querySelector('a-scene').appendChild(wall);
+          }
         });
       });
-    },
-
-    tick: function(){
-      let pos = this.rig.getAttribute('position');
-      const speed = 0.02; // slightly slower
-
-      // Freeze for fork
-      if(!this.choiceMade && pos.z<=8.75){
-        if(!this.frozen){
-          this.frozen = true;
-          document.getElementById('forkMenu').setAttribute('visible', true);
-          this.rig.setAttribute('rotation',{x:0,y:180,z:0}); // face fork
-          this.rig.querySelector('[camera]').setAttribute('look-controls','enabled',false);
-        }
-        return;
-      }
-      if(this.frozen) return;
-
-      // Movement
-      let vec = new THREE.Vector3();
-      if(this.keys.w || this.keys.ArrowUp) vec.z -=1;
-      if(this.keys.s || this.keys.ArrowDown) vec.z +=1;
-      if(this.keys.a || this.keys.ArrowLeft) vec.x -=1;
-      if(this.keys.d || this.keys.ArrowRight) vec.x +=1;
-      if(vec.length()>0){
-        vec.normalize().multiplyScalar(speed);
-        pos.x += vec.x; pos.z += vec.z;
-      }
-
-      // Bounds for chosen path
-      pos.x = Math.max(this.currentBounds.xMin, Math.min(this.currentBounds.xMax, pos.x));
-      pos.z = Math.max(this.currentBounds.zMin, Math.min(this.currentBounds.zMax, pos.z));
-      this.rig.setAttribute('position', pos);
-    }
-  });
-
-  // Tree scattering
-  const trees = document.getElementById('trees');
-  const treeTypes = ['tree1','tree2','tree3','tree4'];
-
-  function inPath(x,z){
-    const pathBounds = [
-      {x:0,z:[9,17]},{x:[-3.5,3.5],z:[8,10]},{x:-2.8,z:[-6,9]},
-      {x:0,z:[-6,9]},{x:2.8,z:[-6,9]},{x:[-3.5,3.5],z:[-7,-6]},{x:0,z:[-15,-10]}
-    ];
-    return pathBounds.some(b=>{
-      if(Array.isArray(b.x)&&Array.isArray(b.z)) return x>=b.x[0]&&x<=b.x[1]&&z>=b.z[0]&&z<=b.z[1];
-      if(Array.isArray(b.x)) return x>=b.x[0]&&x<=b.x[1]&&z>=b.z[0]&&z<=b.z[1];
-      if(Array.isArray(b.z)) return Math.abs(x-b.x)<1&&z>=b.z[0]&&z<=b.z[1];
     });
+  },
+
+  tick: function() {
+    const rig = this.el;
+    let pos = rig.getAttribute('position');
+    const speed = 0.02; // slightly slower
+
+    // Freeze at fork and face the paths
+    if(!this.choiceMade && pos.z <= 8.75){
+      if(!this.frozen){
+        this.frozen = true;
+        document.getElementById('forkMenu').setAttribute('visible', true);
+
+        // Face center of fork
+        const forkCenter = new THREE.Vector3(0, 0, 8.75);
+        const rigPos = new THREE.Vector3(pos.x, 0, pos.z);
+        const dir = new THREE.Vector3().subVectors(forkCenter, rigPos);
+        const angle = Math.atan2(dir.x, dir.z) * (180/Math.PI);
+        rig.setAttribute('rotation', {x:0, y:angle, z:0});
+        rig.querySelector('[camera]').setAttribute('look-controls','enabled',false);
+      }
+      return;
+    } else if(this.frozen){
+      this.frozen = false;
+      rig.querySelector('[camera]').setAttribute('look-controls','enabled',true);
+    }
+
+    // Normal movement (realistic, diagonal)
+    let moveX = 0, moveZ = 0;
+    if(this.keys.w || this.keys.ArrowUp) moveZ -= speed;
+    if(this.keys.s || this.keys.ArrowDown) moveZ += speed;
+    if(this.keys.a || this.keys.ArrowLeft) moveX -= speed;
+    if(this.keys.d || this.keys.ArrowRight) moveX += speed;
+
+    // Diagonal adjustment
+    if(moveX!==0 && moveZ!==0){ moveX*=0.7071; moveZ*=0.7071; }
+
+    pos.x += moveX;
+    pos.z += moveZ;
+
+    // Keep player inside chosen path bounds
+    const bounds = (pos.z>-6)?this.currentBounds:{xMin:-3.5,xMax:3.5,zMin:-15,zMax:8.75};
+    pos.x = Math.max(bounds.xMin, Math.min(bounds.xMax, pos.x));
+    pos.z = Math.max(bounds.zMin, Math.min(bounds.zMax, pos.z));
+
+    rig.setAttribute('position', pos);
   }
+});
 
-  for(let i=0;i<400;i++){ // more trees
-    let x=(Math.random()-0.5)*50;
-    let z=(Math.random()-0.5)*50;
-    if(inPath(x,z)) continue;
+// --- Tree scattering ---
+const trees = document.getElementById('trees');
+const treeTypes = ['tree1','tree2','tree3','tree4'];
 
-    const type=treeTypes[Math.floor(Math.random()*treeTypes.length)];
-    let scale=0.01+Math.random()*0.03;
-    if(type==='tree4') scale*=30;
-    // Smaller between paths
-    if(Math.abs(x)<4 && z>-6 && z<9) scale*=0.5;
+function inPath(x,z){
+  const pathBounds = [
+    {x:0, z:[9,17]}, {x:[-3.5,3.5], z:[8,10]}, {x:-2.8, z:[-6,9]},
+    {x:0, z:[-6,9]}, {x:2.8, z:[-6,9]}, {x:[-3.5,3.5], z:[-7,-6]},
+    {x:0, z:[-15,-10]}
+  ];
+  return pathBounds.some(b => {
+    if(Array.isArray(b.x) && Array.isArray(b.z)) return x>=b.x[0]&&x<=b.x[1] && z>=b.z[0]&&z<=b.z[1];
+    if(Array.isArray(b.x)) return x>=b.x[0]&&x<=b.x[1] && z>=b.z[0]&&z<=b.z[1];
+    if(Array.isArray(b.z)) return Math.abs(x-b.x)<1 && z>=b.z[0]&&z<=b.z[1];
+  });
+}
 
-    let rotY=Math.random()*360;
-    let tree=document.createElement('a-entity');
-    tree.setAttribute('gltf-model', `#${type}`);
-    tree.setAttribute('position', `${x} 0 ${z}`);
-    tree.setAttribute('scale', `${scale} ${scale} ${scale}`);
-    tree.setAttribute('rotation', `0 ${rotY} 0`);
-    trees.appendChild(tree);
-  }
-  </script>
+// Scatter trees heavily between paths
+for(let i=0; i<400; i++){
+  let x = (Math.random()-0.5)*50;
+  let z = (Math.random()-0.5)*50;
+  if(inPath(x,z)) continue;
+
+  const type = treeTypes[Math.floor(Math.random()*treeTypes.length)];
+  let scale = 0.008 + Math.random()*0.015; // smaller between paths
+  if(type==='tree4') scale *= 30;
+
+  const rotY = Math.random()*360;
+  let tree = document.createElement('a-entity');
+  tree.setAttribute('gltf-model', `#${type}`);
+  tree.setAttribute('position', `${x} 0 ${z}`);
+  tree.setAttribute('scale', `${scale} ${scale} ${scale}`);
+  tree.setAttribute('rotation', `0 ${rotY} 0`);
+  trees.appendChild(tree);
+}
+</script>
+
 </a-scene>
 </body>
 </html>
