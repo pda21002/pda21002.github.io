@@ -69,99 +69,162 @@ AFRAME.registerComponent('player-movement', {
   </head>
 
   <body>
-  <a-scene cursor="rayOrigin: mouse" raycaster="objects: .fork-menu-button">
+ <a-scene cursor="rayOrigin: mouse" raycaster="objects: .fork-menu-button"
+         keyboard-shortcuts="" screenshot="" xr-mode-ui="">
   <!-- Assets -->
   <a-assets>
     <img id="groundTexture" src="assets/grass.jpg">
     <img id="pathTexture" src="assets/stone.png">
+
+
+  <img id="groundTexture" src="assets/grass.jpg">
+  <img id="pathTexture" src="assets/stone.png">
+
+  <!-- Tree models -->
+  <a-asset-item id="tree1" src="assets/giant_oak_tree_voxel.glb"></a-asset-item>
+  <a-asset-item id="tree2" src="assets/kapok_tree_voxel.glb"></a-asset-item>
+  <a-asset-item id="tree3" src="assets/sequoia_redwood_tree_voxel.glb"></a-asset-item>
+  <a-asset-item id="tree4" src="assets/voxel_models.glb"></a-asset-item>
+    
+</a-assets>
+    
   </a-assets>
 
   <!-- Ground -->
   <a-plane rotation="-90 0 0" width="50" height="50"
-           material="src:#groundTexture; repeat:20 20; shader:flat"></a-plane>
+           material="repeat: 20 20; shader: flat; src: #groundTexture"></a-plane>
 
-  <!-- Paths (your fixed positions) -->
-  <a-box width="1.5" height="0.05" depth="8" position="0 0.025 12.75"
-         material="src:#pathTexture; repeat:1 4; shader:flat"></a-box>
-  <a-box width="7" height="0.05" depth="1.5" position="0 0.03943 8.75"
-         material="src:#pathTexture; repeat:7 1; shader:flat"></a-box>
-  <a-box class="left-branch" width="1.5" height="0.05" depth="14" position="-2.76655 0.025 1.00951"
-         material="src:#pathTexture; repeat:1 7; shader:flat"></a-box>
-  <a-box class="middle-branch" width="1.5" height="0.05" depth="14" position="0 0.025 1.03888"
-         material="src:#pathTexture; repeat:1 7; shader:flat"></a-box>
-  <a-box class="right-branch" width="1.5" height="0.05" depth="14" position="2.737 0.025 1.01381"
-         material="src:#pathTexture; repeat:1 7; shader:flat"></a-box>
-  <a-box width="7" height="0.05" depth="1.5" position="0 0.03169 -6.25"
-         material="src:#pathTexture; repeat:7 1; shader:flat"></a-box>
-  <a-box width="1.5" height="0.05" depth="8" position="0 0.025 -10.75"
-         material="src:#pathTexture; repeat:1 4; shader:flat"></a-box>
+  <!-- Intro vertical -->
+  <a-box width="1.5" height="0.05" depth="8"
+         position="0 0.025 12.75"
+         material="repeat: 1 4; shader: flat; src: #pathTexture"></a-box>
 
-  <!-- Fork menu -->
+  <!-- Fork horizontal -->
+  <a-box width="7" height="0.05" depth="1.5"
+         position="0 0.03943 8.75"
+         material="repeat: 7 1; shader: flat; src: #pathTexture"></a-box>
+
+  <!-- Branches -->
+  <a-box class="left-branch" width="1.5" height="0.05" depth="14"
+         position="-2.76655 0.025 1.00951"
+         material="repeat: 1 7; shader: flat; src: #pathTexture"></a-box>
+  <a-box class="middle-branch" width="1.5" height="0.05" depth="14"
+         position="0 0.025 1.03888"
+         material="repeat: 1 7; shader: flat; src: #pathTexture"></a-box>
+  <a-box class="right-branch" width="1.5" height="0.05" depth="14"
+         position="2.737 0.025 1.01381"
+         material="repeat: 1 7; shader: flat; src: #pathTexture"></a-box>
+
+  <!-- Ending straight -->
+  <a-box width="7" height="0.05" depth="1.5"
+         position="0 0.03169 -6.25"
+         material="repeat: 7 1; shader: flat; src: #pathTexture"></a-box>
+
+  <!-- Final straight to castle -->
+  <a-box width="1.5" height="0.05" depth="8"
+         position="0 0.025 -10.75"
+         material="repeat: 1 4; shader: flat; src: #pathTexture"></a-box>
+
+  <!-- Fork menu (HUD) -->
   <a-entity id="forkMenu" visible="false" position="0 1.5 6">
-    <a-box class="fork-menu-button" data-choice="left" position="-2 0 0" width="1" height="0.5" depth="0.2" color="blue"></a-box>
-    <a-box class="fork-menu-button" data-choice="middle" width="1" height="0.5" depth="0.2" color="yellow"></a-box>
-    <a-box class="fork-menu-button" data-choice="right" position="2 0 0" width="1" height="0.5" depth="0.2" color="red"></a-box>
+    <a-box class="fork-menu-button" data-choice="left"
+           position="-2 0 0" width="1" height="0.5" depth="0.2" color="blue"></a-box>
+    <a-box class="fork-menu-button" data-choice="middle"
+           width="1" height="0.5" depth="0.2" color="yellow"></a-box>
+    <a-box class="fork-menu-button" data-choice="right"
+           position="2 0 0" width="1" height="0.5" depth="0.2" color="red"></a-box>
   </a-entity>
 
   <!-- Castle -->
-  <a-box id="castle" position="0 0.5 -15" width="2" height="2" depth="2" color="gold"></a-box>
+  <a-box id="castle" position="0 0.5 -15"
+         width="2" height="2" depth="2" color="gold"></a-box>
 
   <!-- Player -->
-  <a-entity id="rig" position="0 0.5 16" player-movement>
-    <a-entity camera look-controls="enabled: false"></a-entity>
+  <a-entity id="rig" position="0 0.5 16" player-movement="">
+    <a-entity camera look-controls></a-entity>
   </a-entity>
 
-  <!-- Random scatter container -->
-  <a-entity id="scatter"></a-entity>
+  <!-- Tree placeholders -->
+  <a-entity id="trees"></a-entity>
 
+  <!-- Script -->
   <script>
-    // Simple scatter script
-    AFRAME.registerComponent('scatter-objects', {
-      schema: { count: { type: 'int', default: 40 } }, // number of objects
-      init: function () {
-        const container = this.el;
-        const types = [
-          { color: 'green', radius: 0.4 },   // type 1
-          { color: 'brown', radius: 0.3 },   // type 2
-          { color: 'pink', radius: 0.5 },    // type 3
-          { color: 'purple', radius: 0.35 }  // type 4
-        ];
+    const rig = document.querySelector('#rig');
+    const forkMenu = document.querySelector('#forkMenu');
+    const trees = document.querySelector('#trees');
+    let choice = null;
 
-        // Path bounding boxes (approximate rectangles)
-        const forbidden = [
-          {xMin:-1, xMax:1, zMin:8.75, zMax:16.75},  // intro vertical
-          {xMin:-3.5, xMax:3.5, zMin:8, zMax:9.5},   // fork horizontal
-          {xMin:-3.5, xMax:-2, zMin:-6.5, zMax:8.5}, // left branch
-          {xMin:-1, xMax:1, zMin:-6.5, zMax:8.5},    // middle branch
-          {xMin:2, xMax:3.5, zMin:-6.5, zMax:8.5},   // right branch
-          {xMin:-3.5, xMax:3.5, zMin:-7, zMax:-5.5}, // ending straight
-          {xMin:-1, xMax:1, zMin:-14.5, zMax:-7}     // final straight
-        ];
+    // Path bounds for blocking and tree avoidance
+    const pathBounds = [
+      {x:0, z:[9,17]},   // intro
+      {x:[-3.5,3.5], z:[8,10]}, // fork
+      {x:-2.8, z:[-6,9]}, // left
+      {x:0,   z:[-6,9]},  // middle
+      {x:2.8, z:[-6,9]},  // right
+      {x:[-3.5,3.5], z:[-7,-6]}, // ending
+      {x:0, z:[-15,-10]}  // final straight
+    ];
 
-        function isOnPath(x, z) {
-          return forbidden.some(b => x >= b.xMin && x <= b.xMax && z >= b.zMin && z <= b.zMax);
-        }
+    function inPath(x,z) {
+      return pathBounds.some(b => {
+        if (Array.isArray(b.x) && Array.isArray(b.z))
+          return x >= b.x[0] && x <= b.x[1] && z >= b.z[0] && z <= b.z[1];
+        if (Array.isArray(b.x))
+          return x >= b.x[0] && x <= b.x[1] && z >= b.z[0] && z <= b.z[1];
+        if (Array.isArray(b.z))
+          return Math.abs(x - b.x) < 1 && z >= b.z[0] && z <= b.z[1];
+      });
+    }
 
-        for (let i = 0; i < this.data.count; i++) {
-          let x, z;
-          do {
-            x = (Math.random() - 0.5) * 50;  // ground is 50x50
-            z = (Math.random() - 0.5) * 50;
-          } while (isOnPath(x, z));
+    // Scatter tree placeholders
+const treeTypes = ['tree1','tree2','tree3','tree4'];
+for (let i=0;i<80;i++) {
+  let x = (Math.random()-0.5)*50;
+  let z = (Math.random()-0.5)*50;
+  if (inPath(x,z)) continue;
+  const type = treeTypes[Math.floor(Math.random()*treeTypes.length)];
+  const scale = 0.5 + Math.random()*1.5;
+  const rotY = Math.random()*360;
+  let tree = document.createElement('a-entity');
+  tree.setAttribute('gltf-model', `#${type}Model`);
+  tree.setAttribute('position', `${x} 0 ${z}`);
+  tree.setAttribute('scale', `${scale} ${scale} ${scale}`);
+  tree.setAttribute('rotation', `0 ${rotY} 0`);
+  trees.appendChild(tree);
+}
 
-          const t = types[Math.floor(Math.random() * types.length)];
-          const sphere = document.createElement('a-sphere');
-          sphere.setAttribute('radius', t.radius);
-          sphere.setAttribute('color', t.color);
-          sphere.setAttribute('position', {x: x, y: t.radius, z: z});
-          container.appendChild(sphere);
-        }
-      }
+    // Menu logic
+    rig.addEventListener('componentchanged', e => {
+      if (e.detail.name !== 'position') return;
+      const pos = e.target.getAttribute('position');
+      if (!choice && pos.z <= 9) forkMenu.setAttribute('visible', true);
     });
 
-    document.getElementById('scatter').setAttribute('scatter-objects', 'count: 60');
+    document.querySelectorAll('.fork-menu-button').forEach(btn=>{
+      btn.addEventListener('click', e=>{
+        choice = e.target.dataset.choice;
+        forkMenu.setAttribute('visible', false);
+        // add invisible walls to block unchosen paths
+        ['left','middle','right'].forEach(path=>{
+          if (path !== choice) {
+            let wall = document.createElement('a-box');
+            wall.setAttribute('position',
+              path==='left' ? '-2.8 0.5 8.5' :
+              path==='right' ? '2.8 0.5 8.5' :
+              '0 0.5 8.5');
+            wall.setAttribute('width','1.5');
+            wall.setAttribute('height','2');
+            wall.setAttribute('depth','0.5');
+            wall.setAttribute('opacity','0');
+            wall.setAttribute('color','#000');
+            document.querySelector('a-scene').appendChild(wall);
+          }
+        });
+      });
+    });
   </script>
 </a-scene>
+
 
   </body>
 </html>
