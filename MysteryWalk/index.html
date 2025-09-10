@@ -1,9 +1,10 @@
 <html>
 <head>
   <script src="https://aframe.io/releases/1.7.0/aframe.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/donmccurdy/aframe-extras@v7.0.0/dist/aframe-extras.min.js"></script>
 </head>
 <body>
-<a-scene cursor="rayOrigin: mouse" raycaster="objects: .fork-menu-button" keyboard-shortcuts="" screenshot="" xr-mode-ui="">
+<a-scene cursor="rayOrigin: mouse" raycaster="objects: .fork-menu-button"">
 
   <!-- Assets -->
   <a-assets>
@@ -38,8 +39,8 @@
   <a-box id="castle" position="0 0.5 -15" width="2" height="2" depth="2" color="gold"></a-box>
 
   <!-- Player -->
-  <a-entity id="rig" position="0 0.5 16" player-movement="">
-    <a-entity camera look-controls></a-entity>
+  <a-entity id="rig">
+    <a-camera position="0 0.5 16"></a-camera>
   </a-entity>
 
   <!-- Tree placeholders -->
@@ -48,37 +49,20 @@
 <script>
 AFRAME.registerComponent('player-movement', {
   init: function() {
-    const rig = this.el;
-    this.currentBounds = {xMin:-0.75, xMax:0.75, zMin:-15, zMax:16.75};
+    this.keys = { w:false, a:false, s:false, d:false, ArrowUp:false, ArrowDown:false, ArrowLeft:false, ArrowRight:false };
     this.choiceMade = false;
     this.frozen = false;
 
-    this.keys = {w:false,a:false,s:false,d:false,ArrowUp:false,ArrowDown:false,ArrowLeft:false,ArrowRight:false};
+    const rig = this.el;
     window.addEventListener('keydown', e => { if(this.keys[e.key]!==undefined) this.keys[e.key]=true; });
     window.addEventListener('keyup', e => { if(this.keys[e.key]!==undefined) this.keys[e.key]=false; });
 
+    // Fork menu clicks
     document.querySelectorAll('.fork-menu-button').forEach(btn => {
       btn.addEventListener('click', () => {
-        const choice = btn.getAttribute('data-choice');
         this.choiceMade = true;
+        this.frozen = false;
         document.getElementById('forkMenu').setAttribute('visible', false);
-
-        if(choice==='left') this.currentBounds = {xMin:-3.0, xMax:-2.0, zMin:-10, zMax:8.75};
-        else if(choice==='middle') this.currentBounds = {xMin:-0.75, xMax:0.75, zMin:-10, zMax:8.75};
-        else this.currentBounds = {xMin:2.0, xMax:3.0, zMin:-10, zMax:8.75};
-
-        ['left','middle','right'].forEach(path => {
-          if(path!==choice){
-            let wall = document.createElement('a-box');
-            wall.setAttribute('position', path==='left'?'-2.8 0.5 1':'path'==='right'?'2.8 0.5 1':'0 0.5 1');
-            wall.setAttribute('width','1.5');
-            wall.setAttribute('height','2');
-            wall.setAttribute('depth','14'); // full branch length
-            wall.setAttribute('opacity','0');
-            wall.setAttribute('color','#000');
-            document.querySelector('a-scene').appendChild(wall);
-          }
-        });
       });
     });
   },
@@ -86,66 +70,72 @@ AFRAME.registerComponent('player-movement', {
   tick: function() {
     const rig = this.el;
     let pos = rig.getAttribute('position');
-    const speed = 0.02; // slightly slower
+    const speed = 0.03;
 
-    // Freeze at fork and face the paths
-    if(!this.choiceMade && pos.z <= 8.75){
-      if(!this.frozen){
-        this.frozen = true;
-        document.getElementById('forkMenu').setAttribute('visible', true);
-
-        // Face center of fork
-        const forkCenter = new THREE.Vector3(0, 0, 8.75);
-        const rigPos = new THREE.Vector3(pos.x, 0, pos.z);
-        const dir = new THREE.Vector3().subVectors(forkCenter, rigPos);
-        const angle = Math.atan2(dir.x, dir.z) * (180/Math.PI);
-        rig.setAttribute('rotation', {x:0, y:angle, z:0});
-        rig.querySelector('[camera]').setAttribute('look-controls','enabled',false);
-      }
-      return;
-    } else if(this.frozen){
-      this.frozen = false;
-      rig.querySelector('[camera]').setAttribute('look-controls','enabled',true);
+    // Freeze at fork if choice not made
+    if (!this.choiceMade && pos.z <= 8.75) {
+      this.frozen = true;
+      // Look straight ahead at fork
+      rig.setAttribute('rotation', '0 0 0'); 
+      // Show menu
+      document.getElementById('forkMenu').setAttribute('visible', true);
     }
 
-    // Normal movement (realistic, diagonal)
-    let moveX = 0, moveZ = 0;
-    if(this.keys.w || this.keys.ArrowUp) moveZ -= speed;
-    if(this.keys.s || this.keys.ArrowDown) moveZ += speed;
-    if(this.keys.a || this.keys.ArrowLeft) moveX -= speed;
-    if(this.keys.d || this.keys.ArrowRight) moveX += speed;
+    if (!this.frozen) {
+      // Normal movement
+      if (this.keys.w || this.keys.ArrowUp) pos.z -= speed;
+      if (this.keys.s || this.keys.ArrowDown) pos.z += speed;
+      if (this.keys.a || this.keys.ArrowLeft) pos.x -= speed;
+      if (this.keys.d || this.keys.ArrowRight) pos.x += speed;
 
-    // Diagonal adjustment
-    if(moveX!==0 && moveZ!==0){ moveX*=0.7071; moveZ*=0.7071; }
-
-    pos.x += moveX;
-    pos.z += moveZ;
-
-    // Keep player inside chosen path bounds
-    const bounds = (pos.z>-6)?this.currentBounds:{xMin:-3.5,xMax:3.5,zMin:-15,zMax:8.75};
-    pos.x = Math.max(bounds.xMin, Math.min(bounds.xMax, pos.x));
-    pos.z = Math.max(bounds.zMin, Math.min(bounds.zMax, pos.z));
-
-    rig.setAttribute('position', pos);
+      rig.setAttribute('position', pos);
+    }
   }
 });
 
-// --- Tree scattering ---
-const trees = document.getElementById('trees');
-const treeTypes = ['tree1','tree2','tree3','tree4'];
 
-function inPath(x,z){
-  const pathBounds = [
-    {x:0, z:[9,17]}, {x:[-3.5,3.5], z:[8,10]}, {x:-2.8, z:[-6,9]},
-    {x:0, z:[-6,9]}, {x:2.8, z:[-6,9]}, {x:[-3.5,3.5], z:[-7,-6]},
-    {x:0, z:[-15,-10]}
-  ];
-  return pathBounds.some(b => {
-    if(Array.isArray(b.x) && Array.isArray(b.z)) return x>=b.x[0]&&x<=b.x[1] && z>=b.z[0]&&z<=b.z[1];
-    if(Array.isArray(b.x)) return x>=b.x[0]&&x<=b.x[1] && z>=b.z[0]&&z<=b.z[1];
-    if(Array.isArray(b.z)) return Math.abs(x-b.x)<1 && z>=b.z[0]&&z<=b.z[1];
-  });
-}
+AFRAME.registerComponent('player-movement', {
+  init: function() {
+    this.choiceMade = false;
+    this.frozen = false;
+
+
+    // Fork menu clicks
+    document.querySelectorAll('.fork-menu-button').forEach(btn => {
+      btn.addEventListener('click', () => {
+        this.choiceMade = true;
+        this.frozen = false;
+        document.getElementById('forkMenu').setAttribute('visible', false);
+      });
+    });
+  },
+
+  tick: function() {
+    const rig = this.el;
+    let pos = rig.getAttribute('position');
+    const speed = 0.03;
+
+    // Freeze at fork if choice not made
+    if (!this.choiceMade && pos.z <= 8.75) {
+      this.frozen = true;
+      // Look straight ahead at fork
+      rig.setAttribute('rotation', '0 0 0'); 
+      // Show menu
+      document.getElementById('forkMenu').setAttribute('visible', true);
+    }
+
+    if (!this.frozen) {
+      // Normal movement
+      if (this.keys.w || this.keys.ArrowUp) pos.z -= speed;
+      if (this.keys.s || this.keys.ArrowDown) pos.z += speed;
+      if (this.keys.a || this.keys.ArrowLeft) pos.x -= speed;
+      if (this.keys.d || this.keys.ArrowRight) pos.x += speed;
+
+      rig.setAttribute('position', pos);
+    }
+  }
+});
+
 
 // Scatter trees heavily between paths
 for(let i=0; i<400; i++){
