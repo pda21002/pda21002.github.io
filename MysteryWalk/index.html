@@ -163,7 +163,7 @@
     let z=(Math.random()-0.5)*50;
     if(inPath(x,z)) continue;
     const type = treeTypes[Math.floor(Math.random()*treeTypes.length)];
-    const scale=0.3 + Math.random();
+    const scale=0.3;
     const rotY=Math.random()*360;
     let tree=document.createElement('a-entity');
     tree.setAttribute('gltf-model', `#${type}`);
