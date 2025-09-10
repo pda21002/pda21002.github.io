@@ -7,7 +7,7 @@ AFRAME.registerComponent('player-movement', {
     this.rig = document.getElementById('rig');
 
     // Initial bounds: start path
-    this.currentBounds = { xMin: -0.75, xMax: 0.75, zMin: 8, zMax: 16 };
+    this.currentBounds = { xMin: -0.75, xMax: 0.75, zMin: 8.75, zMax: 16.75 };
     this.atFork = false;
     this.choiceMade = false;
 
@@ -23,13 +23,13 @@ AFRAME.registerComponent('player-movement', {
       btn.addEventListener('click', () => {
         const choice = btn.getAttribute('data-choice');
         if(choice === 'left') {
-          this.currentBounds = { xMin: -3.25, xMax: -0.75, zMin: -6.5, zMax: 8 };
+          this.currentBounds = { xMin: -3.25, xMax: -0.75, zMin: -6.25, zMax: 8.75 };
           document.querySelectorAll('.right-branch, .middle-branch').forEach(el => el.setAttribute('visible', false));
         } else if(choice === 'middle') {
-          this.currentBounds = { xMin: -0.75, xMax: 0.75, zMin: -6.5, zMax: 8 };
+          this.currentBounds = { xMin: -0.75, xMax: 0.75, zMin: -6.25, zMax: 8.75 };
           document.querySelectorAll('.left-branch, .right-branch').forEach(el => el.setAttribute('visible', false));
         } else if(choice === 'right') {
-          this.currentBounds = { xMin: 0.75, xMax: 3.25, zMin: -6.5, zMax: 8 };
+          this.currentBounds = { xMin: 0.75, xMax: 3.25, zMin: -6.25, zMax: 8.75 };
           document.querySelectorAll('.left-branch, .middle-branch').forEach(el => el.setAttribute('visible', false));
         }
 
@@ -41,18 +41,18 @@ AFRAME.registerComponent('player-movement', {
 
   tick: function () {
     let pos = this.rig.getAttribute('position');
-    const speed = 0.03; // smoother, slower movement
+    const speed = 0.03;
 
-    // Check if at fork
-    if(!this.choiceMade && pos.z <= 8) {
-      pos.z = 8;
-      this.atFork = true;
+    // Stop exactly on the fork line until a choice is made
+    if(!this.choiceMade && pos.z <= 8.75) {
+      pos.z = 8.75;
       this.rig.setAttribute('position', pos);
+      this.atFork = true;
       document.getElementById('forkMenu').setAttribute('visible', true);
       return;
     }
 
-    // Movement (absolute world directions)
+    // Movement
     if(this.keys.w || this.keys.ArrowUp) pos.z -= speed;
     if(this.keys.s || this.keys.ArrowDown) pos.z += speed;
     if(this.keys.a || this.keys.ArrowLeft) pos.x -= speed;
@@ -69,7 +69,7 @@ AFRAME.registerComponent('player-movement', {
   </head>
 
   <body>
-    <a-scene>
+    <a-scene cursor="rayOrigin: mouse" raycaster="objects: .fork-menu-button">
       <!-- Assets -->
       <a-assets>
         <img id="groundTexture" src="assets/grass.jpg">
@@ -80,24 +80,27 @@ AFRAME.registerComponent('player-movement', {
       <a-plane rotation="-90 0 0" width="50" height="50"
                material="src:#groundTexture; repeat:20 20; shader:flat"></a-plane>
 
-      <!-- Paths -->
-      <!-- Intro straight (depth 8, center at 12.75 so it touches fork at 8.75) -->
+      <!-- Intro vertical (depth 8, ends at z=12.75 - 4 = 8.75) -->
       <a-box width="1.5" height="0.05" depth="8" position="0 0.025 12.75"
              material="src:#pathTexture; repeat:1 4; shader:flat"></a-box>
-      <!-- Fork horizontal (depth 1.5, center 8.75 so it touches intro) -->
+
+      <!-- Fork horizontal (depth 1.5, centered at 8.75) -->
       <a-box width="7" height="0.05" depth="1.5" position="0 0.025 8.75"
              material="src:#pathTexture; repeat:7 1; shader:flat"></a-box>
-      <!-- Branches (depth 14, center 0.75 so they touch fork at 8.75) -->
+
+      <!-- Branches (depth 14, centers at 0.75 so they touch fork at 8.75) -->
       <a-box class="left-branch" width="1.5" height="0.05" depth="14" position="-2.5 0.025 0.75"
              material="src:#pathTexture; repeat:1 7; shader:flat"></a-box>
       <a-box class="middle-branch" width="1.5" height="0.05" depth="14" position="0 0.025 0.75"
              material="src:#pathTexture; repeat:1 7; shader:flat"></a-box>
       <a-box class="right-branch" width="1.5" height="0.05" depth="14" position="2.5 0.025 0.75"
              material="src:#pathTexture; repeat:1 7; shader:flat"></a-box>
-      <!-- Ending straight (depth 1.5 at -6.25 to touch branches) -->
+
+      <!-- Ending straight (depth 1.5, touches branches at -6.25) -->
       <a-box width="7" height="0.05" depth="1.5" position="0 0.025 -6.25"
              material="src:#pathTexture; repeat:7 1; shader:flat"></a-box>
-      <!-- Final straight (depth 8 at -10.75 to touch ending) -->
+
+      <!-- Final straight (depth 8, touches ending at -10.75) -->
       <a-box width="1.5" height="0.05" depth="8" position="0 0.025 -10.75"
              material="src:#pathTexture; repeat:1 4; shader:flat"></a-box>
 
@@ -113,7 +116,7 @@ AFRAME.registerComponent('player-movement', {
 
       <!-- Player -->
       <a-entity id="rig" position="0 0.5 16" player-movement>
-        <a-entity camera look-controls="enabled: false"></a-entity> <!-- disable pointer lock -->
+        <a-entity camera look-controls="enabled: false"></a-entity>
       </a-entity>
     </a-scene>
   </body>
