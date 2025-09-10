@@ -182,18 +182,21 @@
       return false;
     });
   }
-
+  
 for (let i = 0; i < 80; i++) {
   let x = (Math.random() - 0.5) * 50;
   let z = (Math.random() - 0.5) * 50;
   if (inPath(x, z)) continue;
 
   const type = treeTypes[Math.floor(Math.random() * treeTypes.length)];
-  
-  // Base scale for tree4 larger, others default
-  const baseScale = (type === 'tree4') ? 0.5 : 0.2;
-  const randomScale = Math.random() * 0.2; // keep variation small
-  const scaleFactor = baseScale + randomScale;
+
+  // small default scale for all trees
+  let scaleFactor = 0.2 + Math.random() * 0.2;
+
+  // only boost tree4
+  if (type === 'tree4') {
+    scaleFactor *= 4; // double it or tweak as needed
+  }
 
   const rotY = Math.random() * 360;
 
@@ -204,7 +207,6 @@ for (let i = 0; i < 80; i++) {
   tree.setAttribute('rotation', `0 ${rotY} 0`);
   trees.appendChild(tree);
 }
-
 </script>
 
 
