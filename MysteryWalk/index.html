@@ -95,16 +95,27 @@ AFRAME.registerComponent('player-movement', {
     window.addEventListener('keyup', e => { if(this.keys[e.key]!==undefined) this.keys[e.key]=false; });
 
     // Fork menu clicks
-    document.querySelectorAll('.fork-menu-button').forEach(btn => {
-      btn.addEventListener('click', () => {
+    document.querySelectorAll('.fork-menu-button').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
         const choice = btn.getAttribute('data-choice');
         this.choiceMade = true;
         document.getElementById('forkMenu').setAttribute('visible', false);
 
-        // tighter fork bounds
-        if(choice === 'left') this.currentBounds = { xMin:-3.0, xMax:-2.0, zMin:-10, zMax:8.75 };
-        else if(choice === 'middle') this.currentBounds = { xMin:-0.75, xMax:0.75, zMin:-10, zMax:8.75 };
-        else if(choice === 'right') this.currentBounds = { xMin:2.0, xMax:3.0, zMin:-10, zMax:8.75 };
+        // Keep current bounds tighter for left/right edges
+        if(choice==='left') this.currentBounds={xMin:-3.1,xMax:-2.0,zMin:-15,zMax:8.75};
+        else if(choice==='middle') this.currentBounds={xMin:-0.75,xMax:0.75,zMin:-15,zMax:8.75};
+        else if(choice==='right') this.currentBounds={xMin:2.0,xMax:3.1,zMin:-15,zMax:8.75};
+
+        // Invisible walls for unchosen paths
+        ['left','middle','right'].forEach(path=>{
+          if(path!==choice){
+            let wall=document.createElement('a-box');
+            wall.setAttribute('position', path==='left'?'-2.8 0.5 8.5':path==='right'?'2.8 0.5 8.5':'0 0.5 8.5');
+            wall.setAttribute('width','1.5'); wall.setAttribute('height','2'); wall.setAttribute('depth','0.5');
+            wall.setAttribute('opacity','0'); wall.setAttribute('color','#000');
+            document.querySelector('a-scene').appendChild(wall);
+          }
+        });
       });
     });
   },
@@ -114,7 +125,7 @@ AFRAME.registerComponent('player-movement', {
     let pos = rig.getAttribute('position');
     const speed = 0.03;
 
-    // Show fork menu
+    // Forceful player stop at fork
     if(!this.choiceMade && pos.z <= 8.75){
       pos.z = 8.75;
       rig.setAttribute('position', pos);
@@ -122,21 +133,20 @@ AFRAME.registerComponent('player-movement', {
       return;
     }
 
-    // Player movement
+    // Movement
     if(this.keys.w || this.keys.ArrowUp) pos.z -= speed;
     if(this.keys.s || this.keys.ArrowDown) pos.z += speed;
     if(this.keys.a || this.keys.ArrowLeft) pos.x -= speed;
     if(this.keys.d || this.keys.ArrowRight) pos.x += speed;
 
-    // Clamp only inside the fork
-    if(pos.z <= 8.75) { // inside fork area
-      pos.x = Math.max(this.currentBounds.xMin, Math.min(this.currentBounds.xMax, pos.x));
-      pos.z = Math.max(this.currentBounds.zMin, Math.min(this.currentBounds.zMax, pos.z));
-    }
+    // Clamp within current path bounds
+    pos.x = Math.max(this.currentBounds.xMin, Math.min(this.currentBounds.xMax, pos.x));
+    pos.z = Math.max(this.currentBounds.zMin, Math.min(this.currentBounds.zMax, pos.z));
 
     rig.setAttribute('position', pos);
   }
 });
+
 
   // 2. Tree scattering
   const trees = document.getElementById('trees');
