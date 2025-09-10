@@ -81,23 +81,24 @@ AFRAME.registerComponent('player-movement', {
                material="src:#groundTexture; repeat:20 20; shader:flat"></a-plane>
 
       <!-- Paths -->
-      <!-- Intro straight -->
-      <a-box width="1.5" height="0.05" depth="8" position="0 0.025 12"
+      <!-- Intro straight (depth 8, center at 12.75 so it touches fork at 8.75) -->
+      <a-box width="1.5" height="0.05" depth="8" position="0 0.025 12.75"
              material="src:#pathTexture; repeat:1 4; shader:flat"></a-box>
-      <!-- Fork horizontal -->
-      <a-box width="7" height="0.05" depth="1.5" position="0 0.025 8"
+      <!-- Fork horizontal (depth 1.5, center 8.75 so it touches intro) -->
+      <a-box width="7" height="0.05" depth="1.5" position="0 0.025 8.75"
              material="src:#pathTexture; repeat:7 1; shader:flat"></a-box>
-      <!-- Branches -->
-      <a-box class="left-branch" width="1.5" height="0.05" depth="14" position="-2.5 0.025 0"
+      <!-- Branches (depth 14, center 0.75 so they touch fork at 8.75) -->
+      <a-box class="left-branch" width="1.5" height="0.05" depth="14" position="-2.5 0.025 0.75"
              material="src:#pathTexture; repeat:1 7; shader:flat"></a-box>
-      <a-box class="middle-branch" width="1.5" height="0.05" depth="14" position="0 0.025 0"
+      <a-box class="middle-branch" width="1.5" height="0.05" depth="14" position="0 0.025 0.75"
              material="src:#pathTexture; repeat:1 7; shader:flat"></a-box>
-      <a-box class="right-branch" width="1.5" height="0.05" depth="14" position="2.5 0.025 0"
+      <a-box class="right-branch" width="1.5" height="0.05" depth="14" position="2.5 0.025 0.75"
              material="src:#pathTexture; repeat:1 7; shader:flat"></a-box>
-      <!-- Ending straight -->
-      <a-box width="7" height="0.05" depth="1.5" position="0 0.025 -7"
+      <!-- Ending straight (depth 1.5 at -6.25 to touch branches) -->
+      <a-box width="7" height="0.05" depth="1.5" position="0 0.025 -6.25"
              material="src:#pathTexture; repeat:7 1; shader:flat"></a-box>
-      <a-box width="1.5" height="0.05" depth="8" position="0 0.025 -12"
+      <!-- Final straight (depth 8 at -10.75 to touch ending) -->
+      <a-box width="1.5" height="0.05" depth="8" position="0 0.025 -10.75"
              material="src:#pathTexture; repeat:1 4; shader:flat"></a-box>
 
       <!-- Fork menu (HUD) -->
@@ -112,7 +113,7 @@ AFRAME.registerComponent('player-movement', {
 
       <!-- Player -->
       <a-entity id="rig" position="0 0.5 16" player-movement>
-        <a-entity camera look-controls="pointerLockEnabled: true"></a-entity>
+        <a-entity camera look-controls="enabled: false"></a-entity> <!-- disable pointer lock -->
       </a-entity>
     </a-scene>
   </body>
