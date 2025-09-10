@@ -3,70 +3,63 @@
     <script src="https://aframe.io/releases/1.7.0/aframe.min.js"></script>
     <script>
 AFRAME.registerComponent('player-movement', {
-  init: function() {
+  init: function () {
     this.rig = document.getElementById('rig');
-    this.currentBounds = {xMin:-0.75, xMax:0.75, zMin:2, zMax:12}; // corridor start
-    this.forkChosen = false;
 
-    this.keyW = this.keyA = this.keyS = this.keyD = false;
+    // Initial movement bounds: just the intro straight path
+    this.currentBounds = { xMin: -0.75, xMax: 0.75, zMin: 8, zMax: 16 };
+    this.choiceMade = false;
+    this.atFork = false;
 
-    // Fork choice
+    this.keys = { w: false, a: false, s: false, d: false,
+                  ArrowUp: false, ArrowDown: false, ArrowLeft: false, ArrowRight: false };
+
+    // Fork choice click
     document.querySelectorAll('.fork-choice').forEach(box => {
       box.addEventListener('click', evt => {
-        if (this.forkChosen) return; // prevent re-choosing
+        if (!this.atFork || this.choiceMade) return;
+
         const choice = box.getAttribute('data-choice');
-
         if (choice === 'left') {
-          this.currentBounds = {xMin:-3.25, xMax:-0.75, zMin:-5, zMax:2};
-        } 
-        else if (choice === 'middle') {
-          this.currentBounds = {xMin:-0.75, xMax:0.75, zMin:-5, zMax:2};
-        }
-        else if (choice === 'right') {
-          this.currentBounds = {xMin:0.75, xMax:3.25, zMin:-5, zMax:2};
+          this.currentBounds = { xMin: -3.25, xMax: -0.75, zMin: -6.5, zMax: 8 };
+          document.querySelectorAll('.right-branch,.middle-branch').forEach(el => el.setAttribute('visible', false));
+        } else if (choice === 'middle') {
+          this.currentBounds = { xMin: -0.75, xMax: 0.75, zMin: -6.5, zMax: 8 };
+          document.querySelectorAll('.left-branch,.right-branch').forEach(el => el.setAttribute('visible', false));
+        } else if (choice === 'right') {
+          this.currentBounds = { xMin: 0.75, xMax: 3.25, zMin: -6.5, zMax: 8 };
+          document.querySelectorAll('.left-branch,.middle-branch').forEach(el => el.setAttribute('visible', false));
         }
 
-        this.forkChosen = true;
+        this.choiceMade = true;
         document.querySelectorAll('.fork-choice').forEach(b => b.setAttribute('visible', false));
-
-        // Place invisible wall *at the fork* so you can’t backtrack
-        const wall = document.createElement('a-box');
-        wall.setAttribute('position', '0 0.75 9'); 
-        wall.setAttribute('width', '6');
-        wall.setAttribute('height', '3');
-        wall.setAttribute('depth', '0.2');
-        wall.setAttribute('color', '#000');
-        wall.setAttribute('opacity', '0');
-        document.querySelector('a-scene').appendChild(wall);
       });
     });
 
     // Keyboard listeners
-    window.addEventListener('keydown', e => {
-      if(e.key === "w" || e.key === "ArrowUp") this.keyW = true;
-      if(e.key === "s" || e.key === "ArrowDown") this.keyS = true;
-      if(e.key === "a" || e.key === "ArrowLeft") this.keyA = true;
-      if(e.key === "d" || e.key === "ArrowRight") this.keyD = true;
-    });
-    window.addEventListener('keyup', e => {
-      if(e.key === "w" || e.key === "ArrowUp") this.keyW = false;
-      if(e.key === "s" || e.key === "ArrowDown") this.keyS = false;
-      if(e.key === "a" || e.key === "ArrowLeft") this.keyA = false;
-      if(e.key === "d" || e.key === "ArrowRight") this.keyD = false;
-    });
+    window.addEventListener('keydown', e => { if (this.keys[e.key] !== undefined) this.keys[e.key] = true; });
+    window.addEventListener('keyup', e => { if (this.keys[e.key] !== undefined) this.keys[e.key] = false; });
   },
 
-  tick: function() {
+  tick: function () {
     let pos = this.rig.getAttribute('position');
-    const speed = 0.025; // slower, smoother movement
+    const speed = 0.05; // smoother, slower
 
-    // Absolute world-based movement
-    if(this.keyW) pos.z -= speed;
-    if(this.keyS) pos.z += speed;
-    if(this.keyA) pos.x -= speed;
-    if(this.keyD) pos.x += speed;
+    // Stop player at the fork if no choice is made
+    if (!this.choiceMade && pos.z <= 8) {
+      this.atFork = true;
+      pos.z = 8;
+      this.rig.setAttribute('position', pos);
+      return;
+    }
 
-    // Clamp within chosen path
+    // Movement (absolute directions)
+    if (this.keys.w || this.keys.ArrowUp) pos.z -= speed;
+    if (this.keys.s || this.keys.ArrowDown) pos.z += speed;
+    if (this.keys.a || this.keys.ArrowLeft) pos.x -= speed;
+    if (this.keys.d || this.keys.ArrowRight) pos.x += speed;
+
+    // Clamp to bounds
     pos.x = Math.max(this.currentBounds.xMin, Math.min(this.currentBounds.xMax, pos.x));
     pos.z = Math.max(this.currentBounds.zMin, Math.min(this.currentBounds.zMax, pos.z));
 
@@ -88,44 +81,42 @@ AFRAME.registerComponent('player-movement', {
       <a-plane rotation="-90 0 0" width="50" height="50"
                material="src:#groundTexture; repeat:20 20; shader:flat"></a-plane>
 
-      <!-- Beginning straight -->
-      <a-box width="1.5" height="0.05" depth="10" position="0 0.025 12"
-             material="src:#pathTexture; repeat:1 5; shader:flat"></a-box>
-      <!-- Fork cross -->
-      <a-box width="5" height="0.05" depth="1.5" position="0 0.025 7.5"
-             material="src:#pathTexture; repeat:5 1; shader:flat"></a-box>
+      <!-- Intro straight path -->
+      <a-box width="1.5" height="0.05" depth="8" position="0 0.025 12"
+             material="src:#pathTexture; repeat:1 4; shader:flat"></a-box>
+
+      <!-- Fork cross path -->
+      <a-box width="7" height="0.05" depth="1.5" position="0 0.025 8"
+             material="src:#pathTexture; repeat:7 1; shader:flat"></a-box>
 
       <!-- Branches -->
-      <a-box class="left-branch" width="1.5" height="0.05" depth="8" position="-2 0.025 3"
-             material="src:#pathTexture; repeat:1 4; shader:flat"></a-box>
-      <a-box class="middle-branch" width="1.5" height="0.05" depth="8" position="0 0.025 3"
-             material="src:#pathTexture; repeat:1 4; shader:flat"></a-box>
-      <a-box class="right-branch" width="1.5" height="0.05" depth="8" position="2 0.025 3"
+      <a-box class="left-branch" width="1.5" height="0.05" depth="14" position="-2.5 0.025 0"
+             material="src:#pathTexture; repeat:1 7; shader:flat"></a-box>
+      <a-box class="middle-branch" width="1.5" height="0.05" depth="14" position="0 0.025 0"
+             material="src:#pathTexture; repeat:1 7; shader:flat"></a-box>
+      <a-box class="right-branch" width="1.5" height="0.05" depth="14" position="2.5 0.025 0"
+             material="src:#pathTexture; repeat:1 7; shader:flat"></a-box>
+
+      <!-- Ending straight path -->
+      <a-box width="7" height="0.05" depth="1.5" position="0 0.025 -7"
+             material="src:#pathTexture; repeat:7 1; shader:flat"></a-box>
+      <a-box width="1.5" height="0.05" depth="8" position="0 0.025 -12"
              material="src:#pathTexture; repeat:1 4; shader:flat"></a-box>
 
-      <!-- Reconnect -->
-      <a-box width="5" height="0.05" depth="1.5" position="0 0.025 -1"
-             material="src:#pathTexture; repeat:5 1; shader:flat"></a-box>
-
-      <!-- Ending straight -->
-      <a-box width="1.5" height="0.05" depth="10" position="0 0.025 -6.5"
-             material="src:#pathTexture; repeat:1 5; shader:flat"></a-box>
+      <!-- Fork choice boxes -->
+      <a-box class="fork-choice" data-choice="left" position="-2.5 0.5 8" depth="0.5" height="0.5" width="0.5" color="blue"></a-box>
+      <a-box class="fork-choice" data-choice="middle" position="0 0.5 8" depth="0.5" height="0.5" width="0.5" color="yellow"></a-box>
+      <a-box class="fork-choice" data-choice="right" position="2.5 0.5 8" depth="0.5" height="0.5" width="0.5" color="red"></a-box>
 
       <!-- Castle -->
-      <a-box id="castle" position="0 1 -15" width="2" height="2" depth="2" color="gold"></a-box>
-
-      <!-- Fork choice boxes (all at fork point) -->
-      <a-box class="fork-choice" data-choice="left" position="-2 0.5 7.5" depth="0.5" height="0.5" width="0.5" color="blue"></a-box>
-      <a-box class="fork-choice" data-choice="middle" position="0 0.5 7.5" depth="0.5" height="0.5" width="0.5" color="green"></a-box>
-      <a-box class="fork-choice" data-choice="right" position="2 0.5 7.5" depth="0.5" height="0.5" width="0.5" color="red"></a-box>
+      <a-box id="castle" position="0 0.5 -15" width="2" height="2" depth="2" color="gold"></a-box>
 
       <!-- Player -->
-      <a-entity id="rig" position="0 0.5 15" player-movement>
-        <a-entity camera look-controls>
-          <a-cursor rayOrigin="mouse" material="opacity:0"></a-cursor>
-        </a-entity>
+      <a-entity id="rig" position="0 0.5 16" player-movement>
+        <a-entity camera look-controls="pointerLockEnabled: true"></a-entity>
       </a-entity>
     </a-scene>
   </body>
 </html>
+
 
