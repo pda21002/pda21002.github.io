@@ -69,55 +69,99 @@ AFRAME.registerComponent('player-movement', {
   </head>
 
   <body>
-    <a-scene cursor="rayOrigin: mouse" raycaster="objects: .fork-menu-button">
-      <!-- Assets -->
-      <a-assets>
-        <img id="groundTexture" src="assets/grass.jpg">
-        <img id="pathTexture" src="assets/stone.png">
-      </a-assets>
+  <a-scene cursor="rayOrigin: mouse" raycaster="objects: .fork-menu-button">
+  <!-- Assets -->
+  <a-assets>
+    <img id="groundTexture" src="assets/grass.jpg">
+    <img id="pathTexture" src="assets/stone.png">
+  </a-assets>
 
-      <!-- Ground -->
-      <a-plane rotation="-90 0 0" width="50" height="50"
-               material="src:#groundTexture; repeat:20 20; shader:flat"></a-plane>
+  <!-- Ground -->
+  <a-plane rotation="-90 0 0" width="50" height="50"
+           material="src:#groundTexture; repeat:20 20; shader:flat"></a-plane>
 
-      <!-- Intro vertical (depth 8, ends at z=12.75 - 4 = 8.75) -->
-      <a-box width="1.5" height="0.05" depth="8" position="0 0.025 12.75"
-             material="src:#pathTexture; repeat:1 4; shader:flat"></a-box>
+  <!-- Paths (your fixed positions) -->
+  <a-box width="1.5" height="0.05" depth="8" position="0 0.025 12.75"
+         material="src:#pathTexture; repeat:1 4; shader:flat"></a-box>
+  <a-box width="7" height="0.05" depth="1.5" position="0 0.03943 8.75"
+         material="src:#pathTexture; repeat:7 1; shader:flat"></a-box>
+  <a-box class="left-branch" width="1.5" height="0.05" depth="14" position="-2.76655 0.025 1.00951"
+         material="src:#pathTexture; repeat:1 7; shader:flat"></a-box>
+  <a-box class="middle-branch" width="1.5" height="0.05" depth="14" position="0 0.025 1.03888"
+         material="src:#pathTexture; repeat:1 7; shader:flat"></a-box>
+  <a-box class="right-branch" width="1.5" height="0.05" depth="14" position="2.737 0.025 1.01381"
+         material="src:#pathTexture; repeat:1 7; shader:flat"></a-box>
+  <a-box width="7" height="0.05" depth="1.5" position="0 0.03169 -6.25"
+         material="src:#pathTexture; repeat:7 1; shader:flat"></a-box>
+  <a-box width="1.5" height="0.05" depth="8" position="0 0.025 -10.75"
+         material="src:#pathTexture; repeat:1 4; shader:flat"></a-box>
 
-      <!-- Fork horizontal (depth 1.5, centered at 8.75) -->
-      <a-box width="7" height="0.05" depth="1.5" position="0 0.025 8.75"
-             material="src:#pathTexture; repeat:7 1; shader:flat"></a-box>
+  <!-- Fork menu -->
+  <a-entity id="forkMenu" visible="false" position="0 1.5 6">
+    <a-box class="fork-menu-button" data-choice="left" position="-2 0 0" width="1" height="0.5" depth="0.2" color="blue"></a-box>
+    <a-box class="fork-menu-button" data-choice="middle" width="1" height="0.5" depth="0.2" color="yellow"></a-box>
+    <a-box class="fork-menu-button" data-choice="right" position="2 0 0" width="1" height="0.5" depth="0.2" color="red"></a-box>
+  </a-entity>
 
-      <!-- Branches (depth 14, centers at 0.75 so they touch fork at 8.75) -->
-      <a-box class="left-branch" width="1.5" height="0.05" depth="14" position="-2.5 0.025 0.75"
-             material="src:#pathTexture; repeat:1 7; shader:flat"></a-box>
-      <a-box class="middle-branch" width="1.5" height="0.05" depth="14" position="0 0.025 0.75"
-             material="src:#pathTexture; repeat:1 7; shader:flat"></a-box>
-      <a-box class="right-branch" width="1.5" height="0.05" depth="14" position="2.5 0.025 0.75"
-             material="src:#pathTexture; repeat:1 7; shader:flat"></a-box>
+  <!-- Castle -->
+  <a-box id="castle" position="0 0.5 -15" width="2" height="2" depth="2" color="gold"></a-box>
 
-      <!-- Ending straight (depth 1.5, touches branches at -6.25) -->
-      <a-box width="7" height="0.05" depth="1.5" position="0 0.025 -6.25"
-             material="src:#pathTexture; repeat:7 1; shader:flat"></a-box>
+  <!-- Player -->
+  <a-entity id="rig" position="0 0.5 16" player-movement>
+    <a-entity camera look-controls="enabled: false"></a-entity>
+  </a-entity>
 
-      <!-- Final straight (depth 8, touches ending at -10.75) -->
-      <a-box width="1.5" height="0.05" depth="8" position="0 0.025 -10.75"
-             material="src:#pathTexture; repeat:1 4; shader:flat"></a-box>
+  <!-- Random scatter container -->
+  <a-entity id="scatter"></a-entity>
 
-      <!-- Fork menu (HUD) -->
-      <a-entity id="forkMenu" visible="false" position="0 1.5 6">
-        <a-box class="fork-menu-button" data-choice="left" position="-2 0 0" width="1" height="0.5" depth="0.2" color="blue"></a-box>
-        <a-box class="fork-menu-button" data-choice="middle" position="0 0 0" width="1" height="0.5" depth="0.2" color="yellow"></a-box>
-        <a-box class="fork-menu-button" data-choice="right" position="2 0 0" width="1" height="0.5" depth="0.2" color="red"></a-box>
-      </a-entity>
+  <script>
+    // Simple scatter script
+    AFRAME.registerComponent('scatter-objects', {
+      schema: { count: { type: 'int', default: 40 } }, // number of objects
+      init: function () {
+        const container = this.el;
+        const types = [
+          { color: 'green', radius: 0.4 },   // type 1
+          { color: 'brown', radius: 0.3 },   // type 2
+          { color: 'pink', radius: 0.5 },    // type 3
+          { color: 'purple', radius: 0.35 }  // type 4
+        ];
 
-      <!-- Castle -->
-      <a-box id="castle" position="0 0.5 -15" width="2" height="2" depth="2" color="gold"></a-box>
+        // Path bounding boxes (approximate rectangles)
+        const forbidden = [
+          {xMin:-1, xMax:1, zMin:8.75, zMax:16.75},  // intro vertical
+          {xMin:-3.5, xMax:3.5, zMin:8, zMax:9.5},   // fork horizontal
+          {xMin:-3.5, xMax:-2, zMin:-6.5, zMax:8.5}, // left branch
+          {xMin:-1, xMax:1, zMin:-6.5, zMax:8.5},    // middle branch
+          {xMin:2, xMax:3.5, zMin:-6.5, zMax:8.5},   // right branch
+          {xMin:-3.5, xMax:3.5, zMin:-7, zMax:-5.5}, // ending straight
+          {xMin:-1, xMax:1, zMin:-14.5, zMax:-7}     // final straight
+        ];
 
-      <!-- Player -->
-      <a-entity id="rig" position="0 0.5 16" player-movement>
-        <a-entity camera look-controls="enabled: false"></a-entity>
-      </a-entity>
-    </a-scene>
+        function isOnPath(x, z) {
+          return forbidden.some(b => x >= b.xMin && x <= b.xMax && z >= b.zMin && z <= b.zMax);
+        }
+
+        for (let i = 0; i < this.data.count; i++) {
+          let x, z;
+          do {
+            x = (Math.random() - 0.5) * 50;  // ground is 50x50
+            z = (Math.random() - 0.5) * 50;
+          } while (isOnPath(x, z));
+
+          const t = types[Math.floor(Math.random() * types.length)];
+          const sphere = document.createElement('a-sphere');
+          sphere.setAttribute('radius', t.radius);
+          sphere.setAttribute('color', t.color);
+          sphere.setAttribute('position', {x: x, y: t.radius, z: z});
+          container.appendChild(sphere);
+        }
+      }
+    });
+
+    document.getElementById('scatter').setAttribute('scatter-objects', 'count: 60');
+  </script>
+</a-scene>
+
   </body>
 </html>
