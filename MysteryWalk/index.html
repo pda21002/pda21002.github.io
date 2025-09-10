@@ -58,246 +58,117 @@
   <!-- Tree container -->
   <a-entity id="trees"></a-entity>
 
-  <script>
-  /* -------------------------
-     Helper geometry functions
-     ------------------------- */
+ <script>
+AFRAME.registerComponent('player-movement', {
+  init: function() {
+    this.rig = this.el;
 
-  function rectContains(rect, x, z) {
-    // rect: { x1, x2, z1, z2 } inclusive
-    return x >= rect.x1 && x <= rect.x2 && z >= rect.z1 && z <= rect.z2;
-  }
+    // Default: only intro path
+    this.currentBounds = { xMin: -0.75, xMax: 0.75, zMin: 8.75, zMax: 16.75 };
+    this.choiceMade = false;
+    this.frozen = false;
 
-  function pointInAny(pointX, pointZ, rects) {
-    for (let i = 0; i < rects.length; i++) {
-      if (rectContains(rects[i], pointX, pointZ)) return true;
-    }
-    return false;
-  }
+    this.keys = {
+      w:false, a:false, s:false, d:false,
+      ArrowUp:false, ArrowDown:false, ArrowLeft:false, ArrowRight:false
+    };
 
-  /* -------------------------
-     Path geometry (logic rectangles)
-     ------------------------- */
+    // Key events
+    window.addEventListener('keydown', e => { if(this.keys[e.key]!==undefined) this.keys[e.key]=true; });
+    window.addEventListener('keyup', e => { if(this.keys[e.key]!==undefined) this.keys[e.key]=false; });
 
-  // These rectangles follow your visual path shapes.
-  // Keep them narrow so player is forced to stay on the path planes.
-  const PATHS = {
-    // intro vertical (visual depth 8 @ z=12.75 so span roughly z=9..17)
-    intro: { x1: -0.75, x2: 0.75, z1: 9, z2: 17 },
+    // Fork menu clicks
+    document.querySelectorAll('.fork-menu-button').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const choice = btn.getAttribute('data-choice');
+        this.choiceMade = true;
+        this.frozen = false; // unfreeze once chosen
+        document.getElementById('forkMenu').setAttribute('visible', false);
 
-    // fork horizontal (thin)
-    fork_h: { x1: -3.5, x2: 3.5, z1: 8, z2: 9.2 },
+        // Re-enable looking
+        this.rig.querySelector('[camera]').setAttribute('look-controls', 'enabled', true);
 
-    // branches (each branch depth -10 .. 8.75 as in your code)
-    left:   { x1: -3.25, x2: -2.0, z1: -10, z2: 8.75 },
-    middle: { x1: -0.9,  x2:  0.9, z1: -10, z2: 8.75 },
-    right:  { x1:  2.0,  x2:  3.25, z1: -10, z2: 8.75 },
+        // Bounds for chosen path
+        if(choice==='left'){
+          this.currentBounds = {xMin:-3.5, xMax:-2.0, zMin:-6.25, zMax:8.75};
+        } else if(choice==='middle'){
+          this.currentBounds = {xMin:-0.75, xMax:0.75, zMin:-6.25, zMax:8.75};
+        } else if(choice==='right'){
+          this.currentBounds = {xMin:2.0, xMax:3.5, zMin:-6.25, zMax:8.75};
+        }
 
-    // ending horizontal (visual at -6.25)
-    ending_h: { x1: -3.5, x2: 3.5, z1: -7.2, z2: -5.2 },
+        // Block entrances/exits of unchosen paths
+        ['left','middle','right'].forEach(path => {
+          if(path !== choice){
+            let wall = document.createElement('a-box');
+            wall.setAttribute('position', 
+              path==='left'?'-2.8 0.5 8.5':path==='right'?'2.8 0.5 8.5':'0 0.5 8.5');
+            wall.setAttribute('width','1.5');
+            wall.setAttribute('height','2');
+            wall.setAttribute('depth','0.5');
+            wall.setAttribute('opacity','0');
+            document.querySelector('a-scene').appendChild(wall);
 
-    // final straight to castle (visual center path)
-    final: { x1: -0.9, x2: 0.9, z1: -15, z2: -10 }
-  };
-
-  // Entrance blockers to be used for unchosen paths (thin rectangles)
-  function entranceBlockRectFor(pathName) {
-    if (pathName === 'left')  return { x1: -3.5, x2: -2.0, z1: 8.3, z2: 9.2 };
-    if (pathName === 'middle')return { x1: -0.9, x2: 0.9,   z1: 8.3, z2: 9.2 };
-    return { x1: 2.0, x2: 3.5, z1: 8.3, z2: 9.2 }; // right
-  }
-
-  // Exit blockers near the ending horizontal that keep unchosen path exits closed
-  function exitBlockRectFor(pathName) {
-    if (pathName === 'left')  return { x1: -3.5, x2: -2.0, z1: -6.5, z2: -5.6 };
-    if (pathName === 'middle')return { x1: -0.9, x2: 0.9,   z1: -6.5, z2: -5.6 };
-    return { x1: 2.0, x2: 3.5, z1: -6.5, z2: -5.6 }; // right
-  }
-
-  /* -------------------------
-     Player movement component
-     ------------------------- */
-
-  AFRAME.registerComponent('player-movement', {
-    init: function () {
-      this.keys = { w:false, a:false, s:false, d:false, ArrowUp:false, ArrowDown:false, ArrowLeft:false, ArrowRight:false };
-      this.choiceMade = false;
-      this.chosenPath = null; // 'left'|'middle'|'right'
-      this.speed = 0.06;
-
-      // initial allowed zones = intro + fork_h (until the fork menu is used)
-      this.allowedZones = [ PATHS.intro, PATHS.fork_h ];
-
-      // blockers (rectangles) for entrances/exits of unchosen paths
-      this.blockers = []; // array of rect objects
-
-      // Listen keyboard
-      window.addEventListener('keydown', e => { if (this.keys[e.key] !== undefined) this.keys[e.key] = true; });
-      window.addEventListener('keyup', e => { if (this.keys[e.key] !== undefined) this.keys[e.key] = false; });
-
-      // Fork menu click handlers (keep your UI behavior)
-      document.querySelectorAll('.fork-menu-button').forEach(btn => {
-        btn.addEventListener('click', () => {
-          const choice = btn.getAttribute('data-choice'); // left|middle|right
-          this.choiceMade = true;
-          this.chosenPath = choice;
-          document.getElementById('forkMenu').setAttribute('visible', false);
-
-          // Set allowed zone to the *chosen branch* (only that branch)
-          if (choice === 'left')  this.allowedZones = [ PATHS.left ];
-          if (choice === 'middle')this.allowedZones = [ PATHS.middle ];
-          if (choice === 'right') this.allowedZones = [ PATHS.right ];
-
-          // Add entrance + exit blockers for the *unchosen* paths
-          ['left','middle','right'].forEach(p => {
-            if (p !== choice) {
-              this.blockers.push( entranceBlockRectFor(p) );
-              this.blockers.push( exitBlockRectFor(p) );
-            }
-          });
-
-          // The ending horizontal and final straight should remain reachable from every path.
-          // We will allow access to them once the player's z gets <= -6 (see tick logic).
+            let exitWall = document.createElement('a-box');
+            exitWall.setAttribute('position', 
+              path==='left'?'-2.8 0.5 -6.0':path==='right'?'2.8 0.5 -6.0':'0 0.5 -6.0');
+            exitWall.setAttribute('width','1.5');
+            exitWall.setAttribute('height','2');
+            exitWall.setAttribute('depth','0.5');
+            exitWall.setAttribute('opacity','0');
+            document.querySelector('a-scene').appendChild(exitWall);
+          }
         });
       });
-    },
+    });
+  },
 
-    tick: function (time, delta) {
-      const rig = this.el;
-      const camera = rig.querySelector('[camera]');
-      if (!camera) return; // safeguard
-      let pos = rig.getAttribute('position');
+  tick: function() {
+    let pos = this.rig.getAttribute('position');
+    const moveSpeed = 0.015; // slower
+    const smoothFactor = 0.15; // for smoothing movement
 
-      // If fork not chosen, keep player parked at fork z and show menu
-      if (!this.choiceMade && pos.z <= 8.75) {
-        pos.z = 8.75;
-        rig.setAttribute('position', pos);
+    // Freeze logic
+    if(!this.choiceMade && pos.z <= 8.75){
+      if(!this.frozen){
+        this.frozen = true;
         document.getElementById('forkMenu').setAttribute('visible', true);
-        return;
+
+        // Disable looking around
+        this.rig.querySelector('[camera]').setAttribute('look-controls', 'enabled', false);
       }
-
-      // Calculate camera-relative direction vectors so arrows feel natural:
-      // forward = camera forward projected onto XZ plane, right = perpendicular
-      const camRotY = camera.object3D.rotation.y;
-      const forward = { x: -Math.sin(camRotY), z: -Math.cos(camRotY) };
-      const right   = { x:  Math.cos(camRotY), z: -Math.sin(camRotY) };
-
-      // Input -> displacement
-      let dx = 0, dz = 0;
-      if (this.keys.w || this.keys.ArrowUp)    { dx += forward.x * this.speed; dz += forward.z * this.speed; }
-      if (this.keys.s || this.keys.ArrowDown)  { dx -= forward.x * this.speed; dz -= forward.z * this.speed; }
-      if (this.keys.d || this.keys.ArrowRight) { dx += right.x * this.speed; dz += right.z * this.speed; }
-      if (this.keys.a || this.keys.ArrowLeft)  { dx -= right.x * this.speed; dz -= right.z * this.speed; }
-
-      if (dx === 0 && dz === 0) return; // nothing to do
-
-      const tentative = { x: pos.x + dx, z: pos.z + dz };
-
-      // If player has already reached the merge region (z <= -6), extend allowed zones
-      // to include ending horizontal and final straight so all paths can reach them.
-      let currentAllowed = this.allowedZones.slice(); // copy
-      if (tentative.z <= -6 || pos.z <= -6) {
-        // Union: allow the chosen branch's deeper area, plus ending & final
-        if (this.chosenPath === 'left')  currentAllowed.push(PATHS.left);
-        if (this.chosenPath === 'middle')currentAllowed.push(PATHS.middle);
-        if (this.chosenPath === 'right') currentAllowed.push(PATHS.right);
-        currentAllowed.push(PATHS.ending_h);
-        currentAllowed.push(PATHS.final);
-      }
-
-      // Decide whether tentative position is allowed:
-      const inAllowed = pointInAny(tentative.x, tentative.z, currentAllowed);
-      const hitsBlocker = pointInAny(tentative.x, tentative.z, this.blockers);
-
-      if (inAllowed && !hitsBlocker) {
-        // OK — move
-        rig.setAttribute('position', { x: tentative.x, y: pos.y, z: tentative.z });
-      } else {
-        // Movement would enter a forbidden zone. To avoid snapping, do per-axis partial movement:
-        // Try X-only then Z-only, allowing sliding along blockers/edges.
-        const tryX = { x: pos.x + dx, z: pos.z };
-        const tryZ = { x: pos.x, z: pos.z + dz };
-
-        const inAllowedX = pointInAny(tryX.x, tryX.z, currentAllowed) && !pointInAny(tryX.x, tryX.z, this.blockers);
-        const inAllowedZ = pointInAny(tryZ.x, tryZ.z, currentAllowed) && !pointInAny(tryZ.x, tryZ.z, this.blockers);
-
-        if (inAllowedX && !inAllowedZ) {
-          rig.setAttribute('position', { x: tryX.x, y: pos.y, z: tryX.z });
-        } else if (!inAllowedX && inAllowedZ) {
-          rig.setAttribute('position', { x: tryZ.x, y: pos.y, z: tryZ.z });
-        } else {
-          // neither axis allowed: completely blocked — do nothing (no snapping).
-        }
-      }
-    }
-  });
-
-  /* -------------------------
-     Tree scattering
-     ------------------------- */
-
-  (function scatterTrees() {
-    const trees = document.getElementById('trees');
-    const treeTypes = ['tree1','tree2','tree3','tree4'];
-
-    // Function to check if a candidate location is within a path rect (with small buffer)
-    function isOnPath(x, z) {
-      // We'll treat main path rects as forbidden with a small buffer of 0.6 units.
-      const buffer = 0.6;
-      const allPaths = [ PATHS.intro, PATHS.fork_h, PATHS.left, PATHS.middle, PATHS.right, PATHS.ending_h, PATHS.final ];
-      for (let r of allPaths) {
-        if (x >= r.x1 - buffer && x <= r.x2 + buffer && z >= r.z1 - buffer && z <= r.z2 + buffer) return true;
-      }
-      return false;
+      return; // stop updating position if frozen
     }
 
-    // Basic random scattering across the plane, but skip where isOnPath === true
-    const TOTAL = 220; // more trees overall
-    let placed = 0;
-    for (let i = 0; i < TOTAL && placed < TOTAL; i++) {
-      let x = (Math.random() - 0.5) * 50;
-      let z = (Math.random() - 0.5) * 50;
-      if (isOnPath(x, z)) continue;
+    if(this.frozen) return; // still frozen
 
-      const type = treeTypes[Math.floor(Math.random() * treeTypes.length)];
-      let scale = 0.01 + Math.random()*0.02;
-      if (type === 'tree4') scale *= 30;
-      const rotY = Math.random()*360;
+    // Movement input
+    let dx = 0, dz = 0;
+    if(this.keys.w || this.keys.ArrowUp) dz -= moveSpeed;
+    if(this.keys.s || this.keys.ArrowDown) dz += moveSpeed;
+    if(this.keys.a || this.keys.ArrowLeft) dx -= moveSpeed;
+    if(this.keys.d || this.keys.ArrowRight) dx += moveSpeed;
 
-      let tree = document.createElement('a-entity');
-      tree.setAttribute('gltf-model', `#${type}`);
-      tree.setAttribute('position', `${x} 0 ${z}`);
-      tree.setAttribute('scale', `${scale} ${scale} ${scale}`);
-      tree.setAttribute('rotation', `0 ${rotY} 0`);
-      trees.appendChild(tree);
-      placed++;
+    // Smooth interpolation
+    pos.x += dx * smoothFactor;
+    pos.z += dz * smoothFactor;
+
+    // Bounds
+    let bounds;
+    if(pos.z > -6.25){ 
+      bounds = this.currentBounds; 
+    } else { 
+      bounds = { xMin: -3.5, xMax: 3.5, zMin: -15, zMax: -6.25 };
     }
 
-    // Extra cluster between the 3 paths (more trees between them, but not on the path planes).
-    // Cluster bounds roughly between x=-2..2 and z=-6..8 (between forks and branches)
-    const clusterCount = 80;
-    for (let i = 0; i < clusterCount; i++) {
-      // random inside cluster area
-      const x = -2 + Math.random()*4;   // -2..2
-      const z = -6 + Math.random()*14;  // -6..8
-      // skip if on a path (narrow)
-      if (isOnPath(x, z)) continue;
+    pos.x = Math.max(bounds.xMin, Math.min(bounds.xMax, pos.x));
+    pos.z = Math.max(bounds.zMin, Math.min(bounds.zMax, pos.z));
 
-      const type = treeTypes[Math.floor(Math.random() * treeTypes.length)];
-      let scale = 0.012 + Math.random()*0.015;
-      if (type === 'tree4') scale *= 22;
-      const rotY = Math.random()*360;
+    this.rig.setAttribute('position', pos);
+  }
+});
+</script>
 
-      let tree = document.createElement('a-entity');
-      tree.setAttribute('gltf-model', `#${type}`);
-      tree.setAttribute('position', `${x} 0 ${z}`);
-      tree.setAttribute('scale', `${scale} ${scale} ${scale}`);
-      tree.setAttribute('rotation', `0 ${rotY} 0`);
-      trees.appendChild(tree);
-    }
-  })();
-
-  </script>
 </a-scene>
 </body>
 </html>
