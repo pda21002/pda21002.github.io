@@ -86,19 +86,19 @@ AFRAME.registerComponent('player-movement', {
         document.getElementById('forkMenu').setAttribute('visible', false);
         this.rig.querySelector('[camera]').setAttribute('look-controls', 'enabled', true);
 
-        // Set bounds for chosen path
+        // Bounds for chosen path
         if(choice==='left') this.currentBounds = {xMin:-3.5, xMax:-2.0, zMin:-6.25, zMax:8.75};
         if(choice==='middle') this.currentBounds = {xMin:-0.75, xMax:0.75, zMin:-6.25, zMax:8.75};
         if(choice==='right') this.currentBounds = {xMin:2.0, xMax:3.5, zMin:-6.25, zMax:8.75};
 
-        // Block entrances/exits of unchosen paths
+        // Block entrances and exits of unchosen paths
         ['left','middle','right'].forEach(path=>{
           if(path!==choice){
             ['entrance','exit'].forEach(posType=>{
               let wall = document.createElement('a-box');
-              let z = posType==='entrance'?8.5:-6.0;
-              wall.setAttribute('position', path==='left' ? `-2.8 0.5 ${z}` :
-                                          path==='right' ? `2.8 0.5 ${z}` : `0 0.5 ${z}`);
+              let z = posType==='entrance'?8.75:-6.25;
+              let x = path==='left'?-2.8:path==='right'?2.8:0;
+              wall.setAttribute('position', `${x} 0.5 ${z}`);
               wall.setAttribute('width','1.5'); wall.setAttribute('height','2'); wall.setAttribute('depth','0.5');
               wall.setAttribute('opacity','0');
               document.querySelector('a-scene').appendChild(wall);
@@ -111,8 +111,8 @@ AFRAME.registerComponent('player-movement', {
 
   tick: function() {
     let pos = this.rig.getAttribute('position');
-    const moveSpeed = 0.04; // faster
-    const smoothFactor = 0.25; // smooth but faster
+    const moveSpeed = 0.06; // slightly faster
+    const smoothFactor = 0.25; 
 
     // Freeze at fork
     if(!this.choiceMade && pos.z <= 8.75){
@@ -132,14 +132,13 @@ AFRAME.registerComponent('player-movement', {
     if(this.keys.a||this.keys.ArrowLeft) dx -= moveSpeed;
     if(this.keys.d||this.keys.ArrowRight) dx += moveSpeed;
 
-    // Interpolated movement
     pos.x += dx*smoothFactor;
     pos.z += dz*smoothFactor;
 
-    // Determine bounds
+    // Bounds per segment
     let bounds;
-    if(pos.z > -6.25) bounds = this.currentBounds; // current chosen path
-    else bounds = { xMin: -3.5, xMax: 3.5, zMin: -15, zMax: -6.25 }; // final horizontal + castle
+    if(pos.z > -6.25) bounds = this.currentBounds; // current chosen branch
+    else bounds = { xMin: -3.5, xMax: 3.5, zMin: -15, zMax: -6.25 }; // last horizontal + final vertical
 
     pos.x = Math.max(bounds.xMin, Math.min(bounds.xMax,pos.x));
     pos.z = Math.max(bounds.zMin, Math.min(bounds.zMax,pos.z));
@@ -148,29 +147,25 @@ AFRAME.registerComponent('player-movement', {
   }
 });
 
-// --- TREE SPAWNING ---
+// --- TREE SPAWNING BETWEEN BRANCHES ONLY ---
 const trees = document.getElementById('trees');
 const treeTypes = ['tree1','tree2','tree3','tree4'];
 
-function inPath(x,z){
-  const pathBounds = [
-    {x:0, z:[9,17]}, {x:[-3.5,3.5], z:[8,10]},
-    {x:-2.8, z:[-6,9]}, {x:0, z:[-6,9]}, {x:2.8, z:[-6,9]},
-    {x:[-3.5,3.5], z:[-7,-6]}, {x:0, z:[-15,-10]}
-  ];
-  return pathBounds.some(b=>{
-    if(Array.isArray(b.x)&&Array.isArray(b.z)) return x>=b.x[0]&&x<=b.x[1]&&z>=b.z[0]&&z<=b.z[1];
-    if(Array.isArray(b.x)) return x>=b.x[0]&&x<=b.x[1]&&z>=b.z[0]&&z<=b.z[1];
-    if(Array.isArray(b.z)) return Math.abs(x-b.x)<1 && z>=b.z[0]&&z<=b.z[1];
-  });
+function inBranchPaths(x,z){
+  // Avoid spawning on the three main paths
+  if((x>=-3.5 && x<=-2.0 && z>=-6.25 && z<=8.75) ||
+     (x>=-0.75 && x<=0.75 && z>=-6.25 && z<=8.75) ||
+     (x>=2.0 && x<=3.5 && z>=-6.25 && z<=8.75)) return true;
+  // Avoid last horizontal path
+  if(z>=-6.25 && z<=-5.25) return true;
+  return false;
 }
 
-// Scatter trees (more trees between paths)
-for(let i=0;i<200;i++){
-  let x = (Math.random()-0.5)*50;
-  let z = (Math.random()-0.5)*50;
-
-  if(inPath(x,z)) continue; // don't spawn on paths
+// More trees between branches
+for(let i=0;i<120;i++){
+  let x = (Math.random()-0.5)*8; // around 3 branches
+  let z = Math.random()*14-6; // from fork to last horizontal
+  if(inBranchPaths(x,z)) continue;
 
   let type = treeTypes[Math.floor(Math.random()*treeTypes.length)];
   let scale = 0.02 + Math.random()*0.02;
