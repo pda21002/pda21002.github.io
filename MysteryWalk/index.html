@@ -120,42 +120,14 @@ AFRAME.registerComponent('player-movement', {
         this.choiceMade = true;
         document.getElementById('forkMenu').setAttribute('visible', false);
 
-        // Block the 2 unchosen paths (entry & exit)
-        ['left', 'middle', 'right'].forEach(path => {
-          if (path !== choice) {
-            // --- Entry block ---
-// --- Entry block ---
-let entryBlock = document.createElement('a-box');
-entryBlock.setAttribute('id', path + '-entry-block');
-entryBlock.setAttribute('width', '1.5');
-entryBlock.setAttribute('height', '2');
-entryBlock.setAttribute('depth', '0.5');
-entryBlock.setAttribute('opacity', '0'); // invisible
-entryBlock.setAttribute('color', '#000');
-entryBlock.setAttribute('static-body', '');   // <--- ADD THIS
-
-if (path === 'left') entryBlock.setAttribute('position', '-2.8 0.5 8.5');
-if (path === 'middle') entryBlock.setAttribute('position', '0 0.5 8.5');
-if (path === 'right') entryBlock.setAttribute('position', '2.8 0.5 8.5');
-document.querySelector('a-scene').appendChild(entryBlock);
-
-// --- Exit block ---
-let exitBlock = document.createElement('a-box');
-exitBlock.setAttribute('id', path + '-exit-block');
-exitBlock.setAttribute('width', '1.5');
-exitBlock.setAttribute('height', '2');
-exitBlock.setAttribute('depth', '0.5');
-exitBlock.setAttribute('opacity', '0'); // invisible
-exitBlock.setAttribute('color', '#000');
-exitBlock.setAttribute('static-body', '');   // <--- ADD THIS
-
-if (path === 'left') exitBlock.setAttribute('position', '-2.8 0.5 -6.5');
-if (path === 'middle') exitBlock.setAttribute('position', '0 0.5 -6.5');
-if (path === 'right') exitBlock.setAttribute('position', '2.8 0.5 -6.5');
-document.querySelector('a-scene').appendChild(exitBlock);
-
-          }
-        });
+        // Update bounds so only the chosen path is accessible
+        if (choice === 'left') {
+          this.currentBounds = { xMin: -3.5, xMax: -1.5, zMin: -6.5, zMax: 8.75 };
+        } else if (choice === 'middle') {
+          this.currentBounds = { xMin: -0.75, xMax: 0.75, zMin: -6.5, zMax: 8.75 };
+        } else if (choice === 'right') {
+          this.currentBounds = { xMin: 1.5, xMax: 3.5, zMin: -6.5, zMax: 8.75 };
+        }
       });
     });
   },
@@ -183,15 +155,14 @@ document.querySelector('a-scene').appendChild(exitBlock);
     const right = new THREE.Vector3().crossVectors(new THREE.Vector3(0,1,0), camDir).normalize();
 
     let dx = 0, dz = 0;
- if (this.keys.ArrowUp) {
-  dx -= camDir.x * speed;
-  dz -= camDir.z * speed;
-}
-if (this.keys.ArrowDown) {
-  dx += camDir.x * speed;
-  dz += camDir.z * speed;
-}
-
+    if (this.keys.ArrowUp) {
+      dx -= camDir.x * speed;   // forward
+      dz -= camDir.z * speed;
+    }
+    if (this.keys.ArrowDown) {
+      dx += camDir.x * speed;   // backward
+      dz += camDir.z * speed;
+    }
     if (this.keys.ArrowLeft) {
       dx -= right.x * speed;
       dz -= right.z * speed;
@@ -204,13 +175,12 @@ if (this.keys.ArrowDown) {
     pos.x += dx;
     pos.z += dz;
 
-    // --- Bounds before fork ---
-    if (!this.choiceMade && pos.z > 8.75) {
-      pos.x = Math.max(this.currentBounds.xMin, Math.min(this.currentBounds.xMax, pos.x));
-      pos.z = Math.max(this.currentBounds.zMin, Math.min(this.currentBounds.zMax, pos.z));
-    }
+    // --- Apply bounds ---
+    pos.x = Math.max(this.currentBounds.xMin, Math.min(this.currentBounds.xMax, pos.x));
+    pos.z = Math.max(this.currentBounds.zMin, Math.min(this.currentBounds.zMax, pos.z));
 
     rig.setAttribute('position', pos);
+
   }
 });
 
