@@ -100,32 +100,32 @@ AFRAME.registerComponent('player-movement', {
     });
   },
 
-  tick: function(time, delta) {
+tick: function() {
     const rig = this.el;
     let pos = rig.getAttribute('position');
+    const speed = 0.015; // smaller base speed for smooth walking
 
-    const speed = 0.05 * (delta/16); // scale speed by delta for smoothness
-
-    // Check fork freeze
+    // Check if we should freeze at fork
     if (!this.choiceMade && pos.z <= 8.75) {
-      this.frozen = true;
-      pos.z = Math.min(pos.z, 8.75); // clamp to fork line
-      rig.setAttribute('position', pos);
-      rig.setAttribute('rotation', '0 0 0');
-      document.getElementById('forkMenu').setAttribute('visible', true);
-      return; // freeze prevents movement below
+        this.frozen = true;
+        pos.z = 8.75; // clamp to fork line
+        rig.setAttribute('position', pos);
+        rig.setAttribute('rotation', '0 0 0'); // face fork straight ahead
+        document.getElementById('forkMenu').setAttribute('visible', true);
+        return; // stop tick, player can't move
     }
 
     if (!this.frozen) {
-      if (this.keys.w || this.keys.ArrowUp) pos.z -= speed;
-      if (this.keys.s || this.keys.ArrowDown) pos.z += speed;
-      if (this.keys.a || this.keys.ArrowLeft) pos.x -= speed;
-      if (this.keys.d || this.keys.ArrowRight) pos.x += speed;
+        // Apply movement
+        if (this.keys.w || this.keys.ArrowUp) pos.z -= speed;
+        if (this.keys.s || this.keys.ArrowDown) pos.z += speed;
+        if (this.keys.a || this.keys.ArrowLeft) pos.x -= speed;
+        if (this.keys.d || this.keys.ArrowRight) pos.x += speed;
 
-      rig.setAttribute('position', pos);
+        rig.setAttribute('position', pos);
     }
-  }
-});
+};
+
 
   </script>
 
