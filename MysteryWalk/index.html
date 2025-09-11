@@ -7,6 +7,9 @@
 
   <!-- Assets -->
   <a-assets>
+    <img id="groundTexture" src="assets/grass.jpg">
+    <img id="pathTexture" src="assets/stone.png">
+
     <a-asset-item id="tree1" src="assets/giant_oak_tree_voxel.glb"></a-asset-item>
     <a-asset-item id="tree2" src="assets/kapok_tree_voxel.glb"></a-asset-item>
     <a-asset-item id="tree3" src="assets/sequoia_redwood_tree_voxel.glb"></a-asset-item>
@@ -14,103 +17,134 @@
   </a-assets>
 
   <!-- Ground -->
-  <a-plane rotation="-90 0 0" width="50" height="50" material="color: #3a7d0d"></a-plane>
+  <a-plane rotation="-90 0 0" width="50" height="50" material="repeat: 20 20; shader: flat; src: #groundTexture"></a-plane>
 
-  <!-- Fork menu (HUD) -->
+  <!-- Paths -->
+  <a-box width="1.5" height="0.05" depth="8" position="0 0.025 12.75" material="repeat: 1 4; shader: flat; src: #pathTexture"></a-box>
+  <a-box width="7" height="0.05" depth="1.5" position="0 0.039 8.75" material="repeat: 7 1; shader: flat; src: #pathTexture"></a-box>
+  <a-box class="left-branch" width="1.5" height="0.05" depth="14" position="-2.766 0.025 1.009" material="repeat: 1 7; shader: flat; src: #pathTexture"></a-box>
+  <a-box class="middle-branch" width="1.5" height="0.05" depth="14" position="0 0.025 1.038" material="repeat: 1 7; shader: flat; src: #pathTexture"></a-box>
+  <a-box class="right-branch" width="1.5" height="0.05" depth="14" position="2.737 0.025 1.013" material="repeat: 1 7; shader: flat; src: #pathTexture"></a-box>
+  <a-box width="7" height="0.05" depth="1.5" position="0 0.031 -6.25" material="repeat: 7 1; shader: flat; src: #pathTexture"></a-box>
+  <a-box width="1.5" height="0.05" depth="8" position="0 0.025 -10.75" material="repeat: 1 4; shader: flat; src: #pathTexture"></a-box>
+
+  <!-- Fork menu -->
   <a-entity id="forkMenu" visible="false" position="0 1.5 8">
     <a-box class="fork-menu-button" data-choice="left" position="-2 0 0" width="1" height="0.5" depth="0.2" color="blue"></a-box>
     <a-box class="fork-menu-button" data-choice="middle" width="1" height="0.5" depth="0.2" color="yellow"></a-box>
     <a-box class="fork-menu-button" data-choice="right" position="2 0 0" width="1" height="0.5" depth="0.2" color="red"></a-box>
   </a-entity>
 
+  <!-- Castle -->
+  <a-box id="castle" position="0 0.5 -15" width="2" height="2" depth="2" color="gold"></a-box>
+
   <!-- Player -->
   <a-entity id="rig" player-movement>
-    <a-camera position="0 2 16" rotation="-10 0 0"></a-camera>
+    <a-camera position="0 1.5 16"></a-camera>
   </a-entity>
 
   <!-- Tree container -->
   <a-entity id="trees"></a-entity>
 
-  <script>
-    const trees = document.getElementById('trees');
-    const treeTypes = ['tree1','tree2','tree3','tree4'];
+<script>
+const treeTypes = ['tree1','tree2','tree3','tree4'];
+const trees = document.getElementById('trees');
 
-    // Define paths to avoid
-    function inPath(x,z){
-      const paths = [
-        {x:[-0.75,0.75], z:[8.5,17]},      // vertical intro
-        {x:[-3,-2], z:[-10,8.75]},         // left branch
-        {x:[-0.75,0.75], z:[-10,8.75]},    // middle branch
-        {x:[2,3], z:[-10,8.75]},           // right branch
-        {x:[-3.5,3.5], z:[-15,-10]}        // path to castle
-      ];
-      return paths.some(p => x>=p.x[0] && x<=p.x[1] && z>=p.z[0] && z<=p.z[1]);
-    }
+// Function to check if a position is inside any path
+function inPath(x,z){
+  const paths = [
+    {x:[-0.75,0.75], z:[8.5,17]},   // vertical intro
+    {x:[-3,-2], z:[-10,8.75]},      // left branch
+    {x:[-0.75,0.75], z:[-10,8.75]}, // middle branch
+    {x:[2,3], z:[-10,8.75]},        // right branch
+    {x:[-3.5,3.5], z:[-15,-10]}     // final straight
+  ];
+  return paths.some(p => x>=p.x[0] && x<=p.x[1] && z>=p.z[0] && z<=p.z[1]);
+}
 
-    // Scatter trees (around paths, not on them)
-    for(let i=0;i<150;i++){
-      let x=(Math.random()-0.5)*50;
-      let z=(Math.random()-0.5)*50;
-      if(inPath(x,z)) continue;
+// Scatter trees
+for(let i=0;i<200;i++){
+  let x=(Math.random()-0.5)*50;
+  let z=(Math.random()-0.5)*50;
+  if(inPath(x,z)) continue;
 
-      const type = treeTypes[Math.floor(Math.random()*treeTypes.length)];
-      let scale = 0.01 + Math.random()*0.02;
-      if(type==='tree4') scale *= 30;
-      let rotY = Math.random()*360;
+  const type = treeTypes[Math.floor(Math.random()*treeTypes.length)];
+  let scale = 0.01 + Math.random()*0.02;
+  if(type==='tree4') scale *= 30;
+  let rotY = Math.random()*360;
 
-      let tree = document.createElement('a-entity');
-      tree.setAttribute('gltf-model', `#${type}`);
-      tree.setAttribute('position', `${x} 0 ${z}`);
-      tree.setAttribute('scale', `${scale} ${scale} ${scale}`);
-      tree.setAttribute('rotation', `0 ${rotY} 0`);
-      trees.appendChild(tree);
-    }
+  let tree = document.createElement('a-entity');
+  tree.setAttribute('gltf-model', `#${type}`);
+  tree.setAttribute('position', `${x} 0 ${z}`);
+  tree.setAttribute('scale', `${scale} ${scale} ${scale}`);
+  tree.setAttribute('rotation', `0 ${rotY} 0`);
+  trees.appendChild(tree);
+}
 
-    // Player movement component
-    AFRAME.registerComponent('player-movement', {
-      init: function() {
-        this.keys = { w:false, a:false, s:false, d:false, ArrowUp:false, ArrowDown:false, ArrowLeft:false, ArrowRight:false };
-        this.choiceMade = false;
-        this.frozen = false;
+// --- Player movement ---
+AFRAME.registerComponent('player-movement', {
+  init: function(){
+    this.keys = {w:false,a:false,s:false,d:false,ArrowUp:false,ArrowDown:false,ArrowLeft:false,ArrowRight:false};
+    this.choiceMade = false;
+    this.frozen = false;
+    this.currentBounds = {xMin:-0.75,xMax:0.75,zMin:-15,zMax:16.75};
 
-        const rig = this.el;
-        window.addEventListener('keydown', e => { if(this.keys[e.key]!==undefined) this.keys[e.key]=true; });
-        window.addEventListener('keyup', e => { if(this.keys[e.key]!==undefined) this.keys[e.key]=false; });
+    const rig = this.el;
 
-        document.querySelectorAll('.fork-menu-button').forEach(btn => {
-          btn.addEventListener('click', () => {
-            this.choiceMade = true;
-            this.frozen = false;
-            document.getElementById('forkMenu').setAttribute('visible', false);
-          });
+    window.addEventListener('keydown', e => { if(this.keys[e.key]!==undefined) this.keys[e.key]=true; });
+    window.addEventListener('keyup', e => { if(this.keys[e.key]!==undefined) this.keys[e.key]=false; });
+
+    document.querySelectorAll('.fork-menu-button').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        const choice = btn.getAttribute('data-choice');
+        this.choiceMade = true;
+        document.getElementById('forkMenu').setAttribute('visible', false);
+
+        if(choice==='left') this.currentBounds = {xMin:-3,xMax:-2,zMin:-10,zMax:8.75};
+        else if(choice==='middle') this.currentBounds = {xMin:-0.75,xMax:0.75,zMin:-10,zMax:8.75};
+        else if(choice==='right') this.currentBounds = {xMin:2,xMax:3,zMin:-10,zMax:8.75};
+
+        // Block unchosen paths with invisible walls
+        ['left','middle','right'].forEach(path=>{
+          if(path!==choice){
+            const wall = document.createElement('a-box');
+            wall.setAttribute('position', path==='left'?'-2.8 1 8.75':path==='right'?'2.8 1 8.75':'0 1 8.75');
+            wall.setAttribute('width','1.5'); wall.setAttribute('height','2'); wall.setAttribute('depth','0.5');
+            wall.setAttribute('opacity','0'); wall.setAttribute('color','#000');
+            document.querySelector('a-scene').appendChild(wall);
+          }
         });
-      },
-
-      tick: function() {
-        const rig = this.el;
-        let pos = rig.getAttribute('position');
-        const speed = 0.015;
-
-        // Freeze at fork until choice made
-        if(!this.choiceMade && pos.z <= 8.75){
-          this.frozen = true;
-          pos.z = 8.75;
-          rig.setAttribute('position', pos);
-          rig.setAttribute('rotation', '0 0 0');
-          document.getElementById('forkMenu').setAttribute('visible', true);
-          return;
-        }
-
-        if(!this.frozen){
-          if(this.keys.w || this.keys.ArrowUp) pos.z -= speed;
-          if(this.keys.s || this.keys.ArrowDown) pos.z += speed;
-          if(this.keys.a || this.keys.ArrowLeft) pos.x -= speed;
-          if(this.keys.d || this.keys.ArrowRight) pos.x += speed;
-          rig.setAttribute('position', pos);
-        }
-      }
+      });
     });
-  </script>
+  },
+
+  tick: function(){
+    const rig = this.el;
+    let pos = rig.getAttribute('position');
+    const speed = 0.015;
+
+    // Freeze at fork until choice made
+    if(!this.choiceMade && pos.z<=8.75){
+      pos.z=8.75;
+      rig.setAttribute('position',pos);
+      document.getElementById('forkMenu').setAttribute('visible', true);
+      return;
+    }
+
+    // Move
+    if(this.keys.w || this.keys.ArrowUp) pos.z -= speed;
+    if(this.keys.s || this.keys.ArrowDown) pos.z += speed;
+    if(this.keys.a || this.keys.ArrowLeft) pos.x -= speed;
+    if(this.keys.d || this.keys.ArrowRight) pos.x += speed;
+
+    // Clamp to bounds
+    pos.x = Math.max(this.currentBounds.xMin, Math.min(this.currentBounds.xMax,pos.x));
+    pos.z = Math.max(this.currentBounds.zMin, Math.min(this.currentBounds.zMax,pos.z));
+
+    rig.setAttribute('position',pos);
+  }
+});
+</script>
 
 </a-scene>
 </body>
