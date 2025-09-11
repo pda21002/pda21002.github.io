@@ -72,9 +72,10 @@
          width="2" height="2" depth="2" color="gold"></a-box>
 
   <!-- Player -->
-  <a-entity id="rig" position="0 0.5 16" player-movement="">
-    <a-entity camera look-controls></a-entity>
-  </a-entity>
+<a-entity id="rig" position="0 0.5 16" player-movement="movementMode: camera">
+  <a-entity camera look-controls></a-entity>
+</a-entity>
+
 
   <!-- Tree placeholders -->
   <a-entity id="trees"></a-entity>
@@ -85,50 +86,83 @@
 <!-- Single script at the end -->
 <script>
 AFRAME.registerComponent('player-movement', {
+  schema: {
+    // 'world' (default) -> arrow keys / WASD move along world X/Z axes
+    // 'camera' -> arrow keys / WASD move relative to camera forward/right
+    movementMode: { type: 'string', default: 'world' }
+  },
+
   init: function() {
     const rig = this.el;
 
-    // Fork paths bounds
+    // initial bounds before choice (allows player to move up to the fork)
     this.currentBounds = { xMin: -0.75, xMax: 0.75, zMin: -15, zMax: 16.75 };
     this.choiceMade = false;
 
+    // normalized key map (all lowercase)
     this.keys = {
-      w:false, a:false, s:false, d:false,
-      ArrowUp:false, ArrowDown:false, ArrowLeft:false, ArrowRight:false
+      w: false, a: false, s: false, d: false,
+      arrowup: false, arrowdown: false, arrowleft: false, arrowright: false
     };
 
-    // Key events
-    window.addEventListener('keydown', e => { if(this.keys[e.key]!==undefined) this.keys[e.key]=true; });
-    window.addEventListener('keyup', e => { if(this.keys[e.key]!==undefined) this.keys[e.key]=false; });
+    // Key handlers (normalize to lowercase: 'arrowup' / 'w' / 'a' etc.)
+    window.addEventListener('keydown', (e) => {
+      const k = (e.key || '').toLowerCase();
+      if (k in this.keys) {
+        this.keys[k] = true;
+        e.preventDefault(); // prevent page scrolling / default behavior
+      }
+    });
+    window.addEventListener('keyup', (e) => {
+      const k = (e.key || '').toLowerCase();
+      if (k in this.keys) {
+        this.keys[k] = false;
+        e.preventDefault();
+      }
+    });
 
-    // Fork menu clicks
+    // Fork menu clicks: lock a corridor for the chosen path and block the others (entry + exit)
     document.querySelectorAll('.fork-menu-button').forEach(btn => {
       btn.addEventListener('click', () => {
+        if (this.choiceMade) return; // ignore extra clicks
         const choice = btn.getAttribute('data-choice');
         this.choiceMade = true;
         document.getElementById('forkMenu').setAttribute('visible', false);
 
-        // Tight bounds for each path
-        if(choice==='left'){
-          this.currentBounds = {xMin:-3.0, xMax:-2.0, zMin:-10, zMax:8.75};
-        } else if(choice==='middle'){
-          this.currentBounds = {xMin:-0.75, xMax:0.75, zMin:-10, zMax:8.75};
-        } else if(choice==='right'){
-          this.currentBounds = {xMin:2.0, xMax:3.0, zMin:-10, zMax:8.75};
+        // Expand the chosen corridor all the way to the castle (zMin:-15 allows reaching the castle)
+        if (choice === 'left') {
+          this.currentBounds = { xMin: -3.0, xMax: -2.0, zMin: -15, zMax: 8.75 };
+        } else if (choice === 'middle') {
+          this.currentBounds = { xMin: -0.75, xMax: 0.75, zMin: -15, zMax: 8.75 };
+        } else if (choice === 'right') {
+          this.currentBounds = { xMin: 2.0, xMax: 3.0, zMin: -15, zMax: 8.75 };
         }
 
-        // Invisible walls for unchosen paths
-        ['left','middle','right'].forEach(path => {
-          if(path !== choice){
-            let wall = document.createElement('a-box');
-            wall.setAttribute('position', path==='left'?'-2.8 0.5 8.5':path==='right'?'2.8 0.5 8.5':'0 0.5 8.5');
-            wall.setAttribute('width','1.5');
-            wall.setAttribute('height','2');
-            wall.setAttribute('depth','0.5');
-            wall.setAttribute('opacity','0');
-            wall.setAttribute('color','#000');
-            document.querySelector('a-scene').appendChild(wall);
-          }
+        // Add invisible blocking walls for unchosen paths (both entry and exit)
+        const scene = document.querySelector('a-scene');
+        const pathX = { left: -2.8, middle: 0, right: 2.8 };
+
+        ['left', 'middle', 'right'].forEach(path => {
+          if (path === choice) return;
+          // entry wall (front)
+          const entryWall = document.createElement('a-box');
+          entryWall.setAttribute('position', `${pathX[path]} 1 8.5`); // front of branch
+          entryWall.setAttribute('width', '1.5');
+          entryWall.setAttribute('height', '2');
+          entryWall.setAttribute('depth', '0.5');
+          entryWall.setAttribute('opacity', '0');
+          entryWall.setAttribute('class', 'invisible-block');
+          scene.appendChild(entryWall);
+
+          // exit wall (back)
+          const exitWall = document.createElement('a-box');
+          exitWall.setAttribute('position', `${pathX[path]} 1 -6.5`); // back of branch
+          exitWall.setAttribute('width', '1.5');
+          exitWall.setAttribute('height', '2');
+          exitWall.setAttribute('depth', '0.5');
+          exitWall.setAttribute('opacity', '0');
+          exitWall.setAttribute('class', 'invisible-block');
+          scene.appendChild(exitWall);
         });
       });
     });
@@ -136,39 +170,78 @@ AFRAME.registerComponent('player-movement', {
 
   tick: function() {
     const rig = this.el;
-    let pos = rig.getAttribute('position');
+    const rigObj = rig.object3D;
     const speed = 0.03;
 
-    // Show fork menu at fork
-    if(!this.choiceMade && pos.z <= 8.75){
+    // position as three.js vector (faster and avoids attribute overhead)
+    const pos = rigObj.position;
+
+    // Show fork menu at fork: force player's z to fork line until choice is made
+    if (!this.choiceMade && pos.z <= 8.75) {
       pos.z = 8.75;
-      rig.setAttribute('position', pos);
+      rigObj.position.copy(pos);
       document.getElementById('forkMenu').setAttribute('visible', true);
       return;
     }
 
-    // Move player (world coordinates, arrows always consistent)
-    if(this.keys.w || this.keys.ArrowUp) pos.z -= speed;
-    if(this.keys.s || this.keys.ArrowDown) pos.z += speed;
-    if(this.keys.a || this.keys.ArrowLeft) pos.x -= speed;
-    if(this.keys.d || this.keys.ArrowRight) pos.x += speed;
+    // movement delta to apply this frame
+    let dx = 0, dz = 0;
 
-    // Bounds
-    let bounds;
-    if(pos.z > -6){ // before last horizontal line
-      bounds = this.currentBounds; // tight per choice
-    } else { // last horizontal line + path to castle
-      bounds = { xMin: -3.5, xMax: 3.5, zMin: -15, zMax: 8.75 }; // merge all paths
+    if (this.data.movementMode === 'camera') {
+      // camera-relative movement
+      const cameraEl = rig.querySelector('[camera]');
+      if (cameraEl) {
+        const dir = new AFRAME.THREE.Vector3();
+        cameraEl.object3D.getWorldDirection(dir); // forward vector
+        dir.y = 0; // ignore vertical
+        dir.normalize();
+
+        // compute right vector (world-up x forward)
+        const right = new AFRAME.THREE.Vector3();
+        right.crossVectors(new AFRAME.THREE.Vector3(0, 1, 0), dir).normalize();
+
+        if (this.keys.w || this.keys.arrowup) { dx += dir.x * speed; dz += dir.z * speed; }
+        if (this.keys.s || this.keys.arrowdown) { dx -= dir.x * speed; dz -= dir.z * speed; }
+        if (this.keys.a || this.keys.arrowleft) { dx -= right.x * speed; dz -= right.z * speed; }
+        if (this.keys.d || this.keys.arrowright) { dx += right.x * speed; dz += right.z * speed; }
+      }
+    } else {
+      // world-relative movement (default) — Up always decreases z in world coords
+      if (this.keys.w || this.keys.arrowup) dz -= speed;
+      if (this.keys.s || this.keys.arrowdown) dz += speed;
+      if (this.keys.a || this.keys.arrowleft) dx -= speed;
+      if (this.keys.d || this.keys.arrowright) dx += speed;
     }
 
+    // apply movement
+    pos.x += dx;
+    pos.z += dz;
+
+    // Determine bounds.
+    // IMPORTANT: once a choice has been made, keep using the chosen path bounds for ALL z
+    // so the other paths remain out of limits entirely (cannot enter from entry or exit).
+    let bounds;
+    if (this.choiceMade) {
+      bounds = this.currentBounds;
+    } else {
+      // before choice, keep the earlier behavior where final area merges paths
+      if (pos.z > -6) {
+        bounds = this.currentBounds;
+      } else {
+        bounds = { xMin: -3.5, xMax: 3.5, zMin: -15, zMax: 8.75 };
+      }
+    }
+
+    // clamp to bounds
     pos.x = Math.max(bounds.xMin, Math.min(bounds.xMax, pos.x));
     pos.z = Math.max(bounds.zMin, Math.min(bounds.zMax, pos.z));
 
-    rig.setAttribute('position', pos);
+    // write back
+    rigObj.position.copy(pos);
   }
 });
 
-// --- Tree scattering ---
+// --- Tree scattering (unchanged except kept here) ---
 const trees = document.getElementById('trees');
 const treeTypes = ['tree1','tree2','tree3','tree4'];
 
@@ -187,7 +260,7 @@ function inPath(x,z){
 }
 
 // Scatter trees
-for(let i=0; i<150; i++){  // <-- increase number here for more trees
+for(let i=0; i<150; i++){
   let x = (Math.random()-0.5)*50;
   let z = (Math.random()-0.5)*50;
   if(inPath(x,z)) continue;
@@ -205,6 +278,7 @@ for(let i=0; i<150; i++){  // <-- increase number here for more trees
   trees.appendChild(tree);
 }
 </script>
+
 
 
 
