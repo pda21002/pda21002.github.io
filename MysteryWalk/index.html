@@ -2,6 +2,8 @@
   
 <head>
   <script src="https://aframe.io/releases/1.7.0/aframe.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/aframe-physics-system@4.0.1/dist/aframe-physics-system.min.js"></script>
+
 </head>
 
   <body>
@@ -72,9 +74,11 @@
          width="2" height="2" depth="2" color="gold"></a-box>
 
   <!-- Player -->
-<a-entity id="rig" position="0 0.5 16" player-movement="movementMode: camera">
+<a-entity id="rig" position="0 0.5 16" player-movement
+          kinematic-body>
   <a-entity camera look-controls></a-entity>
 </a-entity>
+
 
 
   <!-- Tree placeholders -->
@@ -120,32 +124,36 @@ AFRAME.registerComponent('player-movement', {
         ['left', 'middle', 'right'].forEach(path => {
           if (path !== choice) {
             // --- Entry block ---
-            let entryBlock = document.createElement('a-box');
-            entryBlock.setAttribute('id', path + '-entry-block');
-            entryBlock.setAttribute('width', '1.5');
-            entryBlock.setAttribute('height', '2');
-            entryBlock.setAttribute('depth', '0.5');
-            entryBlock.setAttribute('opacity', '0'); // invisible
-            entryBlock.setAttribute('color', '#000');
+// --- Entry block ---
+let entryBlock = document.createElement('a-box');
+entryBlock.setAttribute('id', path + '-entry-block');
+entryBlock.setAttribute('width', '1.5');
+entryBlock.setAttribute('height', '2');
+entryBlock.setAttribute('depth', '0.5');
+entryBlock.setAttribute('opacity', '0'); // invisible
+entryBlock.setAttribute('color', '#000');
+entryBlock.setAttribute('static-body', '');   // <--- ADD THIS
 
-            if (path === 'left') entryBlock.setAttribute('position', '-2.8 0.5 8.5');
-            if (path === 'middle') entryBlock.setAttribute('position', '0 0.5 8.5');
-            if (path === 'right') entryBlock.setAttribute('position', '2.8 0.5 8.5');
-            document.querySelector('a-scene').appendChild(entryBlock);
+if (path === 'left') entryBlock.setAttribute('position', '-2.8 0.5 8.5');
+if (path === 'middle') entryBlock.setAttribute('position', '0 0.5 8.5');
+if (path === 'right') entryBlock.setAttribute('position', '2.8 0.5 8.5');
+document.querySelector('a-scene').appendChild(entryBlock);
 
-            // --- Exit block ---
-            let exitBlock = document.createElement('a-box');
-            exitBlock.setAttribute('id', path + '-exit-block');
-            exitBlock.setAttribute('width', '1.5');
-            exitBlock.setAttribute('height', '2');
-            exitBlock.setAttribute('depth', '0.5');
-            exitBlock.setAttribute('opacity', '0'); // invisible
-            exitBlock.setAttribute('color', '#000');
+// --- Exit block ---
+let exitBlock = document.createElement('a-box');
+exitBlock.setAttribute('id', path + '-exit-block');
+exitBlock.setAttribute('width', '1.5');
+exitBlock.setAttribute('height', '2');
+exitBlock.setAttribute('depth', '0.5');
+exitBlock.setAttribute('opacity', '0'); // invisible
+exitBlock.setAttribute('color', '#000');
+exitBlock.setAttribute('static-body', '');   // <--- ADD THIS
 
-            if (path === 'left') exitBlock.setAttribute('position', '-2.8 0.5 -6.5');
-            if (path === 'middle') exitBlock.setAttribute('position', '0 0.5 -6.5');
-            if (path === 'right') exitBlock.setAttribute('position', '2.8 0.5 -6.5');
-            document.querySelector('a-scene').appendChild(exitBlock);
+if (path === 'left') exitBlock.setAttribute('position', '-2.8 0.5 -6.5');
+if (path === 'middle') exitBlock.setAttribute('position', '0 0.5 -6.5');
+if (path === 'right') exitBlock.setAttribute('position', '2.8 0.5 -6.5');
+document.querySelector('a-scene').appendChild(exitBlock);
+
           }
         });
       });
@@ -175,14 +183,15 @@ AFRAME.registerComponent('player-movement', {
     const right = new THREE.Vector3().crossVectors(new THREE.Vector3(0,1,0), camDir).normalize();
 
     let dx = 0, dz = 0;
-    if (this.keys.ArrowUp) {
-      dx += camDir.x * speed;
-      dz += camDir.z * speed;
-    }
-    if (this.keys.ArrowDown) {
-      dx -= camDir.x * speed;
-      dz -= camDir.z * speed;
-    }
+ if (this.keys.ArrowUp) {
+  dx -= camDir.x * speed;
+  dz -= camDir.z * speed;
+}
+if (this.keys.ArrowDown) {
+  dx += camDir.x * speed;
+  dz += camDir.z * speed;
+}
+
     if (this.keys.ArrowLeft) {
       dx -= right.x * speed;
       dz -= right.z * speed;
