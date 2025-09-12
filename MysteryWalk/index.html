@@ -56,7 +56,7 @@
   <a-entity id="trees"></a-entity>
 
   <!-- Goblin (right path) -->
-  <a-entity id="goblinEntity" gltf-model="#goblin" position="3 0 7" scale="0.02 0.02 0.02"
+  <a-entity gltf-model="#goblin" position="3 0 7" scale="1 1 1"
             goblin-behavior></a-entity>
 
   <script>
@@ -131,7 +131,7 @@
 AFRAME.registerComponent('goblin-behavior', {
   init: function() {
     this.state = 'idle';          // initial state
-    this.speed = 0.03;            // walking speed
+    this.speed = 0.01;            // walking speed
     this.walkLimit = 7;           // max distance into forest before player loses
 
     // No animation for idle (static pose)
@@ -153,7 +153,7 @@ AFRAME.registerComponent('goblin-behavior', {
     if (this.state === 'idle' && dist < 3) {
       this.state = 'walking';
       goblin.setAttribute('rotation', '0 90 0'); // face right
-      goblin.setAttribute('animation-mixer', { clip: 'animation.goblin.walk', loop: 'repeat' });
+      goblin.setAttribute('animation-mixer', { clip: 1, loop: 'repeat' });
     }
 
     // Move goblin if walking
