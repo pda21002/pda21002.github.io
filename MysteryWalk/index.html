@@ -13,7 +13,6 @@
     <a-asset-item id="tree2" src="assets/kapok_tree_voxel.glb"></a-asset-item>
     <a-asset-item id="tree3" src="assets/sequoia_redwood_tree_voxel.glb"></a-asset-item>
     <a-asset-item id="tree4" src="assets/voxel_models.glb"></a-asset-item>
-    <!-- Goblin GLB with idle and walk animations -->
     <a-asset-item id="goblin" src="assets/goblin_mob.glb"></a-asset-item>
   </a-assets>
 
@@ -21,7 +20,7 @@
   <a-plane rotation="-90 0 0" width="50" height="50"
            material="repeat: 20 20; shader: flat; src: #groundTexture"></a-plane>
 
-  <!-- Paths (unchanged) -->
+  <!-- Paths -->
   <a-box width="1.5" height="0.05" depth="8" position="0 0.025 12.75"
          material="repeat: 1 4; shader: flat; src: #pathTexture"></a-box>
   <a-box width="7" height="0.05" depth="1.5" position="0 0.03943 8.75"
@@ -56,15 +55,13 @@
   <a-entity id="trees"></a-entity>
 
   <!-- Goblin (right path) -->
-  <a-entity gltf-model="#goblin" position="3 0 7" scale="1 1 1"
+  <a-entity gltf-model="#goblin" position="3 0 6" scale="0.3 0.3 0.3"
             goblin-behavior></a-entity>
 
-  <script>
-  // --- Player Movement (unchanged from previous working version) ---
+<script>
+  // --- Player Movement ---
   AFRAME.registerComponent('player-movement', {
     init: function () {
-      const rig = this.el;
-      this.currentBounds = { xMin:-0.75, xMax:0.75, zMin:-15, zMax:16.75 };
       this.choiceMade = false;
       this.chosenPath = null;
       this.keys = { ArrowUp:false, ArrowDown:false, ArrowLeft:false, ArrowRight:false };
@@ -88,6 +85,7 @@
       let pos = rig.getAttribute('position');
       const speed = 0.025;
 
+      // Fork menu trigger
       if(!this.choiceMade && pos.z <= 8.75){
         pos.z = 8.75;
         rig.setAttribute('position', pos);
@@ -110,6 +108,7 @@
 
       pos.x += dx; pos.z += dz;
 
+      // --- Bounds only for unchosen paths ---
       let bounds;
       if(!this.choiceMade){
         bounds={xMin:-0.75,xMax:0.75,zMin:-15,zMax:16.75};
@@ -118,59 +117,64 @@
         if(this.chosenPath==='middle') bounds={xMin:-0.75,xMax:0.75,zMin:-6.25,zMax:8.75};
         if(this.chosenPath==='right') bounds={xMin:2.2,xMax:3.2,zMin:-6.25,zMax:8.75};
       } else {
-        bounds={xMin:-3.5,xMax:3.5,zMin:-15,zMax:16.75};
+        bounds=null; // fully free roaming
       }
 
-      pos.x = Math.max(bounds.xMin, Math.min(bounds.xMax,pos.x));
-      pos.z = Math.max(bounds.zMin, Math.min(bounds.zMax,pos.z));
+      if(bounds){
+        pos.x = Math.max(bounds.xMin, Math.min(bounds.xMax,pos.x));
+        pos.z = Math.max(bounds.zMin, Math.min(bounds.zMax,pos.z));
+      }
+
       rig.setAttribute('position', pos);
     }
   });
 
   // --- Goblin Behavior ---
-AFRAME.registerComponent('goblin-behavior', {
-  init: function() {
-    this.state = 'idle';          // initial state
-    this.speed = 0.01;            // walking speed
-    this.walkLimit = 7;           // max distance into forest before player loses
+  AFRAME.registerComponent('goblin-behavior', {
+    init: function() {
+      this.state = 'idle';
+      this.speed = 0.01;
+      this.walkLimit = 7;
+    },
+    tick: function(){
+      const goblin = this.el;
+      const rig = document.getElementById('rig');
+      const gobPos = goblin.getAttribute('position');
+      const rigPos = rig.getAttribute('position');
 
-    // No animation for idle (static pose)
-    // Walking animation will be triggered later
-  },
+      const dx = rigPos.x - gobPos.x;
+      const dz = rigPos.z - gobPos.z;
+      const dist = Math.sqrt(dx*dx + dz*dz);
 
-  tick: function() {
-    const goblin = this.el;
-    const rig = document.getElementById('rig');
-    const gobPos = goblin.getAttribute('position');
-    const rigPos = rig.getAttribute('position');
+      // Face player while idle
+      if(this.state==='idle'){
+        const angle = Math.atan2(dx,dz) * (180/Math.PI);
+        goblin.setAttribute('rotation', `0 ${angle} 0`);
+      }
 
-    // Distance from player
-    const dx = rigPos.x - gobPos.x;
-    const dz = rigPos.z - gobPos.z;
-    const dist = Math.sqrt(dx*dx + dz*dz);
+      // Start walking when close
+      if(this.state==='idle' && dist < 3){
+        this.state='walking';
+        goblin.setAttribute('animation-mixer', { clip: 1, loop: 'repeat' }); // animation index 1
+      }
 
-    // Trigger walking when player is close
-    if (this.state === 'idle' && dist < 3) {
-      this.state = 'walking';
-      goblin.setAttribute('rotation', '0 90 0'); // face right
-      goblin.setAttribute('animation-mixer', { clip: 1, loop: 'repeat' });
-    }
+      // Move goblin forward in its facing direction
+      if(this.state==='walking'){
+        const rotY = goblin.getAttribute('rotation').y * (Math.PI/180);
+        gobPos.x += Math.sin(rotY) * this.speed;
+        gobPos.z += Math.cos(rotY) * this.speed;
+        goblin.setAttribute('position', gobPos);
 
-    // Move goblin if walking
-    if (this.state === 'walking') {
-      gobPos.x += this.speed;
-      goblin.setAttribute('position', gobPos);
-
-        // Lose condition if player goes too deep
-const pathX = 2.75; // center of right path
-if (Math.abs(rigPos.x - pathX) > this.walkLimit) {
-  console.log("GAME OVER: You got lost in the forest!");
-}
+        // Check "lost in forest" condition
+        const pathX = 2.75;
+        if(Math.abs(rigPos.x - pathX) > this.walkLimit){
+          console.log("GAME OVER: You got lost in the forest!");
+        }
       }
     }
   });
 
-  // --- Tree scattering (unchanged from working version) ---
+  // --- Tree scattering ---
   const trees=document.getElementById('trees');
   const treeTypes=['tree1','tree2','tree3','tree4'];
   const branchTreeTypes=['tree1','tree2','tree3'];
@@ -219,9 +223,9 @@ if (Math.abs(rigPos.x - pathX) > this.walkLimit) {
     tree.setAttribute('rotation',`0 ${rotY} 0`);
     trees.appendChild(tree);
   }
-
-  </script>
+</script>
 
 </a-scene>
 </body>
 </html>
+
