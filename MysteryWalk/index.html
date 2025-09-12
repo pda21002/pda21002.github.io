@@ -153,14 +153,14 @@
   }
 
   // General trees
-  for(let i=0; i<300; i++){
+  for(let i=0; i<380; i++){
     let x=(Math.random()-0.5)*50;
     let z=(Math.random()-0.5)*50;
     if(inPath(x,z)) continue;
     const type = treeTypes[Math.floor(Math.random()*treeTypes.length)];
     let scale = 0.01 + Math.random()*0.01;
-    if(type==='tree4') scale*=30;
-    if(type==='tree3') scale*=3;
+    if(type==='tree4') scale*=35;
+    if(type==='tree3') scale*=4;
     const rotY=Math.random()*360;
     let tree=document.createElement('a-entity');
     tree.setAttribute('gltf-model', `#${type}`);
@@ -171,7 +171,7 @@
   }
 
   // Trees densely between branches
- for (let i = 0; i < 100; i++) {
+ for (let i = 0; i < 150; i++) {
   let x, z;
   z = -6 + Math.random() * 14;
 
@@ -185,9 +185,8 @@
   }
 
 const type = branchTreeTypes[Math.floor(Math.random()*branchTreeTypes.length)];
-  let scale = 0.011 + Math.random() * 0.011;
-  if (type === 'tree4') scale *= 20;
-  if (type === 'tree3') scale *= 3;
+  let scale = 0.01 + Math.random() * 0.01;
+  if (type === 'tree3') scale *= 4;
   const rotY = Math.random() * 360;
 
   let tree = document.createElement('a-entity');
