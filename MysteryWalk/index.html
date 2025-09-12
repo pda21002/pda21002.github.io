@@ -56,7 +56,7 @@
   <a-entity id="trees"></a-entity>
 
   <!-- Goblin at end of right path (slightly left) -->
-  <a-entity id="goblin" gltf-model="#goblin" position="2.5 0 -3" scale="0.3 0.3 0.3" rotation="0 90 0" goblin-behavior></a-entity>
+  <a-entity id="goblin" gltf-model="#goblin" position="2.5 0 -3" scale="0.3 0.3 0.3" rotation="0 180 0" goblin-behavior></a-entity>
 
   <script>
   // --- Player Movement ---
@@ -64,6 +64,7 @@
     init: function () {
       this.choiceMade = false;
       this.chosenPath = null;
+      this.followingGoblin = false;
       this.keys = { ArrowUp:false, ArrowDown:false, ArrowLeft:false, ArrowRight:false };
 
       window.addEventListener('keydown', e => { if(this.keys.hasOwnProperty(e.key)) this.keys[e.key]=true; });
@@ -74,6 +75,7 @@
           this.chosenPath = btn.getAttribute('data-choice');
           this.choiceMade = true;
           document.getElementById('forkMenu').setAttribute('visible', false);
+          this.followingGoblin = (this.chosenPath === 'right'); // enable forest roaming if right path
         });
         btn.setAttribute('material','depthTest:false;');
         btn.object3D.renderOrder = 999;
@@ -106,17 +108,19 @@
 
       pos.x += dx; pos.z += dz;
 
-      // Boundaries: block only unchosen paths
+      // Boundaries: restrict only unchosen paths
       let bounds;
       if(!this.choiceMade){
         bounds={xMin:-0.75,xMax:0.75,zMin:-15,zMax:16.75};
       } else if(pos.z<=8.75 && pos.z>-6){
         if(this.chosenPath==='left') bounds={xMin:-3.3,xMax:-2.3,zMin:-6.25,zMax:8.75};
         if(this.chosenPath==='middle') bounds={xMin:-0.75,xMax:0.75,zMin:-6.25,zMax:8.75};
-        if(this.chosenPath==='right') bounds={xMin:2.2,xMax:3.2,zMin:-6.25,zMax:8.75};
-      } else {
-        // Free roaming beyond chosen path (forest)
+        if(this.chosenPath==='right' && !this.followingGoblin) bounds={xMin:2.2,xMax:3.2,zMin:-6.25,zMax:8.75};
+      } else if(this.followingGoblin){
+        // free roaming into forest along chosen path side
         bounds={xMin:-25,xMax:25,zMin:-25,zMax:25};
+      } else {
+        bounds={xMin:-25,xMax:25,zMin:-25,zMax:25}; // default for safety
       }
 
       pos.x = Math.max(bounds.xMin, Math.min(bounds.xMax,pos.x));
@@ -129,11 +133,8 @@
   AFRAME.registerComponent('goblin-behavior', {
     init: function() {
       this.state = 'idle';
-      this.speed = 0.03;
-
-      this.el.addEventListener('model-loaded', () => {
-        // Idle = static pose, no animation until player is close
-      });
+      this.speed = 0.025;
+      this.started = false; // only start animation once
     },
 
     tick: function() {
@@ -146,10 +147,13 @@
       const dz = rigPos.z - gobPos.z;
       const dist = Math.sqrt(dx*dx + dz*dz);
 
-      if(this.state === 'idle' && dist < 2){
+      if(this.state === 'idle' && dist < 1.5){
         this.state = 'walking';
-        goblin.setAttribute('rotation','0 0 0'); // face right
-        goblin.setAttribute('animation-mixer',{clip:1, loop:'repeat'}); // animation index 1 = walk
+        goblin.setAttribute('rotation','0 90 0'); // face right
+        if(!this.started){
+          goblin.setAttribute('animation-mixer', {clipIndex: 1, loop: 'repeat'});
+          this.started = true;
+        }
       }
 
       if(this.state === 'walking'){
