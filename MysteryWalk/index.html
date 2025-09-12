@@ -54,11 +54,10 @@
   <!-- Trees -->
   <a-entity id="trees"></a-entity>
 
-  <!-- Goblin (right path) -->
-  <a-entity gltf-model="#goblin" position="3 0 6" scale="0.3 0.3 0.3"
-            goblin-behavior></a-entity>
+  <!-- Goblin at end of right path -->
+  <a-entity gltf-model="#goblin" position="2.75 0 1" scale="0.3 0.3 0.3" goblin-behavior></a-entity>
 
-<script>
+  <script>
   // --- Player Movement ---
   AFRAME.registerComponent('player-movement', {
     init: function () {
@@ -85,7 +84,6 @@
       let pos = rig.getAttribute('position');
       const speed = 0.025;
 
-      // Fork menu trigger
       if(!this.choiceMade && pos.z <= 8.75){
         pos.z = 8.75;
         rig.setAttribute('position', pos);
@@ -96,8 +94,7 @@
       const camera = this.el.sceneEl.camera.el.object3D;
       const camDir = new THREE.Vector3();
       camera.getWorldDirection(camDir);
-      camDir.y = 0;
-      camDir.normalize();
+      camDir.y = 0; camDir.normalize();
       const right = new THREE.Vector3().crossVectors(new THREE.Vector3(0,1,0), camDir).normalize();
 
       let dx=0,dz=0;
@@ -108,7 +105,7 @@
 
       pos.x += dx; pos.z += dz;
 
-      // --- Bounds only for unchosen paths ---
+      // Bounds: only restrict unchosen paths
       let bounds;
       if(!this.choiceMade){
         bounds={xMin:-0.75,xMax:0.75,zMin:-15,zMax:16.75};
@@ -117,14 +114,12 @@
         if(this.chosenPath==='middle') bounds={xMin:-0.75,xMax:0.75,zMin:-6.25,zMax:8.75};
         if(this.chosenPath==='right') bounds={xMin:2.2,xMax:3.2,zMin:-6.25,zMax:8.75};
       } else {
-        bounds=null; // fully free roaming
+        // Free roaming into forest on chosen path side
+        bounds={xMin:-25,xMax:25,zMin:-25,zMax:25};
       }
 
-      if(bounds){
-        pos.x = Math.max(bounds.xMin, Math.min(bounds.xMax,pos.x));
-        pos.z = Math.max(bounds.zMin, Math.min(bounds.zMax,pos.z));
-      }
-
+      pos.x = Math.max(bounds.xMin, Math.min(bounds.xMax,pos.x));
+      pos.z = Math.max(bounds.zMin, Math.min(bounds.zMax,pos.z));
       rig.setAttribute('position', pos);
     }
   });
@@ -133,10 +128,15 @@
   AFRAME.registerComponent('goblin-behavior', {
     init: function() {
       this.state = 'idle';
-      this.speed = 0.01;
-      this.walkLimit = 7;
+      this.speed = 0.03;
+      this.walkLimit = 7; // distance player can follow before losing
+
+      this.el.addEventListener('model-loaded', () => {
+        // idle = static pose, no animation
+      });
     },
-    tick: function(){
+
+    tick: function() {
       const goblin = this.el;
       const rig = document.getElementById('rig');
       const gobPos = goblin.getAttribute('position');
@@ -146,30 +146,15 @@
       const dz = rigPos.z - gobPos.z;
       const dist = Math.sqrt(dx*dx + dz*dz);
 
-      // Face player while idle
-      if(this.state==='idle'){
-        const angle = Math.atan2(dx,dz) * (180/Math.PI);
-        goblin.setAttribute('rotation', `0 ${angle} 0`);
+      if(this.state === 'idle' && dist < 2){
+        this.state = 'walking';
+        goblin.setAttribute('rotation','0 90 0'); // face right
+        goblin.setAttribute('animation-mixer',{clip:0, loop:'repeat'});
       }
 
-      // Start walking when close
-      if(this.state==='idle' && dist < 3){
-        this.state='walking';
-        goblin.setAttribute('animation-mixer', { clip: 1, loop: 'repeat' }); // animation index 1
-      }
-
-      // Move goblin forward in its facing direction
-      if(this.state==='walking'){
-        const rotY = goblin.getAttribute('rotation').y * (Math.PI/180);
-        gobPos.x += Math.sin(rotY) * this.speed;
-        gobPos.z += Math.cos(rotY) * this.speed;
+      if(this.state === 'walking'){
+        gobPos.x += this.speed;
         goblin.setAttribute('position', gobPos);
-
-        // Check "lost in forest" condition
-        const pathX = 2.75;
-        if(Math.abs(rigPos.x - pathX) > this.walkLimit){
-          console.log("GAME OVER: You got lost in the forest!");
-        }
       }
     }
   });
@@ -223,9 +208,8 @@
     tree.setAttribute('rotation',`0 ${rotY} 0`);
     trees.appendChild(tree);
   }
-</script>
 
+  </script>
 </a-scene>
 </body>
 </html>
-
