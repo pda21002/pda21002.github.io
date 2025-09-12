@@ -144,7 +144,7 @@
     // Second horizontal
     if(x>-3.5 && x<3.5 && z>-7.5 && z<-6) return true;
     // Castle approach
-    if(x>-0.9 && x<0.9 && z<-10.75 && z>-15) return true;
+    if(x>-0.9 && x<0.9 && z<-6.25 && z>-15) return true;
     return false;
   }
 
@@ -167,7 +167,7 @@
   }
 
   // Trees densely between branches
- for (let i = 0; i < 30; i++) {
+ for (let i = 0; i < 80; i++) {
   let x, z;
   z = -6 + Math.random() * 14;
 
@@ -181,8 +181,8 @@
   }
 
   const type = treeTypes[Math.floor(Math.random()*treeTypes.length)];
-  let scale = 0.012 + Math.random() * 0.012;
-  if (type === 'tree4') scale *= 30;
+  let scale = 0.011 + Math.random() * 0.012;
+  if (type === 'tree4') scale *= 20;
   if (type === 'tree3') scale *= 3;
   const rotY = Math.random() * 360;
 
