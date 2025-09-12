@@ -72,7 +72,10 @@
           this.choiceMade = true;
           document.getElementById('forkMenu').setAttribute('visible', false);
         });
-      });
+
+        btn.setAttribute('material', 'depthTest: false;');
+  btn.object3D.renderOrder = 999;
+});
     },
 
     tick: function () {
