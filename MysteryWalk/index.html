@@ -13,13 +13,15 @@
     <a-asset-item id="tree2" src="assets/kapok_tree_voxel.glb"></a-asset-item>
     <a-asset-item id="tree3" src="assets/sequoia_redwood_tree_voxel.glb"></a-asset-item>
     <a-asset-item id="tree4" src="assets/voxel_models.glb"></a-asset-item>
+    <!-- Goblin GLB with idle and walk animations -->
+    <a-asset-item id="goblin" src="assets/goblin_mob.glb"></a-asset-item>
   </a-assets>
 
   <!-- Ground -->
   <a-plane rotation="-90 0 0" width="50" height="50"
            material="repeat: 20 20; shader: flat; src: #groundTexture"></a-plane>
 
-  <!-- Paths -->
+  <!-- Paths (unchanged) -->
   <a-box width="1.5" height="0.05" depth="8" position="0 0.025 12.75"
          material="repeat: 1 4; shader: flat; src: #pathTexture"></a-box>
   <a-box width="7" height="0.05" depth="1.5" position="0 0.03943 8.75"
@@ -50,10 +52,15 @@
     <a-entity camera look-controls></a-entity>
   </a-entity>
 
-  <!-- Tree placeholders -->
+  <!-- Trees -->
   <a-entity id="trees"></a-entity>
 
+  <!-- Goblin (right path) -->
+  <a-entity id="goblinEntity" gltf-model="#goblin" position="3 0 7" scale="0.02 0.02 0.02"
+            goblin-behavior></a-entity>
+
   <script>
+  // --- Player Movement (unchanged from previous working version) ---
   AFRAME.registerComponent('player-movement', {
     init: function () {
       const rig = this.el;
@@ -65,25 +72,22 @@
       window.addEventListener('keydown', e => { if(this.keys.hasOwnProperty(e.key)) this.keys[e.key]=true; });
       window.addEventListener('keyup', e => { if(this.keys.hasOwnProperty(e.key)) this.keys[e.key]=false; });
 
-      // Fork menu
       document.querySelectorAll('.fork-menu-button').forEach(btn=>{
         btn.addEventListener('click', ()=>{
           this.chosenPath = btn.getAttribute('data-choice');
           this.choiceMade = true;
           document.getElementById('forkMenu').setAttribute('visible', false);
         });
-
-        btn.setAttribute('material', 'depthTest: false;');
-  btn.object3D.renderOrder = 999;
-});
+        btn.setAttribute('material','depthTest:false;');
+        btn.object3D.renderOrder = 999;
+      });
     },
 
     tick: function () {
       const rig = this.el;
       let pos = rig.getAttribute('position');
-      const speed = 0.025; // slower movement
+      const speed = 0.025;
 
-      // Stop at fork
       if(!this.choiceMade && pos.z <= 8.75){
         pos.z = 8.75;
         rig.setAttribute('position', pos);
@@ -91,113 +95,133 @@
         return;
       }
 
-      // Camera-relative movement
       const camera = this.el.sceneEl.camera.el.object3D;
       const camDir = new THREE.Vector3();
       camera.getWorldDirection(camDir);
       camDir.y = 0;
       camDir.normalize();
-
       const right = new THREE.Vector3().crossVectors(new THREE.Vector3(0,1,0), camDir).normalize();
 
-      let dx=0, dz=0;
+      let dx=0,dz=0;
       if(this.keys.ArrowUp){ dx-=camDir.x*speed; dz-=camDir.z*speed; }
       if(this.keys.ArrowDown){ dx+=camDir.x*speed; dz+=camDir.z*speed; }
       if(this.keys.ArrowLeft){ dx-=right.x*speed; dz-=right.z*speed; }
       if(this.keys.ArrowRight){ dx+=right.x*speed; dz+=right.z*speed; }
 
-      pos.x += dx;
-      pos.z += dz;
+      pos.x += dx; pos.z += dz;
 
-      // --- Section-based bounds ---
       let bounds;
       if(!this.choiceMade){
-        bounds = { xMin:-0.75, xMax:0.75, zMin:-15, zMax:16.75 }; // pre-fork
-      } else if(pos.z <= 8.75 && pos.z > -6){
-        // Branch section: only chosen path accessible, tighter borders
+        bounds={xMin:-0.75,xMax:0.75,zMin:-15,zMax:16.75};
+      } else if(pos.z<=8.75 && pos.z>-6){
         if(this.chosenPath==='left') bounds={xMin:-3.3,xMax:-2.3,zMin:-6.25,zMax:8.75};
         if(this.chosenPath==='middle') bounds={xMin:-0.75,xMax:0.75,zMin:-6.25,zMax:8.75};
         if(this.chosenPath==='right') bounds={xMin:2.2,xMax:3.2,zMin:-6.25,zMax:8.75};
       } else {
-        // Both horizontal lines fully accessible
-        bounds = { xMin:-3.5, xMax:3.5, zMin:-15, zMax:16.75 };
+        bounds={xMin:-3.5,xMax:3.5,zMin:-15,zMax:16.75};
       }
 
-      pos.x = Math.max(bounds.xMin, Math.min(bounds.xMax, pos.x));
-      pos.z = Math.max(bounds.zMin, Math.min(bounds.zMax, pos.z));
+      pos.x = Math.max(bounds.xMin, Math.min(bounds.xMax,pos.x));
+      pos.z = Math.max(bounds.zMin, Math.min(bounds.zMax,pos.z));
       rig.setAttribute('position', pos);
     }
   });
 
-  // --- Tree scattering ---
-  const trees = document.getElementById('trees');
-  const treeTypes = ['tree1','tree2','tree3','tree4'];
-    const branchTreeTypes = ['tree1','tree2','tree3'];
+  // --- Goblin Behavior ---
+AFRAME.registerComponent('goblin-behavior', {
+  init: function() {
+    this.state = 'idle';          // initial state
+    this.speed = 0.03;            // walking speed
+    this.walkLimit = 7;           // max distance into forest before player loses
+
+    // No animation for idle (static pose)
+    // Walking animation will be triggered later
+  },
+
+  tick: function() {
+    const goblin = this.el;
+    const rig = document.getElementById('rig');
+    const gobPos = goblin.getAttribute('position');
+    const rigPos = rig.getAttribute('position');
+
+    // Distance from player
+    const dx = rigPos.x - gobPos.x;
+    const dz = rigPos.z - gobPos.z;
+    const dist = Math.sqrt(dx*dx + dz*dz);
+
+    // Trigger walking when player is close
+    if (this.state === 'idle' && dist < 3) {
+      this.state = 'walking';
+      goblin.setAttribute('rotation', '0 90 0'); // face right
+      goblin.setAttribute('animation-mixer', { clip: 'animation.goblin.walk', loop: 'repeat' });
+    }
+
+    // Move goblin if walking
+    if (this.state === 'walking') {
+      gobPos.x += this.speed;
+      goblin.setAttribute('position', gobPos);
+
+        // Lose condition if player goes too deep
+const pathX = 2.75; // center of right path
+if (Math.abs(rigPos.x - pathX) > this.walkLimit) {
+  console.log("GAME OVER: You got lost in the forest!");
+}
+      }
+    }
+  });
+
+  // --- Tree scattering (unchanged from working version) ---
+  const trees=document.getElementById('trees');
+  const treeTypes=['tree1','tree2','tree3','tree4'];
+  const branchTreeTypes=['tree1','tree2','tree3'];
 
   function inPath(x,z){
-    // Corridor
-    if(x>-0.9 && x<0.9 && z>8.75 && z<16.75) return true;
-    // First horizontal
-    if(x>-3.5 && x<3.5 && z>8 && z<9.5) return true;
-    // Left branch
-    if(x>-3.3 && x<-2.3 && z>-6.25 && z<8.75) return true;
-    // Middle branch
-    if(x>-0.75 && x<0.75 && z>-6.25 && z<8.75) return true;
-    // Right branch
-    if(x>2.3 && x<3.3 && z>-6.25 && z<8.75) return true;
-    // Second horizontal
-    if(x>-3.5 && x<3.5 && z>-7.5 && z<-6) return true;
-    // Castle approach
-    if(x>-0.9 && x<0.9 && z<-6.25 && z>-15) return true;
+    if(x>-0.9&&x<0.9&&z>8.75&&z<16.75) return true;
+    if(x>-3.5&&x<3.5&&z>8&&z<9.5) return true;
+    if(x>-3.3&&x<-2.3&&z>-6.25&&z<8.75) return true;
+    if(x>-0.75&&x<0.75&&z>-6.25&&z<8.75) return true;
+    if(x>2.3&&x<3.3&&z>-6.25&&z<8.75) return true;
+    if(x>-3.5&&x<3.5&&z>-7.5&&z<-6) return true;
+    if(x>-0.9&&x<0.9&&z<-6.25&&z>-15) return true;
     return false;
   }
 
-  // General trees
-  for(let i=0; i<380; i++){
+  for(let i=0;i<380;i++){
     let x=(Math.random()-0.5)*50;
     let z=(Math.random()-0.5)*50;
     if(inPath(x,z)) continue;
-    const type = treeTypes[Math.floor(Math.random()*treeTypes.length)];
-    let scale = 0.01 + Math.random()*0.01;
+    const type=treeTypes[Math.floor(Math.random()*treeTypes.length)];
+    let scale=0.01+Math.random()*0.01;
     if(type==='tree4') scale*=35;
     if(type==='tree3') scale*=4;
     const rotY=Math.random()*360;
     let tree=document.createElement('a-entity');
-    tree.setAttribute('gltf-model', `#${type}`);
-    tree.setAttribute('position', `${x} 0 ${z}`);
-    tree.setAttribute('scale', `${scale} ${scale} ${scale}`);
-    tree.setAttribute('rotation', `0 ${rotY} 0`);
+    tree.setAttribute('gltf-model',`#${type}`);
+    tree.setAttribute('position',`${x} 0 ${z}`);
+    tree.setAttribute('scale',`${scale} ${scale} ${scale}`);
+    tree.setAttribute('rotation',`0 ${rotY} 0`);
     trees.appendChild(tree);
   }
 
-  // Trees densely between branches
- for (let i = 0; i < 150; i++) {
-  let x, z;
-  z = -6 + Math.random() * 14;
-
-  // Pick a "gap" region between paths
-  if (Math.random() < 0.5) {
-    // Between left and middle
-    x = -2.0 + (Math.random() * 1.0);  // gap range: ~[-2.0, -1.0]
-  } else {
-    // Between middle and right
-    x = 1.0 + (Math.random() * 1.0);   // gap range: ~[1.0, 2.0]
+  for(let i=0;i<150;i++){
+    let x,z;
+    z=-6+Math.random()*14;
+    if(Math.random()<0.5) x=-2+(Math.random()*1);
+    else x=1+(Math.random()*1);
+    const type=branchTreeTypes[Math.floor(Math.random()*branchTreeTypes.length)];
+    let scale=0.01+Math.random()*0.01;
+    if(type==='tree3') scale*=4;
+    const rotY=Math.random()*360;
+    let tree=document.createElement('a-entity');
+    tree.setAttribute('gltf-model',`#${type}`);
+    tree.setAttribute('position',`${x} 0 ${z}`);
+    tree.setAttribute('scale',`${scale} ${scale} ${scale}`);
+    tree.setAttribute('rotation',`0 ${rotY} 0`);
+    trees.appendChild(tree);
   }
 
-const type = branchTreeTypes[Math.floor(Math.random()*branchTreeTypes.length)];
-  let scale = 0.01 + Math.random() * 0.01;
-  if (type === 'tree3') scale *= 4;
-  const rotY = Math.random() * 360;
-
-  let tree = document.createElement('a-entity');
-  tree.setAttribute('gltf-model', `#${type}`);
-  tree.setAttribute('position', `${x} 0 ${z}`);
-  tree.setAttribute('scale', `${scale} ${scale} ${scale}`);
-  tree.setAttribute('rotation', `0 ${rotY} 0`);
-  trees.appendChild(tree);
-}
-    
   </script>
+
 </a-scene>
 </body>
 </html>
