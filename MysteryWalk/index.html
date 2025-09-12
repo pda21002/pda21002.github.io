@@ -1,7 +1,7 @@
 <html>
 <head>
   <script src="https://aframe.io/releases/1.7.0/aframe.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/gh/n5ro/aframe-extras@6.1.1/dist/aframe-extras.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/gh/donmccurdy/aframe-extras@v7.0.0/dist/aframe-extras.min.js"></script>
 </head>
 <body>
 <a-scene cursor="rayOrigin: mouse" raycaster="objects: .fork-menu-button" keyboard-shortcuts="">
@@ -130,38 +130,38 @@
   });
 
   // --- Goblin Behavior ---
-  AFRAME.registerComponent('goblin-behavior', {
-    init: function() {
-      this.state = 'idle';
-      this.speed = 0.025;
-      this.started = false; // only start animation once
-    },
+AFRAME.registerComponent('goblin-behavior', {
+  init: function() {
+    this.state = 'idle';
+    this.speed = 0.025;
+    this.walkingStarted = false; // <- new flag
+  },
 
-    tick: function() {
-      const goblin = this.el;
-      const rig = document.getElementById('rig');
-      const gobPos = goblin.getAttribute('position');
-      const rigPos = rig.getAttribute('position');
+  tick: function() {
+    const goblin = this.el;
+    const rig = document.getElementById('rig');
+    const gobPos = goblin.getAttribute('position');
+    const rigPos = rig.getAttribute('position');
 
-      const dx = rigPos.x - gobPos.x;
-      const dz = rigPos.z - gobPos.z;
-      const dist = Math.sqrt(dx*dx + dz*dz);
+    const dx = rigPos.x - gobPos.x;
+    const dz = rigPos.z - gobPos.z;
+    const dist = Math.sqrt(dx*dx + dz*dz);
 
-      if(this.state === 'idle' && dist < 1.5){
-        this.state = 'walking';
-        goblin.setAttribute('rotation','0 90 0'); // face right
-        if(!this.started){
-          goblin.setAttribute('animation-mixer', {clipIndex: 1, loop: 'repeat'});
-          this.started = true;
-        }
-      }
-
-      if(this.state === 'walking'){
-        gobPos.x += this.speed;
-        goblin.setAttribute('position', gobPos);
-      }
+    // Start walking only once
+    if(this.state === 'idle' && dist < 1.5 && !this.walkingStarted){
+      this.state = 'walking';
+      this.walkingStarted = true;
+      goblin.setAttribute('rotation','0 90 0'); // face right
+      goblin.setAttribute('animation-mixer',{clip:1, loop:'repeat'}); // start animation once
     }
-  });
+
+    // Move goblin forward only if walking
+    if(this.state === 'walking'){
+      gobPos.x += this.speed;
+      goblin.setAttribute('position', gobPos);
+    }
+  }
+});
 
   // --- Tree scattering ---
   const trees=document.getElementById('trees');
