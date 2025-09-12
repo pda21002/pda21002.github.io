@@ -71,18 +71,18 @@ AFRAME.registerComponent('player-movement', {
     window.addEventListener('keyup', e => { if(this.keys.hasOwnProperty(e.key)) this.keys[e.key]=false; });
 
     document.querySelectorAll('.fork-menu-button').forEach(btn=>{
-      btn.addEventListener('click', ()=>{
-        this.chosenPath = btn.getAttribute('data-choice');
-        this.choiceMade = true;
-        document.getElementById('forkMenu').setAttribute('visible', false);
+btn.addEventListener('click', ()=>{
+  this.chosenPath = btn.getAttribute('data-choice');
+  this.choiceMade = true;
+  document.getElementById('forkMenu').setAttribute('visible', false);
 
-        // --- NEW: Remove buttons from raycaster to prevent freeze ---
-        document.querySelectorAll('.fork-menu-button').forEach(b => {
-          b.classList.remove('fork-menu-button');
-        });
+  // Remove buttons from raycaster to prevent freeze
+  const scene = document.querySelector('a-scene');
+  const cursor = scene.querySelector('[cursor]');
+  cursor.components.raycaster.data.objects = ''; // clear raycaster targets
 
-        this.followingGoblin = (this.chosenPath === 'right'); // enable forest roaming if right path
-      });
+  this.followingGoblin = (this.chosenPath === 'right'); 
+});
       btn.setAttribute('material','depthTest:false;');
       btn.object3D.renderOrder = 999;
     });
