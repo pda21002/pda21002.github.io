@@ -56,7 +56,7 @@
   <a-entity id="trees"></a-entity>
 
   <!-- Goblin at end of right path (slightly left) -->
-  <a-entity id="goblin" gltf-model="#goblin" position="2.5 0 -3" scale="0.3 0.3 0.3" rotation="0 180 0" goblin-behavior></a-entity>
+  <a-entity gltf-model="#goblin" position="2.5 0 -3" scale="0.3 0.3 0.3" rotation="0 180 0" goblin-behavior></a-entity>
 
   <script>
   // --- Player Movement ---
@@ -134,7 +134,7 @@ AFRAME.registerComponent('goblin-behavior', {
   init: function() {
     this.state = 'idle';
     this.speed = 0.025;
-    this.walkingStarted = false; // <- new flag
+    this.walkingStarted = false; // prevents repeated animation init
   },
 
   tick: function() {
@@ -147,21 +147,25 @@ AFRAME.registerComponent('goblin-behavior', {
     const dz = rigPos.z - gobPos.z;
     const dist = Math.sqrt(dx*dx + dz*dz);
 
-    // Start walking only once
+    // Start walking only once, and only if model & clip exist
     if(this.state === 'idle' && dist < 1.5 && !this.walkingStarted){
-      this.state = 'walking';
-      this.walkingStarted = true;
-      goblin.setAttribute('rotation','0 90 0'); // face right
-      goblin.setAttribute('animation-mixer',{clip:1, loop:'repeat'}); // start animation once
+      const mesh = goblin.getObject3D('mesh');
+      if(mesh && mesh.animations && mesh.animations.length > 1){
+        goblin.setAttribute('animation-mixer',{clip:1, loop:'repeat'});
+        this.state = 'walking';
+        this.walkingStarted = true;
+        goblin.setAttribute('rotation','0 90 0');
+      }
     }
 
-    // Move goblin forward only if walking
+    // Move goblin forward if walking
     if(this.state === 'walking'){
       gobPos.x += this.speed;
       goblin.setAttribute('position', gobPos);
     }
   }
 });
+
 
   // --- Tree scattering ---
   const trees=document.getElementById('trees');
