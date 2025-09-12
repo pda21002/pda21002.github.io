@@ -55,7 +55,7 @@
   <a-entity id="trees"></a-entity>
 
   <!-- Goblin at end of right path -->
-  <a-entity gltf-model="#goblin" position="2.75 0 1" scale="0.3 0.3 0.3" goblin-behavior></a-entity>
+  <a-entity gltf-model="#goblin" position="2.5 0 0.5" scale="0.3 0.3 0.3" rotation="0 180 0" goblin-behavior></a-entity>
 
   <script>
   // --- Player Movement ---
@@ -63,6 +63,7 @@
     init: function () {
       this.choiceMade = false;
       this.chosenPath = null;
+      this.followingGoblin = false; 
       this.keys = { ArrowUp:false, ArrowDown:false, ArrowLeft:false, ArrowRight:false };
 
       window.addEventListener('keydown', e => { if(this.keys.hasOwnProperty(e.key)) this.keys[e.key]=true; });
@@ -73,6 +74,7 @@
           this.chosenPath = btn.getAttribute('data-choice');
           this.choiceMade = true;
           document.getElementById('forkMenu').setAttribute('visible', false);
+          this.followingGoblin = true; // free roaming enabled
         });
         btn.setAttribute('material','depthTest:false;');
         btn.object3D.renderOrder = 999;
@@ -105,7 +107,7 @@
 
       pos.x += dx; pos.z += dz;
 
-      // Bounds: only restrict unchosen paths
+      // Bounds: restrict only unchosen paths
       let bounds;
       if(!this.choiceMade){
         bounds={xMin:-0.75,xMax:0.75,zMin:-15,zMax:16.75};
@@ -114,7 +116,7 @@
         if(this.chosenPath==='middle') bounds={xMin:-0.75,xMax:0.75,zMin:-6.25,zMax:8.75};
         if(this.chosenPath==='right') bounds={xMin:2.2,xMax:3.2,zMin:-6.25,zMax:8.75};
       } else {
-        // Free roaming into forest on chosen path side
+        // Free roaming into forest along chosen path side
         bounds={xMin:-25,xMax:25,zMin:-25,zMax:25};
       }
 
@@ -129,11 +131,7 @@
     init: function() {
       this.state = 'idle';
       this.speed = 0.03;
-      this.walkLimit = 7; // distance player can follow before losing
-
-      this.el.addEventListener('model-loaded', () => {
-        // idle = static pose, no animation
-      });
+      this.el.addEventListener('model-loaded', () => {});
     },
 
     tick: function() {
@@ -146,10 +144,11 @@
       const dz = rigPos.z - gobPos.z;
       const dist = Math.sqrt(dx*dx + dz*dz);
 
-      if(this.state === 'idle' && dist < 2){
+      // Start walking when player is near
+      if(this.state === 'idle' && dist < 1.5){
         this.state = 'walking';
         goblin.setAttribute('rotation','0 90 0'); // face right
-        goblin.setAttribute('animation-mixer',{clip:0, loop:'repeat'});
+        goblin.setAttribute('animation-mixer',{clip:'1', loop:'repeat'});
       }
 
       if(this.state === 'walking'){
