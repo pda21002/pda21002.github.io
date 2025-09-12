@@ -149,7 +149,7 @@
   }
 
   // General trees
-  for(let i=0; i<120; i++){
+  for(let i=0; i<150; i++){
     let x=(Math.random()-0.5)*50;
     let z=(Math.random()-0.5)*50;
     if(inPath(x,z)) continue;
@@ -167,23 +167,33 @@
   }
 
   // Trees densely between branches
-  const branchXs = [-2.76655, 0, 2.737];
-  for(let i=0;i<30;i++){
-    let branchIndex=Math.floor(Math.random()*branchXs.length);
-    let x=branchXs[branchIndex]+(Math.random()-0.5)*1.2;
-    let z=-6 + Math.random()*14;
-    const type=treeTypes[Math.floor(Math.random()*treeTypes.length)];
-    let scale=0.015+Math.random()*0.015;
-    if(type==='tree4') scale*=30;
-    if(type==='tree3') scale*=3;
-    const rotY=Math.random()*360;
-    let tree=document.createElement('a-entity');
-    tree.setAttribute('gltf-model', `#${type}`);
-    tree.setAttribute('position', `${x} 0 ${z}`);
-    tree.setAttribute('scale', `${scale} ${scale} ${scale}`);
-    tree.setAttribute('rotation', `0 ${rotY} 0`);
-    trees.appendChild(tree);
+ for (let i = 0; i < 30; i++) {
+  let x, z;
+  z = -6 + Math.random() * 14;
+
+  // Pick a "gap" region between paths
+  if (Math.random() < 0.5) {
+    // Between left and middle
+    x = -2.0 + (Math.random() * 1.0);  // gap range: ~[-2.0, -1.0]
+  } else {
+    // Between middle and right
+    x = 1.0 + (Math.random() * 1.0);   // gap range: ~[1.0, 2.0]
   }
+
+  const type = treeTypes[Math.floor(Math.random()*treeTypes.length)];
+  let scale = 0.012 + Math.random() * 0.012;
+  if (type === 'tree4') scale *= 30;
+  if (type === 'tree3') scale *= 3;
+  const rotY = Math.random() * 360;
+
+  let tree = document.createElement('a-entity');
+  tree.setAttribute('gltf-model', `#${type}`);
+  tree.setAttribute('position', `${x} 0 ${z}`);
+  tree.setAttribute('scale', `${scale} ${scale} ${scale}`);
+  tree.setAttribute('rotation', `0 ${rotY} 0`);
+  trees.appendChild(tree);
+}
+    
   </script>
 </a-scene>
 </body>
