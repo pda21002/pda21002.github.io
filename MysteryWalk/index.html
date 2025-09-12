@@ -129,6 +129,7 @@
   // --- Tree scattering ---
   const trees = document.getElementById('trees');
   const treeTypes = ['tree1','tree2','tree3','tree4'];
+    const branchTreeTypes = ['tree1','tree2','tree3'];
 
   function inPath(x,z){
     // Corridor
@@ -149,7 +150,7 @@
   }
 
   // General trees
-  for(let i=0; i<150; i++){
+  for(let i=0; i<300; i++){
     let x=(Math.random()-0.5)*50;
     let z=(Math.random()-0.5)*50;
     if(inPath(x,z)) continue;
@@ -167,7 +168,7 @@
   }
 
   // Trees densely between branches
- for (let i = 0; i < 80; i++) {
+ for (let i = 0; i < 100; i++) {
   let x, z;
   z = -6 + Math.random() * 14;
 
@@ -180,8 +181,8 @@
     x = 1.0 + (Math.random() * 1.0);   // gap range: ~[1.0, 2.0]
   }
 
-  const type = treeTypes[Math.floor(Math.random()*treeTypes.length)];
-  let scale = 0.011 + Math.random() * 0.012;
+const type = branchTreeTypes[Math.floor(Math.random()*branchTreeTypes.length)];
+  let scale = 0.011 + Math.random() * 0.011;
   if (type === 'tree4') scale *= 20;
   if (type === 'tree3') scale *= 3;
   const rotY = Math.random() * 360;
