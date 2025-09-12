@@ -55,7 +55,7 @@
   <a-entity id="trees"></a-entity>
 
   <!-- Goblin at end of right path -->
-  <a-entity gltf-model="#goblin" position="2.5 0 0.5" scale="0.3 0.3 0.3" rotation="0 180 0" goblin-behavior></a-entity>
+  <a-entity gltf-model="#goblin" position="1 0 0.5" scale="0.5 0.5 0.5" rotation="0 180 0" goblin-behavior></a-entity>
 
   <script>
   // --- Player Movement ---
@@ -130,7 +130,7 @@
   AFRAME.registerComponent('goblin-behavior', {
     init: function() {
       this.state = 'idle';
-      this.speed = 0.03;
+      this.speed = 0.025;
       this.el.addEventListener('model-loaded', () => {});
     },
 
@@ -147,8 +147,8 @@
       // Start walking when player is near
       if(this.state === 'idle' && dist < 1.5){
         this.state = 'walking';
-        goblin.setAttribute('rotation','0 90 0'); // face right
-        goblin.setAttribute('animation-mixer',{clip:'1', loop:'repeat'});
+        goblin.setAttribute('rotation','0 180 0'); // face right
+        goblin.setAttribute('animation-mixer',{clip:'0', loop:'repeat'});
       }
 
       if(this.state === 'walking'){
