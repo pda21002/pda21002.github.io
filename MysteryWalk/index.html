@@ -108,15 +108,16 @@ AFRAME.registerComponent('player-movement', {
     this.keys = {ArrowUp:false, ArrowDown:false, ArrowLeft:false, ArrowRight:false};
     const scene = this.el.sceneEl;
 
-    window.addEventListener('keydown', e=>{ if(this.keys.hasOwnProperty(e.key)) this.keys[e.key]=true; });
-    window.addEventListener('keyup', e=>{ if(this.keys.hasOwnProperty(e.key)) this.keys[e.key]=false; });
+    window.addEventListener('keydown', e => { if(this.keys.hasOwnProperty(e.key)) this.keys[e.key]=true; });
+    window.addEventListener('keyup', e => { if(this.keys.hasOwnProperty(e.key)) this.keys[e.key]=false; });
 
-    scene.querySelectorAll('.fork-menu-button').forEach(btn=>{
-      btn.addEventListener('click', ()=>{
+    // Fork menu buttons
+    scene.querySelectorAll('.fork-menu-button').forEach(btn => {
+      btn.addEventListener('click', () => {
         this.chosenPath = btn.getAttribute('data-choice');
         this.choiceMade = true;
         document.getElementById('forkMenu').setAttribute('visible', false);
-        scene.querySelectorAll('.fork-menu-button').forEach(b=>b.classList.remove('fork-menu-button'));
+        scene.querySelectorAll('.fork-menu-button').forEach(b => b.classList.remove('fork-menu-button'));
         const cursorEl = scene.querySelector('[cursor]');
         if(cursorEl && cursorEl.components && cursorEl.components.raycaster)
           cursorEl.components.raycaster.data.objects = '';
@@ -125,26 +126,19 @@ AFRAME.registerComponent('player-movement', {
       btn.object3D.renderOrder=999;
     });
   },
+
   tick: function () {
     const rig = this.el;
     let pos = rig.getAttribute('position');
     const speed = 0.025;
 
-// Fork menu enforcement
-if(!this.choiceMade && pos.z <= 36){  
-  pos.z = 36; rig.setAttribute('position', pos);
-  document.getElementById('forkMenu').setAttribute('visible', true);
-  return;
-}
-
-
-    // camera-relative movement
+    // Camera-relative movement
     const camera = this.el.sceneEl.camera.el.object3D;
     const camDir = new THREE.Vector3();
     camera.getWorldDirection(camDir);
     camDir.y=0; camDir.normalize();
     const right = new THREE.Vector3().crossVectors(new THREE.Vector3(0,1,0), camDir).normalize();
-    let dx=0,dz=0;
+    let dx=0, dz=0;
     if(this.keys.ArrowUp){ dx-=camDir.x*speed; dz-=camDir.z*speed; }
     if(this.keys.ArrowDown){ dx+=camDir.x*speed; dz+=camDir.z*speed; }
     if(this.keys.ArrowLeft){ dx-=right.x*speed; dz-=right.z*speed; }
@@ -152,22 +146,33 @@ if(!this.choiceMade && pos.z <= 36){
 
     pos.x += dx; pos.z += dz;
 
-    // Bounds
+    // --- Fork menu enforcement ---
+    const forkZ = 36; // the Z position of the fork
+    if(!this.choiceMade && pos.z >= forkZ){
+      pos.z = forkZ;
+      rig.setAttribute('position', pos);
+      document.getElementById('forkMenu').setAttribute('visible', true);
+      return;
+    }
+
+    // --- Bounds ---
     let bounds;
     if(!this.choiceMade){
-      bounds={xMin:-0.75,xMax:0.75,zMin:-15,zMax:16.75};
-    } else if(pos.z<=8.75 && pos.z>-6){
+      // allow free roaming along the path to fork and around the house
+      bounds = {xMin:-25, xMax:25, zMin:-15, zMax:36};
+    } else if(pos.z <= 8.75 && pos.z > -6){
+      // original branching logic
       if(this.chosenPath==='left') bounds={xMin:-3.3,xMax:-2.3,zMin:-6.25,zMax:8.75};
       else if(this.chosenPath==='middle') bounds={xMin:-0.75,xMax:0.75,zMin:-6.25,zMax:8.75};
       else if(this.chosenPath==='right' && !this.followingGoblin) bounds={xMin:2.2,xMax:3.2,zMin:-6.25,zMax:8.75};
       else bounds={xMin:-25,xMax:25,zMin:-25,zMax:25};
     } else bounds={xMin:-25,xMax:25,zMin:-25,zMax:25};
 
-    pos.x = Math.max(bounds.xMin, Math.min(bounds.xMax,pos.x));
-    pos.z = Math.max(bounds.zMin, Math.min(bounds.zMax,pos.z));
+    pos.x = Math.max(bounds.xMin, Math.min(bounds.xMax, pos.x));
+    pos.z = Math.max(bounds.zMin, Math.min(bounds.zMax, pos.z));
     rig.setAttribute('position', pos);
 
-    // Losing condition
+    // --- Losing condition ---
     const origin = new THREE.Vector3(0,0,16);
     const playerPos = new THREE.Vector3(pos.x,pos.y,pos.z);
     if(playerPos.distanceTo(origin) > 35){
@@ -176,6 +181,7 @@ if(!this.choiceMade && pos.z <= 36){
     }
   }
 });
+
 
 /* -----------------------
    Goblin behavior
