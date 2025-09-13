@@ -108,6 +108,7 @@ AFRAME.registerComponent('player-movement', {
     this.keys = {ArrowUp:false, ArrowDown:false, ArrowLeft:false, ArrowRight:false};
     const scene = this.el.sceneEl;
 
+    // Key handling
     window.addEventListener('keydown', e => { if(this.keys.hasOwnProperty(e.key)) this.keys[e.key]=true; });
     window.addEventListener('keyup', e => { if(this.keys.hasOwnProperty(e.key)) this.keys[e.key]=false; });
 
@@ -117,13 +118,15 @@ AFRAME.registerComponent('player-movement', {
         this.chosenPath = btn.getAttribute('data-choice');
         this.choiceMade = true;
         document.getElementById('forkMenu').setAttribute('visible', false);
+
+        // remove button class so raycaster stops detecting them
         scene.querySelectorAll('.fork-menu-button').forEach(b => b.classList.remove('fork-menu-button'));
         const cursorEl = scene.querySelector('[cursor]');
         if(cursorEl && cursorEl.components && cursorEl.components.raycaster)
           cursorEl.components.raycaster.data.objects = '';
       });
       btn.setAttribute('material','depthTest:false;');
-      btn.object3D.renderOrder=999;
+      btn.object3D.renderOrder = 999;
     });
   },
 
@@ -132,41 +135,46 @@ AFRAME.registerComponent('player-movement', {
     let pos = rig.getAttribute('position');
     const speed = 0.025;
 
-    // Camera-relative movement
+    // --- Camera-relative movement ---
     const camera = this.el.sceneEl.camera.el.object3D;
     const camDir = new THREE.Vector3();
     camera.getWorldDirection(camDir);
-    camDir.y=0; camDir.normalize();
+    camDir.y = 0; camDir.normalize();
     const right = new THREE.Vector3().crossVectors(new THREE.Vector3(0,1,0), camDir).normalize();
     let dx=0, dz=0;
-    if(this.keys.ArrowUp){ dx-=camDir.x*speed; dz-=camDir.z*speed; }
-    if(this.keys.ArrowDown){ dx+=camDir.x*speed; dz+=camDir.z*speed; }
-    if(this.keys.ArrowLeft){ dx-=right.x*speed; dz-=right.z*speed; }
-    if(this.keys.ArrowRight){ dx+=right.x*speed; dz+=right.z*speed; }
+    if(this.keys.ArrowUp){ dx -= camDir.x*speed; dz -= camDir.z*speed; }
+    if(this.keys.ArrowDown){ dx += camDir.x*speed; dz += camDir.z*speed; }
+    if(this.keys.ArrowLeft){ dx -= right.x*speed; dz -= right.z*speed; }
+    if(this.keys.ArrowRight){ dx += right.x*speed; dz += right.z*speed; }
 
     pos.x += dx; pos.z += dz;
 
     // --- Fork menu enforcement ---
-    const forkZ = 36; // the Z position of the fork
+    const forkZ = 8.75; // Z position of fork
     if(!this.choiceMade && pos.z >= forkZ){
-      pos.z = forkZ;
+      pos.z = forkZ; // stop player at fork
       rig.setAttribute('position', pos);
       document.getElementById('forkMenu').setAttribute('visible', true);
       return;
     }
 
-    // --- Bounds ---
+    // --- Movement bounds ---
     let bounds;
     if(!this.choiceMade){
-      // allow free roaming along the path to fork and around the house
-      bounds = {xMin:-25, xMax:25, zMin:-15, zMax:36};
+      // Player on straight path or in front of house
+      if(pos.z >= 16.75 && pos.z <= 36) bounds = {xMin:-0.75,xMax:0.75,zMin:16.75,zMax:36}; // main path
+      else if(pos.z >= 28 && pos.z <= 33) bounds = {xMin:-3,xMax:3,zMin:28,zMax:33}; // house area
+      else bounds = {xMin:-3.5,xMax:3.5,zMin:8,zMax:28}; // connection between path & house
     } else if(pos.z <= 8.75 && pos.z > -6){
-      // original branching logic
+      // Branch paths after choice
       if(this.chosenPath==='left') bounds={xMin:-3.3,xMax:-2.3,zMin:-6.25,zMax:8.75};
       else if(this.chosenPath==='middle') bounds={xMin:-0.75,xMax:0.75,zMin:-6.25,zMax:8.75};
       else if(this.chosenPath==='right' && !this.followingGoblin) bounds={xMin:2.2,xMax:3.2,zMin:-6.25,zMax:8.75};
       else bounds={xMin:-25,xMax:25,zMin:-25,zMax:25};
-    } else bounds={xMin:-25,xMax:25,zMin:-25,zMax:25};
+    } else {
+      // Free roaming after fork if choice made
+      bounds={xMin:-25,xMax:25,zMin:-25,zMax:25};
+    }
 
     pos.x = Math.max(bounds.xMin, Math.min(bounds.xMax, pos.x));
     pos.z = Math.max(bounds.zMin, Math.min(bounds.zMax, pos.z));
@@ -181,7 +189,6 @@ AFRAME.registerComponent('player-movement', {
     }
   }
 });
-
 
 /* -----------------------
    Goblin behavior
@@ -282,24 +289,30 @@ this.el.object3D.rotation.set(0, 0, 0); // parent stays aligned with world axes
   const branchTreeTypes=['tree1','tree2','tree3'];
 
 function inPath(x, z) {
-  if(x > -0.9 && x < 0.9 && z > 16.75 && z < 36) return true;
+  // Long straight path to fork (new Z range)
+  if(x > -0.75 && x < 0.75 && z > 16.75 && z < 36) return true;
 
+  // Horizontal connections (front/back)
   if(x > -3.5 && x < 3.5 && z > 8 && z < 9.5) return true;
 
+  // Branches after fork
   if(x > -3.3 && x < -2.3 && z > -6.25 && z < 8.75) return true; // left
   if(x > -0.75 && x < 0.75 && z > -6.25 && z < 8.75) return true; // middle
   if(x > 2.3 && x < 3.3 && z > -6.25 && z < 8.75) return true; // right
 
-
+  // Other path connections
   if(x > -3.5 && x < 3.5 && z > -7.5 && z < -6) return true;
-  if(x > -0.9 && x < 0.9 && z > -15 && z < -6.25) return true;
+  if(x > -0.75 && x < 0.75 && z > -15 && z < -6.25) return true;
 
+  // House area (avoid trees in front of house)
   if(x > -3 && x < 3 && z > 28 && z < 33) return true;
 
+  // Castle (optional, keep clear)
   if(x > 4 && x < 10 && z < -70 && z > -80) return true;
 
   return false;
 }
+
 
 
   for(let i=0;i<380;i++){
