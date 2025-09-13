@@ -61,28 +61,28 @@
   <a-entity id="trees"></a-entity>
 
 <a-entity id="fairies">
-  <a-entity gltf-model="#fairy1" position="2.5 1.5 12" scale="0.1 0.1 0.1"
-    rotation="0 -45 0"
+  <a-entity gltf-model="#fairy1" position="2.5 0.9 9" scale="0.1 0.1 0.1"
+    rotation="0 45 0"
             fairy-behavior="idleAnim:idle; reactAnim:interact1; reactDistance:2">
   </a-entity>
 
-  <a-entity gltf-model="#fairy2" position="2.8 1.6 12.2" scale="0.1 0.1 0.1"
-    rotation="0 -40 0"
+  <a-entity gltf-model="#fairy2" position="2.8 1.1 9.2" scale="0.1 0.1 0.1"
+    rotation="0 40 0"
             fairy-behavior="idleAnim:idle; reactAnim:interact2; reactDistance:2">
   </a-entity>
 
-  <a-entity gltf-model="#fairy3" position="2.6 1.7 12.1" scale="0.1 0.1 0.1"
-    rotation="0 -50 0"
+  <a-entity gltf-model="#fairy3" position="2.7 0.7 9.1" scale="0.1 0.1 0.1"
+    rotation="0 50 0"
             fairy-behavior="idleAnim:idle; reactAnim:cantar; reactDistance:2">
   </a-entity>
 
-  <a-entity gltf-model="#fairy4" position="2.9 1.55 12.3" scale="0.1 0.1 0.1"
-    rotation="0 -42 0"
+  <a-entity gltf-model="#fairy4" position="2.9 0.8 9.3" scale="0.1 0.1 0.1"
+    rotation="0 42 0"
             fairy-behavior="idleAnim:idle; reactAnim:interact1; reactDistance:2">
   </a-entity>
 
-  <a-entity gltf-model="#fairy5" position="2.7 1.65 12.15" scale="0.1 0.1 0.1"
-    rotation="0 -48 0"
+  <a-entity gltf-model="#fairy5" position="2.75 1 9.15" scale="0.1 0.1 0.1"
+    rotation="0 48 0"
             fairy-behavior="idleAnim:idle; reactAnim:interact1; reactDistance:2">
   </a-entity>
 </a-entity>
@@ -177,21 +177,21 @@ AFRAME.registerComponent('player-movement', {
 ----------------------- */
 AFRAME.registerComponent('goblin-behavior', {
   schema:{walkIndex:{type:'int',default:0},lookDistance:{type:'number',default:3},startWalkDistance:{type:'number',default:1.6},speed:{type:'number',default:1.2}},
-  init:function(){
-    this.state='idle';
-    this.mixer=null; this.walkAction=null; this.animations=[];
-    this.modelRoot=null; this.hasLooked=false; this.walkingStarted=false;
-    this.rig=document.getElementById('rig');
+init: function() {
+  this.state='idle';
+  this.mixer=null; this.walkAction=null; this.animations=[];
+  this.modelRoot=null; this.hasLooked=false; this.walkingStarted=false;
+  this.rig=document.getElementById('rig');
 
-    // Pre-rotate model so +X is forward
-    this.el.addEventListener('model-loaded',(e)=>{
-      const gltfScene=e.detail.model;
-      this.modelRoot=this.el.getObject3D('mesh')||gltfScene;
-      this.animations=(gltfScene?.animations?.slice())||[];
-      if(this.modelRoot) this.modelRoot.rotation.y = THREE.MathUtils.degToRad(-90);
-      this.el.object3D.rotation.set(0,0,0);
-    });
-  },
+  // Wait for model to load
+  this.el.addEventListener('model-loaded', (e) => {
+    const gltfScene = e.detail.model;
+    this.modelRoot = this.el.getObject3D('mesh') || gltfScene;
+    this.animations = (gltfScene?.animations?.slice()) || [];
+
+    this.el.object3D.rotation.set(0, Math.PI/2, 0);
+  });
+},
   tick:function(time,timeDelta){
     if(!this.rig||!this.el.object3D) return;
     const gob3=this.el.object3D, rig3=this.rig.object3D;
@@ -209,7 +209,7 @@ AFRAME.registerComponent('goblin-behavior', {
 
     // Start walking
     if(this.state==='idle' && dist<=this.data.startWalkDistance && !this.walkingStarted){
-      gob3.rotation.set(0,0,0); // face +X (forest)
+      gob3.rotation.set(0, Math.PI/2, 0);
       if(this.modelRoot && this.animations.length>this.data.walkIndex){
         try{
           this.mixer=new THREE.AnimationMixer(this.modelRoot);
@@ -286,63 +286,58 @@ AFRAME.registerComponent('goblin-behavior', {
 // schema
 AFRAME.registerComponent('fairy-behavior', {
   schema: {
-    idleAnim: { type: 'string', default: 'Idle' },
-    reactAnim: { type: 'string', default: 'React' },
-    reactDistance: { type: 'number', default: 2 },
-    speed: { type: 'number', default: 0 } // if you want them to move slowly
+    idleAnim: {type:'string', default:'Idle'},
+    reactAnim: {type:'string', default:'React'},
+    reactDistance: {type:'number', default:2},
+    speed: {type:'number', default:0} // optional if you want flying motion
   },
-  init: function() {
-    this.mixer = null;
-    this.idleAction = null;
-    this.reactAction = null;
-    this.hasReacted = false;
+  init:function(){
+    this.rig=document.getElementById('rig');
+    this.modelRoot=null; this.mixer=null;
+    this.currentAction=null; this.idleAction=null; this.reactAction=null;
 
-    this.el.addEventListener('model-loaded', (e) => {
-      const mesh = this.el.getObject3D('mesh') || e.detail.model;
-      if (!mesh) return;
-      this.mixer = new THREE.AnimationMixer(mesh);
-      const clips = mesh.animations;
-
-      this.idleAction = this.mixer.clipAction(clips.find(c=>c.name===this.data.idleAnim));
-      this.reactAction = this.mixer.clipAction(clips.find(c=>c.name===this.data.reactAnim));
-
-      if(this.idleAction) this.idleAction.play();
+    this.el.addEventListener('model-loaded', (e)=>{
+      const gltf=e.detail.model;
+      this.modelRoot=this.el.getObject3D('mesh')||gltf;
+      if(!this.modelRoot) return;
+      const clips=gltf.animations||[];
+      this.idleAction=null; this.reactAction=null;
+      clips.forEach(c=>{
+        if(c.name===this.data.idleAnim) this.idleAction=c;
+        if(c.name===this.data.reactAnim) this.reactAction=c;
+      });
+      if(this.idleAction){
+        this.mixer=new THREE.AnimationMixer(this.modelRoot);
+        const act=this.mixer.clipAction(this.idleAction);
+        act.play();
+        this.currentAction='idle';
+      }
     });
-
-    this.player = document.getElementById('rig');
   },
-  tick: function(time, dt) {
-    if (!this.player || !this.mixer) return;
-    dt = (dt||0)/1000;
+  tick:function(time,timeDelta){
+    if(!this.rig||!this.modelRoot||!this.mixer) return;
+    const pos=this.el.object3D.position;
+    const rigPos=this.rig.object3D.position;
+    const dist=Math.hypot(pos.x-rigPos.x,pos.z-rigPos.z);
+    const dt=(timeDelta||0)/1000;
+
+    // decide which animation
+    if(dist<=this.data.reactDistance && this.reactAction && this.currentAction!=='react'){
+      this.mixer.stopAllAction();
+      const act=this.mixer.clipAction(this.reactAction);
+      act.setLoop(THREE.LoopOnce); act.clampWhenFinished=true; act.play();
+      this.currentAction='react';
+    } else if(dist>this.data.reactDistance && this.idleAction && this.currentAction!=='idle'){
+      this.mixer.stopAllAction();
+      const act=this.mixer.clipAction(this.idleAction);
+      act.setLoop(THREE.LoopRepeat); act.play();
+      this.currentAction='idle';
+    }
 
     this.mixer.update(dt);
-
-    const dx = this.player.object3D.position.x - this.el.object3D.position.x;
-    const dz = this.player.object3D.position.z - this.el.object3D.position.z;
-    const dist = Math.hypot(dx,dz);
-
-    if(dist <= this.data.reactDistance && !this.hasReacted) {
-      if(this.reactAction) {
-        this.idleAction?.stop();
-        this.reactAction.reset().play();
-        // once react finishes, return to idle
-        this.reactAction.clampWhenFinished = true;
-        this.reactAction.setLoop(THREE.LoopOnce);
-        this.reactAction.paused = false;
-        this.reactAction._finishedCallback = () => {
-          this.reactAction.stop();
-          this.idleAction?.play();
-        };
-        // for compatibility, listen for finished event
-        this.mixer.addEventListener('finished', () => {
-          this.reactAction.stop();
-          this.idleAction?.play();
-        });
-      }
-      this.hasReacted = true;
-    }
   }
 });
+
 
 
 </script>
