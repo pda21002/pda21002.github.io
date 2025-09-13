@@ -62,27 +62,27 @@
 
 <a-entity id="fairies">
   <a-entity gltf-model="#fairy1" position="3.5 0.9 7" scale="0.1 0.1 0.1"
-    rotation="0 45 0"
+    rotation="0 90 0"
             fairy-behavior="idleAnim:idle; reactAnim:interact1; reactDistance:2">
   </a-entity>
 
   <a-entity gltf-model="#fairy2" position="3.8 1.1 7.2" scale="0.1 0.1 0.1"
-    rotation="0 40 0"
+    rotation="0 85 0"
             fairy-behavior="idleAnim:idle; reactAnim:interact2; reactDistance:2">
   </a-entity>
 
   <a-entity gltf-model="#fairy3" position="3.7 0.7 7.1" scale="0.1 0.1 0.1"
-    rotation="0 50 0"
+    rotation="0 95 0"
             fairy-behavior="idleAnim:idle; reactAnim:cantar; reactDistance:2">
   </a-entity>
 
   <a-entity gltf-model="#fairy4" position="3.9 0.8 7.3" scale="0.1 0.1 0.1"
-    rotation="0 42 0"
+    rotation="0 87 0"
             fairy-behavior="idleAnim:idle; reactAnim:interact1; reactDistance:2">
   </a-entity>
 
-  <a-entity gltf-model="#fairy5" position="3.75 1 7.15" scale="0.1 0.1 0.1"
-    rotation="0 48 0"
+  <a-entity gltf-model="#fairy5" position="3.65 1 7.15" scale="0.1 0.1 0.1"
+    rotation="0 93 0"
             fairy-behavior="idleAnim:idle; reactAnim:interact1; reactDistance:2">
   </a-entity>
 </a-entity>
@@ -199,7 +199,11 @@ AFRAME.registerComponent('goblin-behavior', {
       this.modelRoot = this.el.getObject3D('mesh') || gltfScene;
       this.animations = (gltfScene?.animations?.slice()) || [];
 
-      this.el.object3D.rotation.set(0, 0, 0); // faces right at spawn
+     if (this.modelRoot) {
+  // Rotate the model so its front faces +X
+  this.modelRoot.rotation.y = THREE.MathUtils.degToRad(-90);
+}
+this.el.object3D.rotation.set(0, 0, 0); // parent stays aligned with world axes
     });
   },
 
@@ -217,13 +221,13 @@ AFRAME.registerComponent('goblin-behavior', {
     // 1) Look at player once when approaching
     if (this.state === 'idle' && dist <= this.data.lookDistance && !this.hasLooked) {
       const angleToPlayer = Math.atan2(rig3.position.x - gob3.position.x, rig3.position.z - gob3.position.z);
-      gob3.rotation.set(0, angleToPlayer, 0);
+ gob3.rotation.y = angleToPlayer - THREE.MathUtils.degToRad(90);
       this.hasLooked = true;
     }
 
     // 2) Start walking when player very close
     if (this.state === 'idle' && dist <= this.data.startWalkDistance && !this.walkingStarted) {
-      gob3.rotation.set(0, 0, 0); // reset to face right (+X)
+     gob3.rotation.y = 0; // reset to face right (+X)
       
       if (this.modelRoot && this.animations.length > this.data.walkIndex) {
         try {
