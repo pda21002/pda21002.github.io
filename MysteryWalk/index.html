@@ -46,6 +46,13 @@
   <a-box width="1.5" height="0.05" depth="8" position="0 0.025 -10.75"
          material="repeat: 1 4; shader: flat; src: #pathTexture"></a-box>
 
+
+  <!-- Boundaries for first path -->
+<a-box id="left-boundary" position="-0.9 0 18" width="0.1" height="2" depth="24" color="red" visible="false"></a-box>
+<a-box id="right-boundary" position="0.9 0 18" width="0.1" height="2" depth="24" color="red" visible="false"></a-box>
+<a-box id="end-boundary" position="0 0 29.5" width="2" height="2" depth="0.1" color="red" visible="false"></a-box>
+
+
   <!-- Fork menu -->
   <a-entity id="forkMenu" visible="false" position="0 1.5 6">
     <a-box class="fork-menu-button" data-choice="left" position="-2 0 0" width="1" height="0.5" depth="0.2" color="blue"></a-box>
@@ -98,19 +105,12 @@
             goblin-behavior="walkIndex:0; lookDistance:4; startWalkDistance:1.6; speed:1.2">
   </a-entity>
 
-  <a-entity id="witchEntity" position="2.5 0 5.5" rotation="0 150 0" scale="0.8 0.8 0.8"
-          gltf-model="#witch"
+  <a-entity gltf-model="#witch" position="2.5 0 4" rotation="0 120 0" scale="0.4 0.4 0.4"
           witch-behavior="idleAnim:idle; reactAnim:bye; reactDistance:2">
-  <!-- floating text -->
-  <a-entity id="witchText"
-            text="value: Γεια! Αν ψάχνεις το παλάτι, είσαι σε σωστό δρόμο. Αρκεί να μην αφήσεις τίποτα να σε αποσπάσει!; align:center; color:#fff; width:4"
-            position="0 2 0"
-            visible="false">
   </a-entity>
-</a-entity>
+
   
-<a-entity id="mushroomEntity" position="2.3 0 3.5" rotation="0 150 0" scale="0.5 0.5 0.5"
-          gltf-model="#mushroom"
+<a-entity gltf-model="#mushroom" position="4 0 0" rotation="0 150 0" scale="0.2 0.2 0.2"
           mushroom-behavior="idleAnim:idle">
 </a-entity>
 
@@ -149,65 +149,70 @@ AFRAME.registerComponent('player-movement', {
     });
   },
 
-  tick: function () {
-    const rig = this.el;
-    let pos = rig.getAttribute('position');
-    const speed = 0.025;
+tick: function () {
+  const rig = this.el;
+  let pos = rig.getAttribute('position');
+  const speed = 0.025;
 
-    // --- Camera-relative movement ---
-    const camera = this.el.sceneEl.camera.el.object3D;
-    const camDir = new THREE.Vector3();
-    camera.getWorldDirection(camDir);
-    camDir.y = 0; camDir.normalize();
-    const right = new THREE.Vector3().crossVectors(new THREE.Vector3(0,1,0), camDir).normalize();
-    let dx=0, dz=0;
-    if(this.keys.ArrowUp){ dx -= camDir.x*speed; dz -= camDir.z*speed; }
-    if(this.keys.ArrowDown){ dx += camDir.x*speed; dz += camDir.z*speed; }
-    if(this.keys.ArrowLeft){ dx -= right.x*speed; dz -= right.z*speed; }
-    if(this.keys.ArrowRight){ dx += right.x*speed; dz += right.z*speed; }
+  // --- Camera-relative movement ---
+  const camera = this.el.sceneEl.camera.el.object3D;
+  const camDir = new THREE.Vector3();
+  camera.getWorldDirection(camDir);
+  camDir.y = 0; camDir.normalize();
+  const right = new THREE.Vector3().crossVectors(new THREE.Vector3(0,1,0), camDir).normalize();
+  let dx=0, dz=0;
+  if(this.keys.ArrowUp){ dx -= camDir.x*speed; dz -= camDir.z*speed; }
+  if(this.keys.ArrowDown){ dx += camDir.x*speed; dz += camDir.z*speed; }
+  if(this.keys.ArrowLeft){ dx -= right.x*speed; dz -= right.z*speed; }
+  if(this.keys.ArrowRight){ dx += right.x*speed; dz += right.z*speed; }
+  pos.x += dx; pos.z += dz;
 
-    pos.x += dx; pos.z += dz;
-
-    // --- Fork menu enforcement ---
-    const forkZ = 9.5; // Z position of fork
-if (!this.choiceMade && pos.z <= forkZ) {  // moving "down" toward fork
-  pos.z = forkZ;
-  rig.setAttribute('position', pos);
-  document.getElementById('forkMenu').setAttribute('visible', true);
-  return;
-}
-
-    // --- Movement bounds ---
-    let bounds;
-    if(!this.choiceMade){
-      // Player on straight path or in front of house
-      if(pos.z >= 16.75 && pos.z <= 36) bounds = {xMin:-0.75,xMax:0.75,zMin:16.75,zMax:36}; // main path
-      else if(pos.z >= 28 && pos.z <= 33) bounds = {xMin:-3,xMax:3,zMin:28,zMax:33}; // house area
-      else bounds = {xMin:-3.5,xMax:3.5,zMin:8,zMax:28}; // connection between path & house
-    } else if(pos.z <= 8.75 && pos.z > -6){
-      // Branch paths after choice
-      if(this.chosenPath==='left') bounds={xMin:-3.3,xMax:-2.3,zMin:-6.25,zMax:8.75};
-      else if(this.chosenPath==='middle') bounds={xMin:-0.75,xMax:0.75,zMin:-6.25,zMax:8.75};
-      else if(this.chosenPath==='right' && !this.followingGoblin) bounds={xMin:2.2,xMax:3.2,zMin:-6.25,zMax:8.75};
-      else bounds={xMin:-25,xMax:25,zMin:-25,zMax:25};
-    } else {
-      // Free roaming after fork if choice made
-      bounds={xMin:-25,xMax:25,zMin:-25,zMax:25};
-    }
-
-    pos.x = Math.max(bounds.xMin, Math.min(bounds.xMax, pos.x));
-    pos.z = Math.max(bounds.zMin, Math.min(bounds.zMax, pos.z));
+  // --- Fork menu enforcement ---
+  const forkZ = 9.5;
+  if (!this.choiceMade && pos.z <= forkZ) {
+    pos.z = forkZ;
     rig.setAttribute('position', pos);
+    document.getElementById('forkMenu').setAttribute('visible', true);
+    return;
+  }
 
-    // --- Losing condition ---
-    const origin = new THREE.Vector3(0,0,16);
-    const playerPos = new THREE.Vector3(pos.x,pos.y,pos.z);
-    if(playerPos.distanceTo(origin) > 35){
-      alert('You wandered too far and got lost! Game over.');
-      window.location.reload();
+  // --- Movement bounds ---
+  let bounds;
+
+  if (!this.choiceMade) {
+    // Player is still on the first path before choice
+    bounds = {xMin:-0.75, xMax:0.75, zMin:16.75, zMax:29}; 
+  } else {
+    // After choice → branch paths
+    if (pos.z <= 8.75 && pos.z > -6) {
+      if (this.chosenPath === 'left') 
+        bounds = {xMin:-3.3,xMax:-2.3,zMin:-6.25,zMax:8.75};
+      else if (this.chosenPath === 'middle') 
+        bounds = {xMin:-0.75,xMax:0.75,zMin:-6.25,zMax:8.75};
+      else if (this.chosenPath === 'right' && !this.followingGoblin) 
+        bounds = {xMin:2.2,xMax:3.2,zMin:-6.25,zMax:8.75};
+      else 
+        bounds = {xMin:-25,xMax:25,zMin:-25,zMax:25};
+    } else {
+      // Free roaming after fork
+      bounds = {xMin:-25,xMax:25,zMin:-25,zMax:25};
     }
   }
-});
+
+  // Apply boundaries
+  pos.x = Math.max(bounds.xMin, Math.min(bounds.xMax, pos.x));
+  pos.z = Math.max(bounds.zMin, Math.min(bounds.zMax, pos.z));
+  rig.setAttribute('position', pos);
+
+  // --- Losing condition ---
+  const origin = new THREE.Vector3(0,0,16);
+  const playerPos = new THREE.Vector3(pos.x,pos.y,pos.z);
+  if(playerPos.distanceTo(origin) > 35){
+    alert('You wandered too far and got lost! Game over.');
+    window.location.reload();
+  }
+}
+
 
 /* -----------------------
    Goblin behavior
@@ -297,42 +302,54 @@ this.el.object3D.rotation.set(0, 0, 0); // parent stays aligned with world axes
   }
 });
 
-  AFRAME.registerComponent('witch-behavior', {
+AFRAME.registerComponent('witch-behavior', {
   schema: {
-    idleAnim: {type: 'string', default: 'idle'},
-    reactAnim: {type: 'string', default: 'talk'},
-    reactDistance: {type: 'number', default: 2}
+    reactAnim: { type: 'string', default: 'wave' }, // όνομα animation
+    reactDistance: { type: 'number', default: 3 },
+    message: { type: 'string', default: 'Γεια! Αν ψάχνεις το παλάτι, είσαι σε σωστό δρόμο. Αρκεί να μην αφήσεις τίποτα να σε αποσπάσει!' }
   },
   init: function () {
+    this.rig = document.getElementById('rig');
     this.mixer = null;
-    this.idleAction = null;
-    this.reactAction = null;
     this.hasReacted = false;
-    this.player = document.getElementById('rig');
-    this.textEl = this.el.querySelector('#witchText');
 
-    this.el.addEventListener('model-loaded', e => {
+    this.textEl = document.createElement('a-text');
+    this.textEl.setAttribute('value', this.data.message);
+    this.textEl.setAttribute('color', '#fff');
+    this.textEl.setAttribute('align', 'center');
+    this.textEl.setAttribute('visible', 'false');
+    this.textEl.setAttribute('position', '0 2 0'); // πάνω από το κεφάλι
+    this.el.appendChild(this.textEl);
+
+    this.el.addEventListener('model-loaded', (e) => {
       const model = e.detail.model;
-      if (!model) return;
       this.mixer = new THREE.AnimationMixer(model);
-      const clips = model.animations || [];
-      const idle = clips.find(c => c.name === this.data.idleAnim);
-      const react = clips.find(c => c.name === this.data.reactAnim);
-      if (idle) {
-        this.idleAction = this.mixer.clipAction(idle);
-        this.idleAction.play();
-      }
-      if (react) this.reactAction = this.mixer.clipAction(react);
+      this.clips = model.animations || [];
+      this.action = null;
     });
   },
-  tick: function (time, dt) {
-    if (this.mixer) this.mixer.update(dt/1000);
-    if (this.hasReacted || !this.player) return;
-    const dist = this.el.object3D.position.distanceTo(this.player.object3D.position);
-    if (dist <= this.data.reactDistance && this.reactAction) {
-      if (this.idleAction) this.idleAction.stop();
-      this.reactAction.play();
-      if (this.textEl) this.textEl.setAttribute('visible', true);
+  tick: function (time, timeDelta) {
+    if (!this.rig || !this.el.object3D) return;
+
+    const rigPos = this.rig.object3D.position;
+    const witchPos = this.el.object3D.position;
+    const dist = rigPos.distanceTo(witchPos);
+
+    if (this.mixer) this.mixer.update(timeDelta / 1000);
+
+    if (!this.hasReacted && dist <= this.data.reactDistance) {
+      // Παίξε animation μία φορά
+      if (this.clips && this.clips.length > 0) {
+        const clip = THREE.AnimationClip.findByName(this.clips, this.data.reactAnim);
+        if (clip) {
+          this.action = this.mixer.clipAction(clip);
+          this.action.setLoop(THREE.LoopOnce);
+          this.action.clampWhenFinished = true;
+          this.action.play();
+        }
+      }
+      // Εμφάνισε το κείμενο
+      this.textEl.setAttribute('visible', 'true');
       this.hasReacted = true;
     }
   }
