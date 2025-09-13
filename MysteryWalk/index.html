@@ -105,7 +105,7 @@
             goblin-behavior="walkIndex:0; lookDistance:4; startWalkDistance:1.6; speed:1.2">
   </a-entity>
 
-  <a-entity gltf-model="#witch" position="2.5 0 4" rotation="0 -65 0" scale="0.4 0.4 0.4"
+  <a-entity gltf-model="#witch" position="2.5 0 4" rotation="0 -95 0" scale="0.4 0.4 0.4"
           witch-behavior="idleAnim:idle; reactAnim:bye; reactDistance:2">
   </a-entity>
 
@@ -210,6 +210,7 @@ tick: function () {
   if(playerPos.distanceTo(origin) > 35){
     alert('You wandered too far and got lost! Game over.');
     window.location.reload();
+  }
   }
 }); 
 
@@ -355,6 +356,61 @@ AFRAME.registerComponent('witch-behavior', {
   }
 });
 
+  AFRAME.registerComponent('fairy-behavior', {
+  schema: {
+    idleAnim: {type:'string', default:'Idle'},
+    reactAnim: {type:'string', default:'React'},
+    reactDistance: {type:'number', default:2},
+    speed: {type:'number', default:0} // optional if you want flying motion
+  },
+  init:function(){
+    this.rig=document.getElementById('rig');
+    this.modelRoot=null; this.mixer=null;
+    this.currentAction=null; this.idleAction=null; this.reactAction=null;
+
+    this.el.addEventListener('model-loaded', (e)=>{
+      const gltf=e.detail.model;
+      this.modelRoot=this.el.getObject3D('mesh')||gltf;
+      if(!this.modelRoot) return;
+      const clips=gltf.animations||[];
+      this.idleAction=null; this.reactAction=null;
+      clips.forEach(c=>{
+        if(c.name===this.data.idleAnim) this.idleAction=c;
+        if(c.name===this.data.reactAnim) this.reactAction=c;
+      });
+      if(this.idleAction){
+        this.mixer=new THREE.AnimationMixer(this.modelRoot);
+        const act=this.mixer.clipAction(this.idleAction);
+        act.play();
+        this.currentAction='idle';
+      }
+    });
+  },
+  tick:function(time,timeDelta){
+    if(!this.rig||!this.modelRoot||!this.mixer) return;
+    const pos=this.el.object3D.position;
+    const rigPos=this.rig.object3D.position;
+    const dist=Math.hypot(pos.x-rigPos.x,pos.z-rigPos.z);
+    const dt=(timeDelta||0)/1000;
+
+    // decide which animation
+    if(dist<=this.data.reactDistance && this.reactAction && this.currentAction!=='react'){
+      this.mixer.stopAllAction();
+      const act=this.mixer.clipAction(this.reactAction);
+      act.setLoop(THREE.LoopOnce); act.clampWhenFinished=true; act.play();
+      this.currentAction='react';
+    } else if(dist>this.data.reactDistance && this.idleAction && this.currentAction!=='idle'){
+      this.mixer.stopAllAction();
+      const act=this.mixer.clipAction(this.idleAction);
+      act.setLoop(THREE.LoopRepeat); act.play();
+      this.currentAction='idle';
+    }
+
+    this.mixer.update(dt);
+  }
+});
+  
+
 AFRAME.registerComponent('mushroom-behavior', {
   schema: {
     idleAnim: {type: 'string', default: 'idle'}
@@ -445,62 +501,6 @@ function inPath(x, z) {
     trees.appendChild(tree);
   }
 })();
-
-// schema
-AFRAME.registerComponent('fairy-behavior', {
-  schema: {
-    idleAnim: {type:'string', default:'Idle'},
-    reactAnim: {type:'string', default:'React'},
-    reactDistance: {type:'number', default:2},
-    speed: {type:'number', default:0} // optional if you want flying motion
-  },
-  init:function(){
-    this.rig=document.getElementById('rig');
-    this.modelRoot=null; this.mixer=null;
-    this.currentAction=null; this.idleAction=null; this.reactAction=null;
-
-    this.el.addEventListener('model-loaded', (e)=>{
-      const gltf=e.detail.model;
-      this.modelRoot=this.el.getObject3D('mesh')||gltf;
-      if(!this.modelRoot) return;
-      const clips=gltf.animations||[];
-      this.idleAction=null; this.reactAction=null;
-      clips.forEach(c=>{
-        if(c.name===this.data.idleAnim) this.idleAction=c;
-        if(c.name===this.data.reactAnim) this.reactAction=c;
-      });
-      if(this.idleAction){
-        this.mixer=new THREE.AnimationMixer(this.modelRoot);
-        const act=this.mixer.clipAction(this.idleAction);
-        act.play();
-        this.currentAction='idle';
-      }
-    });
-  },
-  tick:function(time,timeDelta){
-    if(!this.rig||!this.modelRoot||!this.mixer) return;
-    const pos=this.el.object3D.position;
-    const rigPos=this.rig.object3D.position;
-    const dist=Math.hypot(pos.x-rigPos.x,pos.z-rigPos.z);
-    const dt=(timeDelta||0)/1000;
-
-    // decide which animation
-    if(dist<=this.data.reactDistance && this.reactAction && this.currentAction!=='react'){
-      this.mixer.stopAllAction();
-      const act=this.mixer.clipAction(this.reactAction);
-      act.setLoop(THREE.LoopOnce); act.clampWhenFinished=true; act.play();
-      this.currentAction='react';
-    } else if(dist>this.data.reactDistance && this.idleAction && this.currentAction!=='idle'){
-      this.mixer.stopAllAction();
-      const act=this.mixer.clipAction(this.idleAction);
-      act.setLoop(THREE.LoopRepeat); act.play();
-      this.currentAction='idle';
-    }
-
-    this.mixer.update(dt);
-  }
-});
-
 
 
 </script>
