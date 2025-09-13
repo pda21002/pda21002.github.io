@@ -52,7 +52,7 @@
   </a-entity>
 
   <!-- Castle -->
-  <a-entity gltf-model="#castle" position="0 0.5 -15" width="2"></a-entity>
+  <a-entity gltf-model="#castle" position="6.99881 -0.8 -76.225" width="2"></a-entity>
 
   <!-- Player rig -->
   <a-entity id="rig" position="0 0.5 16" player-movement>
@@ -130,12 +130,13 @@ AFRAME.registerComponent('player-movement', {
     let pos = rig.getAttribute('position');
     const speed = 0.025;
 
-    // Fork menu enforcement
-    if(!this.choiceMade && pos.z <= 8.75){
-      pos.z = 8.75; rig.setAttribute('position', pos);
-      document.getElementById('forkMenu').setAttribute('visible', true);
-      return;
-    }
+// Fork menu enforcement
+if(!this.choiceMade && pos.z <= 36){  
+  pos.z = 36; rig.setAttribute('position', pos);
+  document.getElementById('forkMenu').setAttribute('visible', true);
+  return;
+}
+
 
     // camera-relative movement
     const camera = this.el.sceneEl.camera.el.object3D;
@@ -274,16 +275,26 @@ this.el.object3D.rotation.set(0, 0, 0); // parent stays aligned with world axes
   const treeTypes=['tree1','tree2','tree3','tree4'];
   const branchTreeTypes=['tree1','tree2','tree3'];
 
-  function inPath(x,z){
-    if(x>-0.9&&x<0.9&&z>8.75&&z<16.75) return true;
-    if(x>-3.5&&x<3.5&&z>8&&z<9.5) return true;
-    if(x>-3.3&&x<-2.3&&z>-6.25&&z<8.75) return true;
-    if(x>-0.75&&x<0.75&&z>-6.25&&z<8.75) return true;
-    if(x>2.3&&x<3.3&&z>-6.25&&z<8.75) return true;
-    if(x>-3.5&&x<3.5&&z>-7.5&&z<-6) return true;
-    if(x>-0.9&&x<0.9&&z<-6.25&&z>-15) return true;
-    return false;
-  }
+function inPath(x, z) {
+  if(x > -0.9 && x < 0.9 && z > 16.75 && z < 36) return true;
+
+  if(x > -3.5 && x < 3.5 && z > 8 && z < 9.5) return true;
+
+  if(x > -3.3 && x < -2.3 && z > -6.25 && z < 8.75) return true; // left
+  if(x > -0.75 && x < 0.75 && z > -6.25 && z < 8.75) return true; // middle
+  if(x > 2.3 && x < 3.3 && z > -6.25 && z < 8.75) return true; // right
+
+
+  if(x > -3.5 && x < 3.5 && z > -7.5 && z < -6) return true;
+  if(x > -0.9 && x < 0.9 && z > -15 && z < -6.25) return true;
+
+  if(x > -3 && x < 3 && z > 28 && z < 33) return true;
+
+  if(x > 4 && x < 10 && z < -70 && z > -80) return true;
+
+  return false;
+}
+
 
   for(let i=0;i<380;i++){
     let x=(Math.random()-0.5)*50, z=(Math.random()-0.5)*50;
