@@ -20,17 +20,19 @@
      <a-asset-item id="fairy3" src="assets/fairy_gm_villager4.glb"></a-asset-item>
      <a-asset-item id="fairy4" src="assets/fairy_gm_villager5.glb"></a-asset-item>
      <a-asset-item id="fairy5" src="assets/fairy_gm_villager6.glb"></a-asset-item>
+    <a-asset-item id="house" src="assets/big_medieval_town_house_4.glb"></a-asset-item>
+        <a-asset-item id="castle" src="assets/pixel_artvoxel_art_castle.glb"></a-asset-item>
   </a-assets>
 
   <!-- Ground -->
-  <a-plane rotation="-90 0 0" width="50" height="50"
-           material="repeat: 20 20; shader: flat; src: #groundTexture"></a-plane>
+  <a-plane rotation="-90 0 0" width="80" height="80"
+           material="repeat: 30 30; shader: flat; src: #groundTexture"></a-plane>
 
   <!-- Paths -->
-  <a-box width="1.5" height="0.05" depth="8" position="0 0.025 12.75"
-         material="repeat: 1 4; shader: flat; src: #pathTexture"></a-box>
+  <a-box width="1.5" height="0.05" depth="20" position="0 0.025 22"
+         material="repeat: 1 7; shader: flat; src: #pathTexture"></a-box>
   <a-box width="7" height="0.05" depth="1.5" position="0 0.03943 8.75"
-         material="repeat: 7 1; shader: flat; src: #pathTexture"></a-box>
+         material="repeat: 1 7; shader: flat; src: #pathTexture"></a-box>
   <a-box class="left-branch" width="1.5" height="0.05" depth="14" position="-2.76655 0.025 1.00951"
          material="repeat: 1 7; shader: flat; src: #pathTexture"></a-box>
   <a-box class="middle-branch" width="1.5" height="0.05" depth="14" position="0 0.025 1.03888"
@@ -38,9 +40,9 @@
   <a-box class="right-branch" width="1.5" height="0.05" depth="14" position="2.737 0.025 1.01381"
          material="repeat: 1 7; shader: flat; src: #pathTexture"></a-box>
   <a-box width="7" height="0.05" depth="1.5" position="0 0.03169 -6.25"
-         material="repeat: 7 1; shader: flat; src: #pathTexture"></a-box>
+         material="repeat: 1 7; shader: flat; src: #pathTexture"></a-box>
   <a-box width="1.5" height="0.05" depth="8" position="0 0.025 -10.75"
-         material="repeat: 1 4; shader: flat; src: #pathTexture"></a-box>
+         material="repeat: 1 7; shader: flat; src: #pathTexture"></a-box>
 
   <!-- Fork menu -->
   <a-entity id="forkMenu" visible="false" position="0 1.5 6">
@@ -50,12 +52,14 @@
   </a-entity>
 
   <!-- Castle -->
-  <a-box id="castle" position="0 0.5 -15" width="2" height="2" depth="2" color="gold"></a-box>
+  <a-entity gltf-model="castle" position="0 0.5 -15" width="2"></a-entity>
 
   <!-- Player rig -->
   <a-entity id="rig" position="0 0.5 16" player-movement>
     <a-entity camera look-controls></a-entity>
   </a-entity>
+
+  <a-entity gltf-model="#house" position="0 0 22" scale="0.5 0.5 0.5"></a-entity>
 
   <!-- Tree holder -->
   <a-entity id="trees"></a-entity>
