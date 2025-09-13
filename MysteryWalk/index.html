@@ -165,7 +165,7 @@ AFRAME.registerComponent('player-movement', {
     // Losing condition
     const origin = new THREE.Vector3(0,0,16);
     const playerPos = new THREE.Vector3(pos.x,pos.y,pos.z);
-    if(playerPos.distanceTo(origin) > 35){
+    if(playerPos.distanceTo(origin) > 30){
       alert('You wandered too far and got lost! Game over.');
       window.location.reload();
     }
