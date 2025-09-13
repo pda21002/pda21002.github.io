@@ -56,7 +56,7 @@
   <a-entity id="trees"></a-entity>
 
   <!-- Goblin at end of right path (slightly left) -->
-  <a-entity gltf-model="#goblin" position="2.5 0 -3" scale="0.3 0.3 0.3" rotation="0 180 0" goblin-behavior></a-entity>
+  <a-entity gltf-model="#goblin" position="2.5 0 -6" scale="0.3 0.3 0.3" rotation="0 180 0" goblin-behavior="walkIndex:0"></a-entity>
 
 <script>
 // --- Player Movement ---
@@ -137,115 +137,82 @@ btn.addEventListener('click', ()=>{
 // --- Goblin Behavior ---
 AFRAME.registerComponent('goblin-behavior', {
   schema: {
-    walkIndex:    { type: 'int',    default: 1 },    // index of walk clip in your GLB (0-based)
-    lookDistance: { type: 'number', default: 3.0 },  // distance to look at player
-    startWalkDistance:{ type:'number', default: 1.5 },// distance to start walking
-    speed:        { type: 'number', default: 0.8 }   // units per second
+    walkIndex: { type: 'int', default: 0 },    // index of walking anim (try 0,1,2)
+    lookDistance: { type: 'number', default: 3 },
+    startWalkDistance: { type: 'number', default: 1.5 },
+    speed: { type: 'number', default: 0.8 }    // movement speed
   },
 
   init: function () {
     this.state = 'idle';
-    this.walkingStarted = false;
     this.mixer = null;
     this.walkAction = null;
     this.animations = [];
-    this.modelRoot = null; // glTF root / mesh used for mixer
+    this.modelRoot = null;
+    this.hasLooked = false;
     this.rig = document.getElementById('rig');
 
-    // wait for model to be loaded and cache animation clips safely
     this.el.addEventListener('model-loaded', (e) => {
-      // e.detail.model is the glTF scene; try to get animations from there first
-      const gltfScene = e.detail && e.detail.model;
-      this.animations = (gltfScene && gltfScene.animations) ? gltfScene.animations.slice() : [];
-
-      // also try mesh object fallback (some setups store animations on mesh)
       const mesh = this.el.getObject3D('mesh');
-      if (mesh && mesh.animations && mesh.animations.length && !this.animations.length) {
-        this.animations = mesh.animations.slice();
-      }
-
-      // model root for mixer: prefer the `mesh` object (Three object used by A-Frame)
-      this.modelRoot = this.el.getObject3D('mesh') || gltfScene || null;
-
-      console.log('[goblin-behavior] model-loaded, animations count =', this.animations.length,
-                  'names =', this.animations.map(a => a.name || '<unnamed>'));
+      this.modelRoot = mesh || e.detail.model || null;
+      this.animations = (mesh && mesh.animations) ? mesh.animations.slice() : [];
+      console.log('[goblin] model loaded, animations =', this.animations.length);
     });
   },
 
-  /**
-   * tick receives (time, timeDelta) where timeDelta is ms since last frame
-   */
   tick: function (time, timeDelta) {
-    // small guards
-    if (!this.el.object3D) return;
-    if (!this.rig) this.rig = document.getElementById('rig');
-    if (!this.rig) return;
+    if (!this.rig || !this.el.object3D) return;
 
-    // update mixer if exists
-    const dt = (timeDelta || 0) / 1000;
-    if (this.mixer) {
-      try { this.mixer.update(dt); } catch (err) { console.warn('mixer.update error', err); }
-    }
-
-    // positions (work with object3D positions — faster than getAttribute)
     const gob3 = this.el.object3D;
     const rig3 = this.rig.object3D;
     const dx = rig3.position.x - gob3.position.x;
     const dz = rig3.position.z - gob3.position.z;
     const dist = Math.hypot(dx, dz);
+    const dt = timeDelta / 1000;
 
-    // 1) look at the player once when close enough (only once to avoid churn)
-    if (this.state === 'idle' && dist <= this.data.lookDistance && !this._hasLookedAt) {
-      // keep y-level stable when looking
-      gob3.lookAt(rig3.position.x, gob3.position.y, rig3.position.z);
-      // lock to horizontal rotation only
-      const e = gob3.rotation;
-      gob3.rotation.set(0, e.y, 0);
-      this._hasLookedAt = true;
+    // 1. Look at player once
+    if (this.state === 'idle' && dist <= this.data.lookDistance && !this.hasLooked) {
+      const angle = Math.atan2(dx, dz);
+      gob3.rotation.set(0, angle, 0);
+      this.hasLooked = true;
     }
 
-    // 2) start walking only when close enough and only once
-    if (this.state === 'idle' && dist <= this.data.startWalkDistance && !this.walkingStarted) {
-      // ensure model and animations exist before creating mixer
-      if (this.modelRoot && this.animations && this.animations.length > this.data.walkIndex) {
-        try {
-          // create the mixer exactly once
-          this.mixer = new THREE.AnimationMixer(this.modelRoot);
-          const clip = this.animations[this.data.walkIndex];
-          this.walkAction = this.mixer.clipAction(clip);
-          this.walkAction.setLoop(THREE.LoopRepeat);
-          this.walkAction.play();
-          console.log('[goblin-behavior] started walk animation (index)', this.data.walkIndex);
-        } catch (err) {
-          console.warn('[goblin-behavior] failed to create/play mixer:', err);
-          this.mixer = null;
-          this.walkAction = null;
-        }
-      } else {
-        // no animations available — just proceed to walking movement without animation
-        console.log('[goblin-behavior] no walk animation available, will move without anim');
-      }
-
-      // set state to walking and make the goblin face the intended walk direction
-      this.walkingStarted = true;
-      this.state = 'walking';
-      // face world +X (right) — adjust degrees if your path orientation differs
+    // 2. Start walking
+    if (this.state === 'idle' && dist <= this.data.startWalkDistance) {
+      // Rotate back to right (facing forest, +X axis = 90°)
       gob3.rotation.set(0, THREE.MathUtils.degToRad(90), 0);
+
+      // Play walk animation
+      if (this.modelRoot && this.animations.length > this.data.walkIndex) {
+        this.mixer = new THREE.AnimationMixer(this.modelRoot);
+        const clip = this.animations[this.data.walkIndex];
+        this.walkAction = this.mixer.clipAction(clip);
+        this.walkAction.setLoop(THREE.LoopRepeat);
+        this.walkAction.play();
+        console.log('[goblin] walk animation started at index', this.data.walkIndex);
+      }
+
+      // Change state
+      this.state = 'walking';
+
+      // BREAK boundaries → allow following goblin
+      const playerComp = this.rig.components['player-movement'];
+      if (playerComp) {
+        playerComp.followingGoblin = true;
+        console.log('[goblin] player can now follow into forest!');
+      }
     }
 
-    // 3) walking movement (apply movement with dt, and **do not** push into the player)
+    // 3. Update walking
     if (this.state === 'walking') {
-      // stop moving forward if player is overlapping too closely to avoid jitter/freeze
-      const minSeparation = 0.8; // keep small gap
-      if (dist > minSeparation) {
-        // move in +X direction in world space (this is what you used before)
-        gob3.position.x += this.data.speed * dt;
-        // update A-Frame attributes so other code reading getAttribute still sees new position
-        this.el.setAttribute('position', `${gob3.position.x} ${gob3.position.y} ${gob3.position.z}`);
-      }
+      if (this.mixer) this.mixer.update(dt);
+      gob3.position.x += this.data.speed * dt;
+      this.el.setAttribute('position',
+        `${gob3.position.x} ${gob3.position.y} ${gob3.position.z}`);
     }
   }
 });
+
 
 
 
