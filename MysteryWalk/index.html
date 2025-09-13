@@ -55,7 +55,7 @@
   <a-entity gltf-model="#castle" position="6.99881 -0.8 -76.225" width="2"></a-entity>
 
   <!-- Player rig -->
-  <a-entity id="rig" position="0 0.5 -10" player-movement>
+  <a-entity id="rig" position="0 0.5 28" player-movement>
     <a-entity camera look-controls></a-entity>
   </a-entity>
 
@@ -65,12 +65,12 @@
   <a-entity id="trees"></a-entity>
 
 <a-entity id="fairies">
-  <a-entity gltf-model="#fairy1" position="3.8 0.97 7" scale="0.1 0.1 0.1"
+  <a-entity gltf-model="#fairy1" position="3.8 0.8 7" scale="0.1 0.1 0.1"
     rotation="0 135 0"
             fairy-behavior="idleAnim:idle; reactAnim:interact1; reactDistance:2">
   </a-entity>
 
-  <a-entity gltf-model="#fairy2" position="3.7 0.95 7.2" scale="0.1 0.1 0.1"
+  <a-entity gltf-model="#fairy2" position="3.65 0.95 7.2" scale="0.1 0.1 0.1"
     rotation="0 130 0"
             fairy-behavior="idleAnim:idle; reactAnim:interact2; reactDistance:2">
   </a-entity>
@@ -289,26 +289,24 @@ this.el.object3D.rotation.set(0, 0, 0); // parent stays aligned with world axes
   const branchTreeTypes=['tree1','tree2','tree3'];
 
 function inPath(x, z) {
-  // Long straight path to fork (new Z range)
-  if(x > -0.75 && x < 0.75 && z > 16.75 && z < 36) return true;
+  // extended main straight path
+  if (x > -0.75 && x < 0.75 && z > 9.467 && z < 29.467) return true;
 
-  // Horizontal connections (front/back)
-  if(x > -3.5 && x < 3.5 && z > 8 && z < 9.5) return true;
+  // cross-section near fork
+  if (x > -3.5 && x < 3.5 && z > 8 && z < 9.5) return true;
 
-  // Branches after fork
-  if(x > -3.3 && x < -2.3 && z > -6.25 && z < 8.75) return true; // left
-  if(x > -0.75 && x < 0.75 && z > -6.25 && z < 8.75) return true; // middle
-  if(x > 2.3 && x < 3.3 && z > -6.25 && z < 8.75) return true; // right
+  // branches
+  if (x > -3.3 && x < -2.3 && z > -6.25 && z < 8.75) return true; // left
+  if (x > -0.75 && x < 0.75 && z > -6.25 && z < 8.75) return true; // middle
+  if (x > 2.3 && x < 3.3 && z > -6.25 && z < 8.75) return true; // right
 
-  // Other path connections
-  if(x > -3.5 && x < 3.5 && z > -7.5 && z < -6) return true;
-  if(x > -0.75 && x < 0.75 && z > -15 && z < -6.25) return true;
+  // other paths
+  if (x > -3.5 && x < 3.5 && z > -7.5 && z < -6) return true;
+  if (x > -0.9 && x < 0.9 && z > -15 && z < -6.25) return true;
 
-  // House area (avoid trees in front of house)
-  if(x > -3 && x < 3 && z > 28 && z < 33) return true;
-
-  // Castle (optional, keep clear)
-  if(x > 4 && x < 10 && z < -70 && z > -80) return true;
+  // other special areas (house, castle, etc.)
+  if (x > -3 && x < 3 && z > 28 && z < 33) return true; // house?
+  if (x > 4 && x < 10 && z < -70 && z > -80) return true; // castle?
 
   return false;
 }
