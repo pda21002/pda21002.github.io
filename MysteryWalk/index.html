@@ -22,6 +22,8 @@
      <a-asset-item id="fairy5" src="assets/fairy_gm_villager6.glb"></a-asset-item>
     <a-asset-item id="house" src="assets/big_medieval_town_house_4.glb"></a-asset-item>
         <a-asset-item id="castle" src="assets/pixel_artvoxel_art_castle.glb"></a-asset-item>
+      <a-asset-item id="witch" src="assets/little_witch.glb"></a-asset-item>
+      <a-asset-item id="mushroom" src="assets/mushroom_bup_minecraft_mob.glb"></a-asset-item>
   </a-assets>
 
   <!-- Ground -->
@@ -70,7 +72,7 @@
             fairy-behavior="idleAnim:idle; reactAnim:interact1; reactDistance:2">
   </a-entity>
 
-  <a-entity gltf-model="#fairy2" position="3.65 0.95 7.2" scale="0.1 0.1 0.1"
+  <a-entity gltf-model="#fairy2" position="3.8 0.95 7.2" scale="0.1 0.1 0.1"
     rotation="0 130 0"
             fairy-behavior="idleAnim:idle; reactAnim:interact2; reactDistance:2">
   </a-entity>
@@ -95,6 +97,23 @@
   <a-entity gltf-model="#goblin" position="2.5 0 -4" scale="0.3 0.3 0.3"
             goblin-behavior="walkIndex:0; lookDistance:4; startWalkDistance:1.6; speed:1.2">
   </a-entity>
+
+  <a-entity id="witchEntity" position="2.5 0 5.5" rotation="0 150 0" scale="0.8 0.8 0.8"
+          gltf-model="#witch"
+          witch-behavior="idleAnim:idle; reactAnim:bye; reactDistance:2">
+  <!-- floating text -->
+  <a-entity id="witchText"
+            text="value: Γεια! Αν ψάχνεις το παλάτι, είσαι σε σωστό δρόμο. Αρκεί να μην αφήσεις τίποτα να σε αποσπάσει!; align:center; color:#fff; width:4"
+            position="0 2 0"
+            visible="false">
+  </a-entity>
+</a-entity>
+  
+<a-entity id="mushroomEntity" position="2.3 0 3.5" rotation="0 150 0" scale="0.5 0.5 0.5"
+          gltf-model="#mushroom"
+          mushroom-behavior="idleAnim:idle">
+</a-entity>
+
 
 <script>
 /* -----------------------
@@ -277,6 +296,73 @@ this.el.object3D.rotation.set(0, 0, 0); // parent stays aligned with world axes
     }
   }
 });
+
+  AFRAME.registerComponent('witch-behavior', {
+  schema: {
+    idleAnim: {type: 'string', default: 'idle'},
+    reactAnim: {type: 'string', default: 'talk'},
+    reactDistance: {type: 'number', default: 2}
+  },
+  init: function () {
+    this.mixer = null;
+    this.idleAction = null;
+    this.reactAction = null;
+    this.hasReacted = false;
+    this.player = document.getElementById('rig');
+    this.textEl = this.el.querySelector('#witchText');
+
+    this.el.addEventListener('model-loaded', e => {
+      const model = e.detail.model;
+      if (!model) return;
+      this.mixer = new THREE.AnimationMixer(model);
+      const clips = model.animations || [];
+      const idle = clips.find(c => c.name === this.data.idleAnim);
+      const react = clips.find(c => c.name === this.data.reactAnim);
+      if (idle) {
+        this.idleAction = this.mixer.clipAction(idle);
+        this.idleAction.play();
+      }
+      if (react) this.reactAction = this.mixer.clipAction(react);
+    });
+  },
+  tick: function (time, dt) {
+    if (this.mixer) this.mixer.update(dt/1000);
+    if (this.hasReacted || !this.player) return;
+    const dist = this.el.object3D.position.distanceTo(this.player.object3D.position);
+    if (dist <= this.data.reactDistance && this.reactAction) {
+      if (this.idleAction) this.idleAction.stop();
+      this.reactAction.play();
+      if (this.textEl) this.textEl.setAttribute('visible', true);
+      this.hasReacted = true;
+    }
+  }
+});
+
+AFRAME.registerComponent('mushroom-behavior', {
+  schema: {
+    idleAnim: {type: 'string', default: 'idle'}
+  },
+  init: function () {
+    this.mixer = null;
+    this.idleAction = null;
+    this.el.addEventListener('model-loaded', e => {
+      const model = e.detail.model;
+      if (!model) return;
+      this.mixer = new THREE.AnimationMixer(model);
+      const clips = model.animations || [];
+      const idle = clips.find(c => c.name === this.data.idleAnim);
+      if (idle) {
+        this.idleAction = this.mixer.clipAction(idle);
+        this.idleAction.setLoop(THREE.LoopRepeat);
+        this.idleAction.play();
+      }
+    });
+  },
+  tick: function (time, dt) {
+    if (this.mixer) this.mixer.update(dt/1000);
+  }
+});
+
 
 
 /* -----------------------
