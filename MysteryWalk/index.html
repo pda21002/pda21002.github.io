@@ -150,7 +150,7 @@ AFRAME.registerComponent('player-movement', {
     pos.x += dx; pos.z += dz;
 
     // --- Fork menu enforcement ---
-    const forkZ = 8.75; // Z position of fork
+    const forkZ = 7.5; // Z position of fork
 if (!this.choiceMade && pos.z <= forkZ) {  // moving "down" toward fork
   pos.z = forkZ;
   rig.setAttribute('position', pos);
