@@ -15,6 +15,11 @@
     <a-asset-item id="tree3" src="assets/sequoia_redwood_tree_voxel.glb"></a-asset-item>
     <a-asset-item id="tree4" src="assets/voxel_models.glb"></a-asset-item>
     <a-asset-item id="goblin" src="assets/goblin_mob.glb"></a-asset-item>
+        <a-asset-item id="fairy1" src="assets/fairy_gm_villager1.glb"></a-asset-item>
+     <a-asset-item id="fairy2" src="assets/fairy_gm_villager3.glb"></a-asset-item>
+     <a-asset-item id="fairy3" src="assets/fairy_gm_villager4.glb"></a-asset-item>
+     <a-asset-item id="fairy4" src="assets/fairy_gm_villager5.glb"></a-asset-item>
+     <a-asset-item id="fairy5" src="assets/fairy_gm_villager6.glb"></a-asset-item>
   </a-assets>
 
   <!-- Ground -->
@@ -55,9 +60,10 @@
   <!-- Tree holder -->
   <a-entity id="trees"></a-entity>
 
+  <a-entity id="fairies"></a-entity>
   <!-- Goblin -->
-  <a-entity id="goblinEntity" gltf-model="#goblin" position="2.5 0 -4" scale="0.3 0.3 0.3"
-            goblin-behavior="walkIndex:0; lookDistance:3; startWalkDistance:1.6; speed:1.2">
+  <a-entity gltf-model="#goblin" position="2.5 0 -4" scale="0.3 0.3 0.3"
+            goblin-behavior="walkIndex:0; lookDistance:7; startWalkDistance:1.6; speed:1.2">
   </a-entity>
 
 <script>
@@ -250,6 +256,60 @@ AFRAME.registerComponent('goblin-behavior', {
     trees.appendChild(tree);
   }
 })();
+
+  // ----------------------- Fairy Behavior Component -----------------------
+AFRAME.registerComponent('fairy-behavior', {
+  schema: { idleIndex:{type:'int', default:0}, reactIndex:{type:'int', default:1}, reactDistance:{type:'number', default:2} },
+  init: function(){
+    this.mixer = null; this.animations = []; this.modelRoot=null; this.hasReacted=false;
+    this.player = document.getElementById('rig');
+    this.el.addEventListener('model-loaded', e=>{
+      const model = e.detail.model; this.modelRoot=model; this.animations = model.animations?model.animations.slice():[];
+      if(this.animations.length>this.data.idleIndex){
+        this.mixer = new THREE.AnimationMixer(this.modelRoot);
+        this.idleAction = this.mixer.clipAction(this.animations[this.data.idleIndex]);
+        this.idleAction.setLoop(THREE.LoopRepeat); this.idleAction.play();
+      }
+    });
+  },
+  tick:function(time, delta){
+    if(!this.player || !this.el.object3D) return;
+    const dt=delta/1000;
+    if(this.mixer) this.mixer.update(dt);
+    const pos=this.el.object3D.position; const pPos=this.player.object3D.position;
+    const dist=pos.distanceTo(pPos);
+    if(dist<=this.data.reactDistance && !this.hasReacted){
+      this.hasReacted=true;
+      if(this.animations.length>this.data.reactIndex){
+        const clip = this.animations[this.data.reactIndex];
+        const action = this.mixer.clipAction(clip);
+        action.reset(); action.setLoop(THREE.LoopOnce); action.clampWhenFinished=true;
+        action.play(); this.idleAction.crossFadeTo(action,0.3,false);
+        action.getMixer().addEventListener('finished', ()=>{ this.idleAction.reset().play(); this.hasReacted=false; });
+      }
+    }
+  }
+});
+
+// ----------------------- Scatter 5 Different Fairies -----------------------
+(function(){
+  const fairyModels=['#fairy1','#fairy2','#fairy3','#fairy4','#fairy5'];
+  const container=document.getElementById('fairies');
+  for(let i=0;i<5;i++){
+    const fairy=document.createElement('a-entity');
+    fairy.setAttribute('gltf-model', fairyModels[i]);
+    fairy.setAttribute('scale','0.05 0.05 0.05');
+    const x = 2.5 + Math.random()*1.5;
+    const z = 2 + Math.random()*5;
+    const y = 0.5 + Math.random();
+    fairy.setAttribute('position', `${x} ${y} ${z}`);
+    fairy.setAttribute('rotation', `0 ${Math.random()*360} 0`);
+    fairy.setAttribute('fairy-behavior','idleIndex:0; reactIndex:1; reactDistance:2');
+    container.appendChild(fairy);
+  }
+})();
+
+  
 </script>
 </a-scene>
 </body>
