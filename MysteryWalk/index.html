@@ -62,27 +62,27 @@
 
 <a-entity id="fairies">
   <a-entity gltf-model="#fairy1" position="3.5 0.9 7" scale="0.1 0.1 0.1"
-    rotation="0 90 0"
+    rotation="0 135 0"
             fairy-behavior="idleAnim:idle; reactAnim:interact1; reactDistance:2">
   </a-entity>
 
-  <a-entity gltf-model="#fairy2" position="3.8 1.1 7.2" scale="0.1 0.1 0.1"
-    rotation="0 85 0"
+  <a-entity gltf-model="#fairy2" position="3.8 1.95 7.2" scale="0.1 0.1 0.1"
+    rotation="0 130 0"
             fairy-behavior="idleAnim:idle; reactAnim:interact2; reactDistance:2">
   </a-entity>
 
-  <a-entity gltf-model="#fairy3" position="3.7 0.7 7.1" scale="0.1 0.1 0.1"
-    rotation="0 95 0"
+  <a-entity gltf-model="#fairy3" position="3.7 0.85 7.1" scale="0.1 0.1 0.1"
+    rotation="0 140 0"
             fairy-behavior="idleAnim:idle; reactAnim:cantar; reactDistance:2">
   </a-entity>
 
   <a-entity gltf-model="#fairy4" position="3.9 0.8 7.3" scale="0.1 0.1 0.1"
-    rotation="0 87 0"
+    rotation="0 132 0"
             fairy-behavior="idleAnim:idle; reactAnim:interact1; reactDistance:2">
   </a-entity>
 
   <a-entity gltf-model="#fairy5" position="3.65 1 7.15" scale="0.1 0.1 0.1"
-    rotation="0 93 0"
+    rotation="0 137 0"
             fairy-behavior="idleAnim:idle; reactAnim:interact1; reactDistance:2">
   </a-entity>
 </a-entity>
@@ -165,7 +165,7 @@ AFRAME.registerComponent('player-movement', {
     // Losing condition
     const origin = new THREE.Vector3(0,0,16);
     const playerPos = new THREE.Vector3(pos.x,pos.y,pos.z);
-    if(playerPos.distanceTo(origin) > 25){
+    if(playerPos.distanceTo(origin) > 35){
       alert('You wandered too far and got lost! Game over.');
       window.location.reload();
     }
