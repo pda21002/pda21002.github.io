@@ -55,7 +55,7 @@
   <a-entity gltf-model="#castle" position="6.99881 -0.8 -76.225" width="2"></a-entity>
 
   <!-- Player rig -->
-  <a-entity id="rig" position="0 0.5 50" player-movement>
+  <a-entity id="rig" position="0 0.5 0" player-movement>
     <a-entity camera look-controls></a-entity>
   </a-entity>
 
@@ -150,7 +150,7 @@ AFRAME.registerComponent('player-movement', {
     pos.x += dx; pos.z += dz;
 
     // --- Fork menu enforcement ---
-    const forkZ = 8.75; // Z position of fork
+    const forkZ = 29; // Z position of fork
     if(!this.choiceMade && pos.z >= forkZ){
       pos.z = forkZ; // stop player at fork
       rig.setAttribute('position', pos);
