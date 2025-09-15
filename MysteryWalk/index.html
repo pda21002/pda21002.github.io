@@ -249,10 +249,9 @@ AFRAME.registerComponent('goblin-behavior', {
       this.modelRoot = gltfScene;
       this.animations = (gltfScene.animations || []).slice();
 
-      // Rotate **root** entity, not individual meshes
-      this.el.object3D.rotation.y = THREE.MathUtils.degToRad(-90);
+      // Initial rotation: face +X
+      this.el.object3D.rotation.y = THREE.MathUtils.degToRad(0);
 
-      // Ensure goblin starts slightly above ground
       const pos = this.el.getAttribute('position');
       if (pos.y === 0) this.el.setAttribute('position', { x: pos.x, y: 0.05, z: pos.z });
     });
@@ -268,22 +267,19 @@ AFRAME.registerComponent('goblin-behavior', {
     const dist = Math.hypot(dx, dz);
     const dt = (timeDelta || 0) / 1000;
 
-    // Update animations
     if (this.mixer) this.mixer.update(dt);
 
     // 1) Look at player once
     if (this.state === 'idle' && dist <= this.data.lookDistance && !this.hasLooked) {
-      const target = new THREE.Vector3(rig3.position.x, gob3.position.y, rig3.position.z);
-      gob3.lookAt(target);
-      gob3.rotation.x = 0; // keep upright
-      gob3.rotation.z = 0;
+      const angleToPlayer = Math.atan2(rig3.position.x - gob3.position.x, rig3.position.z - gob3.position.z);
+      gob3.rotation.y = angleToPlayer + Math.PI; // 180° offset to face correctly
       this.hasLooked = true;
     }
 
-    // 2) Start walking when very close
+    // 2) Start walking
     if (this.state === 'idle' && dist <= this.data.startWalkDistance && !this.walkingStarted) {
-      // Keep initial facing direction (e.g., +X)
-      gob3.rotation.y = THREE.MathUtils.degToRad(0);
+      // Reset facing +X before walking
+      gob3.rotation.y = 0;
 
       if (this.modelRoot && this.animations.length > this.data.walkIndex) {
         this.mixer = new THREE.AnimationMixer(this.modelRoot);
@@ -304,7 +300,6 @@ AFRAME.registerComponent('goblin-behavior', {
       const minSeparation = 0.6;
       if (dist > minSeparation) gob3.position.x += this.data.speed * dt;
 
-      // Step down to ground
       const groundY = 0;
       const stepDownSpeed = 1.5;
       if (gob3.position.y > groundY) gob3.position.y = Math.max(groundY, gob3.position.y - stepDownSpeed * dt);
@@ -313,6 +308,7 @@ AFRAME.registerComponent('goblin-behavior', {
     }
   }
 });
+
 
   
 AFRAME.registerComponent('witch-behavior', {
