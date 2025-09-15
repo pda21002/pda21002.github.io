@@ -112,6 +112,13 @@
 </a-entity>
 
 
+  <!-- Goblin -->
+  <a-entity gltf-model="#goblin" position="2.5 0 -4" scale="0.3 0.3 0.3"
+            goblin-behavior="walkIndex:0; lookDistance:4; startWalkDistance:1.6; speed:1.2">
+  </a-entity>
+
+
+
 <script>
 /* -----------------------
    Player movement
@@ -322,48 +329,57 @@ AFRAME.registerComponent('goblin-behavior', {
   
 AFRAME.registerComponent('witch-behavior', {
   schema: {
-    reactAnim: { type: 'string', default: 'wave' },
+    reactAnim: { type: 'string', default: 'bye' },
     reactDistance: { type: 'number', default: 3 }
   },
 
-init: function () {
-  this.rig = document.getElementById('rig');
-  this.mixer = null;
-  this.hasReacted = false;
-
-  // look up text in the wrapper, not inside glTF
-  this.textEl = document.querySelector('#witchText');
-
-  this.el.addEventListener('model-loaded', (e) => {
-    const model = e.detail.model;
-    this.mixer = new THREE.AnimationMixer(model);
-    this.clips = model.animations || [];
+  init: function () {
+    this.rig = document.getElementById('rig');
+    this.mixer = null;
+    this.clips = [];
     this.action = null;
-  });
-},
+    this.playerNearby = false;
+
+    // Text element (inside wrapper)
+    this.textEl = this.el.parentEl.querySelector('#witchText');
+
+    this.el.addEventListener('model-loaded', (e) => {
+      const model = e.detail.model;
+      if (!model) return;
+      this.mixer = new THREE.AnimationMixer(model);
+      this.clips = model.animations || [];
+    });
+  },
+
   tick: function (time, timeDelta) {
-    if (!this.rig || !this.el.object3D) return;
+    if (!this.rig || !this.mixer) return;
 
     const rigPos = this.rig.object3D.position;
     const witchPos = this.el.object3D.position;
     const dist = rigPos.distanceTo(witchPos);
+    const dt = timeDelta / 1000;
 
-    if (this.mixer) this.mixer.update(timeDelta / 1000);
+    this.mixer.update(dt);
 
-    if (!this.hasReacted && dist <= this.data.reactDistance) {
-      // Παίξε animation μία φορά
-      if (this.clips && this.clips.length > 0) {
+    if (dist <= this.data.reactDistance) {
+      if (!this.playerNearby) {
+        // Player just approached → play animation once
         const clip = THREE.AnimationClip.findByName(this.clips, this.data.reactAnim);
         if (clip) {
           this.action = this.mixer.clipAction(clip);
           this.action.setLoop(THREE.LoopOnce);
           this.action.clampWhenFinished = true;
-          this.action.play();
+          this.action.reset().play();
         }
+        this.textEl.setAttribute('visible', true);
+        this.playerNearby = true;
       }
-      // Εμφάνισε το κείμενο
-      this.textEl.setAttribute('visible', 'true');
-      this.hasReacted = true;
+    } else {
+      if (this.playerNearby) {
+        // Player left → hide text
+        this.textEl.setAttribute('visible', false);
+        this.playerNearby = false;
+      }
     }
   }
 });
