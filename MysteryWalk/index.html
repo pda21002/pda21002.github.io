@@ -95,22 +95,13 @@
   </a-entity>
 </a-entity>
 
-<a-entity id="witch-wrapper" position="-0.07 -0.45 4">
+<a-entity id="witch-wrapper" position="2.35 0.04454 4.80785" rotation="0 -14.72 0">
   <!-- Witch model with behavior -->
-  <a-entity gltf-model="#witch" 
-            scale="0.3 0.3 0.3" 
-            rotation="0 -135 0"
-            witch-behavior="reactAnim:bye; reactDistance:2">
+  <a-entity gltf-model="assets/little_witch.glb" scale="0.3 0.3 0.3" rotation="0 -135 0" witch-behavior="reactAnim: bye; reactDistance: 2">
   </a-entity>
 
   <!-- Text NOT affected by witch scale -->
-  <a-text id="witchText"
-          value="Γεια! Αν ψάχνεις το παλάτι, είσαι σε σωστό δρόμο. Αρκεί να μην αφήσεις τίποτα να σε αποσπάσει!"
-          position="0 2 0"
-          align="center"
-          color="#fff"
-          visible="false"
-          side="double">
+  <a-text id="witchText" value="Γεια! Αν ψάχνεις το παλάτι, είσαι σε σωστό δρόμο. Αρκεί να μην αφήσεις τίποτα να σε αποσπάσει!" position="0 2 0" align="center" color="#fff" visible="false" side="double">
   </a-text>
 </a-entity>
   
@@ -248,15 +239,20 @@ AFRAME.registerComponent('goblin-behavior', {
 
     // Set initial spawn direction: facing right (+X)
     this.el.addEventListener('model-loaded', (e) => {
-      const gltfScene = e.detail.model;
-      this.modelRoot = this.el.getObject3D('mesh') || gltfScene;
-      this.animations = (gltfScene?.animations?.slice()) || [];
+const gltfScene = e.detail.model;
+this.modelRoot = gltfScene; // use the loaded scene as root
+this.animations = (gltfScene.animations || []).slice();
 
-     if (this.modelRoot) {
-  // Rotate the model so its front faces +X
-  this.modelRoot.rotation.y = THREE.MathUtils.degToRad(-90);
+// Rotate goblin mesh only, do NOT touch your carefully set rotations
+if (this.modelRoot) {
+  this.modelRoot.traverse(obj => {
+    if (obj.isMesh) obj.rotation.y += THREE.MathUtils.degToRad(-90);
+  });
 }
-this.el.object3D.rotation.set(0, 0, 0); // parent stays aligned with world axes
+
+// Ensure the goblin starts slightly above ground so it’s visible
+const pos = this.el.getAttribute('position');
+if (pos.y === 0) this.el.setAttribute('position', {x: pos.x, y: 0.05, z: pos.z}); // parent stays aligned with world axes
     });
   },
 
@@ -310,12 +306,11 @@ if (this.state === 'walking') {
     gob3.position.x += this.data.speed * dt;
 
     // when reaching the right edge of the path, step down
-    if (gob3.position.x >= 3.487) {
-      if (gob3.position.y > 0.01) {
-        gob3.position.y = Math.max(0, gob3.position.y - dt * 1.5);
-      } else {
-        gob3.position.y = 0; // lock to ground after landing
-      }
+const groundY = 0; // base ground level
+const stepDownSpeed = 1.5; // units/sec
+if (gob3.position.y > groundY) {
+  gob3.position.y = Math.max(groundY, gob3.position.y - dt * stepDownSpeed);
+}
     }
 
     // apply new position
