@@ -250,18 +250,16 @@ AFRAME.registerComponent('goblin-behavior', {
       this.modelRoot = gltfScene; 
       this.animations = (gltfScene.animations || []).slice();
 
-      // Rotate goblin mesh only
-      if (this.modelRoot) {
-        this.modelRoot.traverse(obj => {
-          if (obj.isMesh) obj.rotation.y += THREE.MathUtils.degToRad(-90);
-        });
-      }
+      // Fix "crumbled" appearance: rotate only meshes inside the model
+      this.modelRoot.traverse(obj => {
+        if (obj.isMesh) obj.rotation.y += THREE.MathUtils.degToRad(-90);
+      });
 
       // Ensure goblin starts slightly above ground
       const pos = this.el.getAttribute('position');
       if (pos.y === 0) this.el.setAttribute('position', { x: pos.x, y: 0.05, z: pos.z });
     });
-  }, // end init
+  },
 
   tick: function(time, timeDelta) {
     if (!this.rig || !this.el.object3D) return;
@@ -281,13 +279,13 @@ AFRAME.registerComponent('goblin-behavior', {
     // 1) Look at player once
     if (this.state === 'idle' && dist <= this.data.lookDistance && !this.hasLooked) {
       const angleToPlayer = Math.atan2(rig3.position.x - gob3.position.x, rig3.position.z - gob3.position.z);
-      gob3.rotation.y = angleToPlayer - THREE.MathUtils.degToRad(90);
+      gob3.rotation.y = angleToPlayer; // YOUR scene rotation logic intact
       this.hasLooked = true;
     }
 
     // 2) Start walking when player very close
     if (this.state === 'idle' && dist <= this.data.startWalkDistance && !this.walkingStarted) {
-      gob3.rotation.y = 0; // face right (+X)
+      gob3.rotation.y = Math.PI / 2; // face right (+X), same as your original
 
       if (this.modelRoot && this.animations.length > this.data.walkIndex) {
         try {
@@ -322,9 +320,9 @@ AFRAME.registerComponent('goblin-behavior', {
       // Apply new position to A-Frame element
       this.el.setAttribute('position', { x: gob3.position.x, y: gob3.position.y, z: gob3.position.z });
     }
-  } // end tick
+  }
+});
 
-}); // end AFRAME.registerComponent
 
   
 AFRAME.registerComponent('witch-behavior', {
@@ -339,13 +337,16 @@ AFRAME.registerComponent('witch-behavior', {
     this.clips = [];
     this.action = null;
     this.playerNearby = false;
+    this.animationPlayed = false; // ensures animation plays only once per approach
 
     // Text element (inside wrapper)
     this.textEl = this.el.parentEl.querySelector('#witchText');
 
+    // Wait for model to load
     this.el.addEventListener('model-loaded', (e) => {
       const model = e.detail.model;
       if (!model) return;
+
       this.mixer = new THREE.AnimationMixer(model);
       this.clips = model.animations || [];
     });
@@ -359,30 +360,37 @@ AFRAME.registerComponent('witch-behavior', {
     const dist = rigPos.distanceTo(witchPos);
     const dt = timeDelta / 1000;
 
+    // Update mixer every frame
     this.mixer.update(dt);
 
     if (dist <= this.data.reactDistance) {
       if (!this.playerNearby) {
-        // Player just approached → play animation once
-        const clip = THREE.AnimationClip.findByName(this.clips, this.data.reactAnim);
-        if (clip) {
-          this.action = this.mixer.clipAction(clip);
-          this.action.setLoop(THREE.LoopOnce);
-          this.action.clampWhenFinished = true;
-          this.action.reset().play();
-        }
-        this.textEl.setAttribute('visible', true);
+        // Player just approached
         this.playerNearby = true;
+        this.textEl.setAttribute('visible', true);
+
+        if (!this.animationPlayed) {
+          const clip = THREE.AnimationClip.findByName(this.clips, this.data.reactAnim);
+          if (clip) {
+            this.action = this.mixer.clipAction(clip);
+            this.action.setLoop(THREE.LoopOnce);
+            this.action.clampWhenFinished = true;
+            this.action.reset().play();
+          }
+          this.animationPlayed = true; // don’t replay until player leaves
+        }
       }
     } else {
       if (this.playerNearby) {
-        // Player left → hide text
-        this.textEl.setAttribute('visible', false);
+        // Player left
         this.playerNearby = false;
+        this.textEl.setAttribute('visible', false);
+        this.animationPlayed = false; // reset so next approach works
       }
     }
   }
 });
+
 
   AFRAME.registerComponent('fairy-behavior', {
   schema: {
