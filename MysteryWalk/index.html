@@ -256,66 +256,72 @@ if (pos.y === 0) this.el.setAttribute('position', {x: pos.x, y: 0.05, z: pos.z})
     });
   },
 
-  tick: function(time, timeDelta) {
-    if (!this.rig || !this.el.object3D) return;
-    const gob3 = this.el.object3D;
-    const rig3 = this.rig.object3D;
-    const dx = rig3.position.x - gob3.position.x;
-    const dz = rig3.position.z - gob3.position.z;
-    const dist = Math.hypot(dx, dz);
-    const dt = (timeDelta || 0) / 1000;
+tick: function(time, timeDelta) {
+  if (!this.rig || !this.el.object3D) return;
+  const gob3 = this.el.object3D;
+  const rig3 = this.rig.object3D;
+  const dx = rig3.position.x - gob3.position.x;
+  const dz = rig3.position.z - gob3.position.z;
+  const dist = Math.hypot(dx, dz);
+  const dt = (timeDelta || 0) / 1000;
 
-    if (this.mixer) try { this.mixer.update(dt); } catch (err) {}
+  // Update animations
+  if (this.mixer) {
+    try { this.mixer.update(dt); } catch (err) {}
+  }
 
-    // 1) Look at player once when approaching
-    if (this.state === 'idle' && dist <= this.data.lookDistance && !this.hasLooked) {
-      const angleToPlayer = Math.atan2(rig3.position.x - gob3.position.x, rig3.position.z - gob3.position.z);
- gob3.rotation.y = angleToPlayer - THREE.MathUtils.degToRad(90);
-      this.hasLooked = true;
-    }
+  // 1) Look at player once when approaching
+  if (this.state === 'idle' && dist <= this.data.lookDistance && !this.hasLooked) {
+    const angleToPlayer = Math.atan2(rig3.position.x - gob3.position.x, rig3.position.z - gob3.position.z);
+    gob3.rotation.y = angleToPlayer - THREE.MathUtils.degToRad(90);
+    this.hasLooked = true;
+  }
 
-    // 2) Start walking when player very close
-    if (this.state === 'idle' && dist <= this.data.startWalkDistance && !this.walkingStarted) {
-     gob3.rotation.y = 0; // reset to face right (+X)
-      
-      if (this.modelRoot && this.animations.length > this.data.walkIndex) {
-        try {
-          this.mixer = new THREE.AnimationMixer(this.modelRoot);
-          this.walkAction = this.mixer.clipAction(this.animations[this.data.walkIndex]);
-          this.walkAction.setLoop(THREE.LoopRepeat);
-          this.walkAction.play();
-        } catch (err) {
-          console.warn(err);
-          this.mixer = null;
-          this.walkAction = null;
-        }
+  // 2) Start walking when player very close
+  if (this.state === 'idle' && dist <= this.data.startWalkDistance && !this.walkingStarted) {
+    gob3.rotation.y = 0; // face right (+X)
+
+    if (this.modelRoot && this.animations.length > this.data.walkIndex) {
+      try {
+        this.mixer = new THREE.AnimationMixer(this.modelRoot);
+        this.walkAction = this.mixer.clipAction(this.animations[this.data.walkIndex]);
+        this.walkAction.setLoop(THREE.LoopRepeat);
+        this.walkAction.play();
+      } catch (err) {
+        console.warn(err);
+        this.mixer = null;
+        this.walkAction = null;
       }
-
-      this.walkingStarted = true;
-      this.state = 'walking';
-
-      const playerComp = this.rig.components['player-movement'];
-      if (playerComp) playerComp.followingGoblin = true;
     }
 
-    // 3) Walking motion
-if (this.state === 'walking') {
-  const minSeparation = 0.6;
-  if (dist > minSeparation) {
-    // move right
-    gob3.position.x += this.data.speed * dt;
+    this.walkingStarted = true;
+    this.state = 'walking';
 
-    // when reaching the right edge of the path, step down
-const groundY = 0; // base ground level
-const stepDownSpeed = 1.5; // units/sec
-if (gob3.position.y > groundY) {
-  gob3.position.y = Math.max(groundY, gob3.position.y - dt * stepDownSpeed);
-}
+    const playerComp = this.rig.components['player-movement'];
+    if (playerComp) playerComp.followingGoblin = true;
+  }
+
+  // 3) Walking motion
+  if (this.state === 'walking') {
+    const minSeparation = 0.6;
+    if (dist > minSeparation) {
+      // move right along +X
+      gob3.position.x += this.data.speed * dt;
+
+      // Step down to ground if above
+      const groundY = 0;
+      const stepDownSpeed = 1.5;
+      if (gob3.position.y > groundY) {
+        gob3.position.y = Math.max(groundY, gob3.position.y - stepDownSpeed * dt);
+      }
     }
 
-    // apply new position
-    this.el.setAttribute('position',
-      `${gob3.position.x} ${gob3.position.y} ${gob3.position.z}`);
+    // Apply new position to A-Frame element (object)
+    this.el.setAttribute('position', {
+      x: gob3.position.x,
+      y: gob3.position.y,
+      z: gob3.position.z
+    });
   }
 }
   }
@@ -514,7 +520,6 @@ function inPath(x, z) {
     trees.appendChild(tree);
   }
 })();
-
 
 </script>
 </a-scene>
