@@ -74,45 +74,54 @@
   <a-entity id="trees"></a-entity>
 
 <a-entity id="fairies">
-  <a-entity gltf-model="#fairy1" position="3.8 0.8 7" scale="0.1 0.1 0.1"
+  <a-entity gltf-model="#fairy1" position="3.8 0.8 7" scale="0.08 0.08 0.08"
     rotation="0 135 0"
             fairy-behavior="idleAnim:idle; reactAnim:interact1; reactDistance:2">
   </a-entity>
 
-  <a-entity gltf-model="#fairy2" position="3.8 0.95 7.2" scale="0.1 0.1 0.1"
+  <a-entity gltf-model="#fairy2" position="3.8 0.95 7.2" scale="0.08 0.08 0.08"
     rotation="0 130 0"
             fairy-behavior="idleAnim:idle; reactAnim:interact2; reactDistance:2">
   </a-entity>
 
-  <a-entity gltf-model="#fairy3" position="3.6 0.85 7.1" scale="0.1 0.1 0.1"
+  <a-entity gltf-model="#fairy3" position="3.6 0.85 7.1" scale="0.08 0.08 0.08"
     rotation="0 140 0"
             fairy-behavior="idleAnim:idle; reactAnim:cantar; reactDistance:2">
   </a-entity>
 
-  <a-entity gltf-model="#fairy4" position="3.85 0.8 7.3" scale="0.1 0.1 0.1"
+  <a-entity gltf-model="#fairy4" position="3.85 0.8 7.3" scale="0.08 0.08 0.08"
     rotation="0 132 0"
             fairy-behavior="idleAnim:idle; reactAnim:interact1; reactDistance:2">
   </a-entity>
 
-  <a-entity gltf-model="#fairy5" position="3.65 1 7.15" scale="0.1 0.1 0.1"
+  <a-entity gltf-model="#fairy5" position="3.65 1 7.15" scale="0.08 0.08 0.08"
     rotation="0 137 0"
             fairy-behavior="idleAnim:idle; reactAnim:interact1; reactDistance:2">
   </a-entity>
 </a-entity>
 
-  <!-- Goblin -->
-  <a-entity gltf-model="#goblin" position="2.5 0 -4" scale="0.3 0.3 0.3"
-            goblin-behavior="walkIndex:0; lookDistance:4; startWalkDistance:1.6; speed:1.2">
+<a-entity id="witch-wrapper" position="2.5 0.5 4">
+  <!-- Witch model with behavior -->
+  <a-entity gltf-model="#witch" 
+            scale="0.3 0.3 0.3" 
+            rotation="0 -135 0"
+            witch-behavior="reactAnim:bye; reactDistance:2">
   </a-entity>
 
-  <a-entity gltf-model="#witch" position="2.5 0 4" rotation="0 -130 0" scale="0.3 0.3 0.3"
-          witch-behavior="idleAnim:idle; reactAnim:bye; reactDistance:2">
-  <a-text id="witchText" value="Γεια! Αν ψάχνεις το παλάτι, είσαι σε σωστό δρόμο. Αρκεί να μην αφήσεις τίποτα να σε αποσπάσει!"
-          position="0 2 0" align="center" color="#fff" visible="false"></a-text>
-  </a-entity>
+  <!-- Text NOT affected by witch scale -->
+  <a-text id="witchText"
+          value="Γεια! Αν ψάχνεις το παλάτι, είσαι σε σωστό δρόμο. Αρκεί να μην αφήσεις τίποτα να σε αποσπάσει!"
+          position="0 2 0"
+          align="center"
+          color="#fff"
+          visible="false"
+          side="double">
+  </a-text>
+</a-entity>
+  
 
   
-<a-entity gltf-model="#mushroom" position="3.5 0 0" rotation="0 150 0" scale="0.15 0.15 0.15"
+<a-entity gltf-model="#mushroom" position="3 0.5 0" rotation="0 150 0" scale="0.15 0.15 0.15"
           mushroom-behavior="idleAnim:idle">
 </a-entity>
 
@@ -299,13 +308,26 @@ this.el.object3D.rotation.set(0, 0, 0); // parent stays aligned with world axes
     }
 
     // 3) Walking motion
-    if (this.state === 'walking') {
-      const minSeparation = 0.6;
-      if (dist > minSeparation) {
-        gob3.position.x += this.data.speed * dt; // move right
-        this.el.setAttribute('position', `${gob3.position.x} ${gob3.position.y} ${gob3.position.z}`);
+if (this.state === 'walking') {
+  const minSeparation = 0.6;
+  if (dist > minSeparation) {
+    // move right
+    gob3.position.x += this.data.speed * dt;
+
+    // when reaching the right edge of the path, step down
+    if (gob3.position.x >= 3.487) {
+      if (gob3.position.y > 0.01) {
+        gob3.position.y = Math.max(0, gob3.position.y - dt * 1.5);
+      } else {
+        gob3.position.y = 0; // lock to ground after landing
       }
     }
+
+    // apply new position
+    this.el.setAttribute('position',
+      `${gob3.position.x} ${gob3.position.y} ${gob3.position.z}`);
+  }
+}
   }
 });
   
@@ -315,21 +337,21 @@ AFRAME.registerComponent('witch-behavior', {
     reactDistance: { type: 'number', default: 3 }
   },
 
-  init: function () {
-    this.rig = document.getElementById('rig');
-    this.mixer = null;
-    this.hasReacted = false;
+init: function () {
+  this.rig = document.getElementById('rig');
+  this.mixer = null;
+  this.hasReacted = false;
 
-    // ✅ grab the a-text already in the entity
-    this.textEl = this.el.querySelector('#witchText');
+  // look up text in the wrapper, not inside glTF
+  this.textEl = document.querySelector('#witchText');
 
-    this.el.addEventListener('model-loaded', (e) => {
-      const model = e.detail.model;
-      this.mixer = new THREE.AnimationMixer(model);
-      this.clips = model.animations || [];
-      this.action = null;
-    });
-  },
+  this.el.addEventListener('model-loaded', (e) => {
+    const model = e.detail.model;
+    this.mixer = new THREE.AnimationMixer(model);
+    this.clips = model.animations || [];
+    this.action = null;
+  });
+},
   tick: function (time, timeDelta) {
     if (!this.rig || !this.el.object3D) return;
 
