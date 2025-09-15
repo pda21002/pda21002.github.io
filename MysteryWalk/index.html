@@ -105,12 +105,14 @@
             goblin-behavior="walkIndex:0; lookDistance:4; startWalkDistance:1.6; speed:1.2">
   </a-entity>
 
-  <a-entity gltf-model="#witch" position="2.5 0 4" rotation="0 -95 0" scale="0.4 0.4 0.4"
+  <a-entity gltf-model="#witch" position="2.5 0 4" rotation="0 -130 0" scale="0.3 0.3 0.3"
           witch-behavior="idleAnim:idle; reactAnim:bye; reactDistance:2">
+  <a-text id="witchText" value="Γεια! Αν ψάχνεις το παλάτι, είσαι σε σωστό δρόμο. Αρκεί να μην αφήσεις τίποτα να σε αποσπάσει!"
+          position="0 2 0" align="center" color="#fff" visible="false"></a-text>
   </a-entity>
 
   
-<a-entity gltf-model="#mushroom" position="4 0 0" rotation="0 150 0" scale="0.2 0.2 0.2"
+<a-entity gltf-model="#mushroom" position="3.5 0 0" rotation="0 150 0" scale="0.15 0.15 0.15"
           mushroom-behavior="idleAnim:idle">
 </a-entity>
 
@@ -168,13 +170,17 @@ tick: function () {
   pos.x += dx; pos.z += dz;
 
   // --- Fork menu enforcement ---
-  const forkZ = 9.5;
-  if (!this.choiceMade && pos.z <= forkZ) {
-    pos.z = forkZ;
-    rig.setAttribute('position', pos);
-    document.getElementById('forkMenu').setAttribute('visible', true);
-    return;
-  }
+const forkZ = 9.5;
+if (!this.choiceMade && pos.z <= forkZ) {
+  // Lock player exactly at the fork position
+  rig.setAttribute('position', {x: 0, y: pos.y, z: forkZ});
+  
+  // Show menu
+  document.getElementById('forkMenu').setAttribute('visible', true);
+
+  // ❌ Skip movement updates
+  return;
+}
 
   // --- Movement bounds ---
   let bounds;
@@ -302,25 +308,20 @@ this.el.object3D.rotation.set(0, 0, 0); // parent stays aligned with world axes
     }
   }
 });
-
+  
 AFRAME.registerComponent('witch-behavior', {
   schema: {
-    reactAnim: { type: 'string', default: 'wave' }, // όνομα animation
-    reactDistance: { type: 'number', default: 3 },
-    message: { type: 'string', default: 'Γεια! Αν ψάχνεις το παλάτι, είσαι σε σωστό δρόμο. Αρκεί να μην αφήσεις τίποτα να σε αποσπάσει!' }
+    reactAnim: { type: 'string', default: 'wave' },
+    reactDistance: { type: 'number', default: 3 }
   },
+
   init: function () {
     this.rig = document.getElementById('rig');
     this.mixer = null;
     this.hasReacted = false;
 
-    this.textEl = document.createElement('a-text');
-    this.textEl.setAttribute('value', this.data.message);
-    this.textEl.setAttribute('color', '#fff');
-    this.textEl.setAttribute('align', 'center');
-    this.textEl.setAttribute('visible', 'false');
-    this.textEl.setAttribute('position', '0 2 0'); // πάνω από το κεφάλι
-    this.el.appendChild(this.textEl);
+    // ✅ grab the a-text already in the entity
+    this.textEl = this.el.querySelector('#witchText');
 
     this.el.addEventListener('model-loaded', (e) => {
       const model = e.detail.model;
