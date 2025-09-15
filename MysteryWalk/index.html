@@ -244,16 +244,13 @@ AFRAME.registerComponent('goblin-behavior', {
     this.walkingStarted = false;
     this.rig = document.getElementById('rig');
 
-    // Listen for model load
     this.el.addEventListener('model-loaded', (e) => {
       const gltfScene = e.detail.model;
-      this.modelRoot = gltfScene; 
+      this.modelRoot = gltfScene;
       this.animations = (gltfScene.animations || []).slice();
 
-      // Fix "crumbled" appearance: rotate only meshes inside the model
-      this.modelRoot.traverse(obj => {
-        if (obj.isMesh) obj.rotation.y += THREE.MathUtils.degToRad(-90);
-      });
+      // Rotate **root** entity, not individual meshes
+      this.el.object3D.rotation.y = THREE.MathUtils.degToRad(-90);
 
       // Ensure goblin starts slightly above ground
       const pos = this.el.getAttribute('position');
@@ -272,32 +269,27 @@ AFRAME.registerComponent('goblin-behavior', {
     const dt = (timeDelta || 0) / 1000;
 
     // Update animations
-    if (this.mixer) {
-      try { this.mixer.update(dt); } catch (err) {}
-    }
+    if (this.mixer) this.mixer.update(dt);
 
     // 1) Look at player once
     if (this.state === 'idle' && dist <= this.data.lookDistance && !this.hasLooked) {
-      const angleToPlayer = Math.atan2(rig3.position.x - gob3.position.x, rig3.position.z - gob3.position.z);
-      gob3.rotation.y = angleToPlayer; // YOUR scene rotation logic intact
+      const target = new THREE.Vector3(rig3.position.x, gob3.position.y, rig3.position.z);
+      gob3.lookAt(target);
+      gob3.rotation.x = 0; // keep upright
+      gob3.rotation.z = 0;
       this.hasLooked = true;
     }
 
-    // 2) Start walking when player very close
+    // 2) Start walking when very close
     if (this.state === 'idle' && dist <= this.data.startWalkDistance && !this.walkingStarted) {
-      gob3.rotation.y = Math.PI / 2; // face right (+X), same as your original
+      // Keep initial facing direction (e.g., +X)
+      gob3.rotation.y = THREE.MathUtils.degToRad(0);
 
       if (this.modelRoot && this.animations.length > this.data.walkIndex) {
-        try {
-          this.mixer = new THREE.AnimationMixer(this.modelRoot);
-          this.walkAction = this.mixer.clipAction(this.animations[this.data.walkIndex]);
-          this.walkAction.setLoop(THREE.LoopRepeat);
-          this.walkAction.play();
-        } catch (err) {
-          console.warn(err);
-          this.mixer = null;
-          this.walkAction = null;
-        }
+        this.mixer = new THREE.AnimationMixer(this.modelRoot);
+        this.walkAction = this.mixer.clipAction(this.animations[this.data.walkIndex]);
+        this.walkAction.setLoop(THREE.LoopRepeat);
+        this.walkAction.play();
       }
 
       this.walkingStarted = true;
@@ -317,18 +309,16 @@ AFRAME.registerComponent('goblin-behavior', {
       const stepDownSpeed = 1.5;
       if (gob3.position.y > groundY) gob3.position.y = Math.max(groundY, gob3.position.y - stepDownSpeed * dt);
 
-      // Apply new position to A-Frame element
-      this.el.setAttribute('position', { x: gob3.position.x, y: gob3.position.y, z: gob3.position.z });
+      this.el.setAttribute('position', gob3.position);
     }
   }
 });
-
 
   
 AFRAME.registerComponent('witch-behavior', {
   schema: {
     reactAnim: { type: 'string', default: 'bye' },
-    reactDistance: { type: 'number', default: 3 }
+    reactDistance: { type: 'number', default: 2.5 } // match wrapper distance
   },
 
   init: function () {
@@ -337,16 +327,14 @@ AFRAME.registerComponent('witch-behavior', {
     this.clips = [];
     this.action = null;
     this.playerNearby = false;
-    this.animationPlayed = false; // ensures animation plays only once per approach
+    this.animationPlayed = false;
 
-    // Text element (inside wrapper)
-    this.textEl = this.el.parentEl.querySelector('#witchText');
+    this.wrapper = this.el.parentEl; // wrapper entity
+    this.textEl = this.wrapper.querySelector('#witchText');
 
-    // Wait for model to load
     this.el.addEventListener('model-loaded', (e) => {
       const model = e.detail.model;
       if (!model) return;
-
       this.mixer = new THREE.AnimationMixer(model);
       this.clips = model.animations || [];
     });
@@ -356,16 +344,14 @@ AFRAME.registerComponent('witch-behavior', {
     if (!this.rig || !this.mixer) return;
 
     const rigPos = this.rig.object3D.position;
-    const witchPos = this.el.object3D.position;
+    const witchPos = this.wrapper.object3D.position; // use wrapper for distance
     const dist = rigPos.distanceTo(witchPos);
     const dt = timeDelta / 1000;
 
-    // Update mixer every frame
     this.mixer.update(dt);
 
     if (dist <= this.data.reactDistance) {
       if (!this.playerNearby) {
-        // Player just approached
         this.playerNearby = true;
         this.textEl.setAttribute('visible', true);
 
@@ -377,15 +363,14 @@ AFRAME.registerComponent('witch-behavior', {
             this.action.clampWhenFinished = true;
             this.action.reset().play();
           }
-          this.animationPlayed = true; // don’t replay until player leaves
+          this.animationPlayed = true;
         }
       }
     } else {
       if (this.playerNearby) {
-        // Player left
         this.playerNearby = false;
         this.textEl.setAttribute('visible', false);
-        this.animationPlayed = false; // reset so next approach works
+        this.animationPlayed = false;
       }
     }
   }
