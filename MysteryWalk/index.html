@@ -98,10 +98,19 @@
 <a-entity gltf-model="#creepygirl" position="-3.20252 0.04765 5.73719" scale="0.0007 0.0007 0.0007" rotation="0 25 0"></a-entity>
   <a-entity gltf-model="#sisters" position="-2.60894 0.58665 1.29681" scale="0.08 0.08 0.08" rotation="0 -110 0"></a-entity>
   <a-entity gltf-model="#dwarf" position="-0.29412 0.05046 4.64215" scale="0.008 0.008 0.008" rotation="0 20 0"></a-entity>
-  <a-entity gltf-model="#wizard" position="-0.02192 0.04843 -1.66883" scale="0.4 0.4 0.4" animation-mixer="clip:6; loop:repeat"></a-entity>
+  <a-entity gltf-model="#wizard" position="-0.02192 0.04843 -1.66883" scale="0.4 0.4 0.4" animation-mixer="clip:6; loop:repeat" wizard-interact></a-entity>
   <a-entity gltf-model="#fox" position="0.33427 0.05 7.18987" scale="0.045 0.045 0.045" rotation="0 70 0"></a-entity>
   <a-entity gltf-model="#butterflies" position="-0.16089 0 30.2737" scale="1 1 1" rotation="0 0 0"></a-entity>
   <a-entity gltf-model="#ghost" position="-2.8142 0.08774 -3.2995" scale="0.2 0.2 0.2"></a-entity>
+
+  <a-entity id="wizardChoices" visible="false">
+  <a-box id="choice1" color="red" position="-1 1 -4" depth="0.2" height="0.5" width="1"></a-box>
+  <a-text value="1. Ignore him" position="-1 1.5 -4" align="center"></a-text>
+  <a-box id="choice2" color="green" position="1 1 -4" depth="0.2" height="0.5" width="1"></a-box>
+  <a-text value="2. Explain message" position="1 1.5 -4" align="center"></a-text>
+  <a-box id="choice3" color="blue" position="3 1 -4" depth="0.2" height="0.5" width="1"></a-box>
+  <a-text value="3. Get out of way" position="3 1.5 -4" align="center"></a-text>
+</a-entity>
 
 
 <script>
@@ -456,150 +465,102 @@ AFRAME.registerComponent('mushroom-behavior', {
 });
 
 AFRAME.registerComponent('wizard-interact', {
-  schema: { range: {type: 'number', default: 3} },
+  schema: { range: { type: 'number', default: 3 } },
 
   init: function() {
-    this.player = document.querySelector('#camera');
-    this.wizard = this.el;
-    this.interacted = false;
-
-    // Create text above wizard
+    this.player = document.querySelector('#rig'); // camera rig or player entity
+    this.el.setAttribute('animation-mixer', 'clip:6; loop:repeat'); // default idle
     this.text = document.createElement('a-text');
     this.text.setAttribute('value', 'ΤΙ ΔΟΥΛΕΙΑ ΕΧΕΙΣ ΕΣΥ ΕΔΩ;!');
     this.text.setAttribute('position', '0 2 0');
     this.text.setAttribute('align', 'center');
     this.text.setAttribute('visible', 'false');
-    this.wizard.appendChild(this.text);
+    this.el.appendChild(this.text);
 
-    // Store mixer and clips when model loads
-    this.mixer = null;
-    this.clips = [];
-    this.currentAction = null;
-    this.el.addEventListener('model-loaded', (e) => {
-      const model = e.detail.model;
-      if (!model) return;
-      this.mixer = new THREE.AnimationMixer(model);
-      this.clips = model.animations || [];
-    });
+    this.choices = document.querySelector('#wizardChoices');
+    this.interacted = false;
+
+    // Bind choice handlers
+    this.onChoice1 = this.onChoice1.bind(this);
+    this.onChoice2 = this.onChoice2.bind(this);
+    this.onChoice3 = this.onChoice3.bind(this);
   },
 
   tick: function() {
-    if (this.interacted || !this.mixer) return;
+    if (this.interacted) return;
 
-    const wizardPos = this.wizard.object3D.position;
+    const wizardPos = this.el.object3D.position;
     const playerPos = this.player.object3D.position;
     const dist = wizardPos.distanceTo(playerPos);
 
     if (dist < this.data.range) {
-      this.startInteraction();
       this.interacted = true;
+      this.startInteraction();
     }
   },
 
   startInteraction: function() {
-    // Show text
+    // Show text and switch wizard to "react" animation 2
     this.text.setAttribute('visible', 'true');
+    this.el.setAttribute('animation-mixer', 'clip:2; loop:repeat');
 
     // Freeze player
-    if (this.player.components['player-movement']) {
-      this.player.components['player-movement'].pause = true;
-    }
+    this.player.components['player-movement'].pause = true;
 
-    // Play a specific clip safely
-    this.playClipByIndex(2, true); // loop = true
-
-    // Show choices after a short delay
-    setTimeout(() => this.showChoices(), 500);
+    // Show choice buttons
+    this.choices.setAttribute('visible', true);
+    this.choices.querySelector('#choice1').addEventListener('click', this.onChoice1);
+    this.choices.querySelector('#choice2').addEventListener('click', this.onChoice2);
+    this.choices.querySelector('#choice3').addEventListener('click', this.onChoice3);
   },
 
-  showChoices: function() {
-    const choice = prompt(
-      "1. Ignore him\n2. Explain message\n3. Tell him to get out of your way"
-    );
-    this.handleChoice(choice);
+  hideChoices: function() {
+    this.choices.setAttribute('visible', false);
+    this.choices.querySelector('#choice1').removeEventListener('click', this.onChoice1);
+    this.choices.querySelector('#choice2').removeEventListener('click', this.onChoice2);
+    this.choices.querySelector('#choice3').removeEventListener('click', this.onChoice3);
   },
 
-  handleChoice: function(choice) {
-    switch(choice) {
-      case "1":
-        this.playClipByIndex(4, false);
-        this.moveAndDie(0.5);
-        break;
+  // Choices
+  onChoice1: function() { this.killPlayer(0.5); },
+  onChoice3: function() { this.killPlayer(0.5, 3); },
 
-      case "3":
-        this.playClipByIndex(3, false, () => {
-          this.playClipByIndex(4, false);
-          this.moveAndDie(0.5);
-        });
-        break;
+  onChoice2: function() {
+    // Animation 1 plays once
+    this.el.setAttribute('animation-mixer', 'clip:1; loop:once');
 
-      case "2":
-        this.playClipByIndex(1, false, () => {
-          this.playClipByIndex(2, true);
-          if (this.player.components['player-movement']) {
-            this.player.components['player-movement'].pause = false;
-          }
-          this.text.setAttribute('visible', 'false');
-        });
-        break;
-
-      default:
-        alert("Invalid choice. Wizard is angry!");
-    }
+    setTimeout(() => {
+      // Back to react animation 2 loop
+      this.el.setAttribute('animation-mixer', 'clip:2; loop:repeat');
+      this.text.setAttribute('visible', 'false');
+      this.player.components['player-movement'].pause = false; // unfreeze
+      this.hideChoices();
+    }, 1500);
   },
 
-  moveAndDie: function(distance) {
-    const wizardObj = this.wizard.object3D;
-    const playerPos = this.player.object3D.position.clone();
-    const dir = new THREE.Vector3().subVectors(playerPos, wizardObj.position).normalize();
-    const targetPos = wizardObj.position.clone().add(dir.multiplyScalar(distance));
+  killPlayer: function(moveDist, anim3Index) {
+    const mixer = this.el.components['animation-mixer'];
+    // Play animation 3 if specified (for "get out of way")
+    if (anim3Index) this.el.setAttribute('animation-mixer', `clip:${anim3Index}; loop:once`);
 
-    this.smoothMove(targetPos, 1000, () => {
-      this.playClipByIndex(5, false, () => {
-        alert("You died! Game over.");
-      });
-    });
-  },
+    // Move wizard slightly toward player
+    const wizard3D = this.el.object3D;
+    const dir = new THREE.Vector3().subVectors(this.player.object3D.position, wizard3D.position).normalize();
+    wizard3D.position.add(dir.multiplyScalar(moveDist));
 
-  // CSP-safe clip player
-  playClipByIndex: function(index, loop = false, onFinished = null) {
-    if (!this.mixer || !this.clips[index]) return;
-    if (this.currentAction) this.currentAction.stop();
+    // Play attack/death animation 4 then 5 (loop 5-6 times)
+    setTimeout(() => {
+      this.el.setAttribute('animation-mixer', 'clip:4; loop:once');
+      setTimeout(() => {
+        this.el.setAttribute('animation-mixer', 'clip:5; loop:5');
+        setTimeout(() => alert('You died! Game over.'), 2000);
+      }, 1000);
+    }, 500);
 
-    const action = this.mixer.clipAction(this.clips[index]);
-    action.setLoop(loop ? THREE.LoopRepeat : THREE.LoopOnce);
-    action.clampWhenFinished = true;
-    action.reset().play();
-
-    this.currentAction = action;
-
-    if (onFinished) {
-      const onEnd = () => {
-        action.removeEventListener('finished', onEnd);
-        onFinished();
-      };
-      action.addEventListener('finished', onEnd);
-    }
-  },
-
-  // Smooth move function (already CSP-safe)
-  smoothMove: function(targetPos, duration, callback) {
-    const wizardObj = this.wizard.object3D;
-    const startPos = wizardObj.position.clone();
-    let elapsed = 0;
-    const tick = (timeDelta) => {
-      elapsed += timeDelta;
-      const t = Math.min(elapsed / duration, 1);
-      wizardObj.position.lerpVectors(startPos, targetPos, t);
-      if (t < 1) {
-        requestAnimationFrame(tick);
-      } else if (callback) {
-        callback();
-      }
-    };
-    requestAnimationFrame(tick);
+    this.hideChoices();
   }
 });
+
 
 /* -----------------------
    Scatter trees
