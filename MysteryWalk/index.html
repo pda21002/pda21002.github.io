@@ -15,15 +15,15 @@
     <a-asset-item id="tree3" src="assets/sequoia_redwood_tree_voxel.glb"></a-asset-item>
     <a-asset-item id="tree4" src="assets/voxel_models.glb"></a-asset-item>
     <a-asset-item id="goblin" src="assets/goblin_mob.glb"></a-asset-item>
-        <a-asset-item id="fairy1" src="assets/fairy_gm_villager1.glb"></a-asset-item>
-     <a-asset-item id="fairy2" src="assets/fairy_gm_villager3.glb"></a-asset-item>
-     <a-asset-item id="fairy3" src="assets/fairy_gm_villager4.glb"></a-asset-item>
-     <a-asset-item id="fairy4" src="assets/fairy_gm_villager5.glb"></a-asset-item>
-     <a-asset-item id="fairy5" src="assets/fairy_gm_villager6.glb"></a-asset-item>
+    <a-asset-item id="fairy1" src="assets/fairy_gm_villager1.glb"></a-asset-item>
+    <a-asset-item id="fairy2" src="assets/fairy_gm_villager3.glb"></a-asset-item>
+    <a-asset-item id="fairy3" src="assets/fairy_gm_villager4.glb"></a-asset-item>
+    <a-asset-item id="fairy4" src="assets/fairy_gm_villager5.glb"></a-asset-item>
+    <a-asset-item id="fairy5" src="assets/fairy_gm_villager6.glb"></a-asset-item>
     <a-asset-item id="house" src="assets/big_medieval_town_house_4.glb"></a-asset-item>
-        <a-asset-item id="castle" src="assets/pixel_artvoxel_art_castle.glb"></a-asset-item>
-      <a-asset-item id="witch" src="assets/little_witch.glb"></a-asset-item>
-      <a-asset-item id="mushroom" src="assets/mushroom_bup_minecraft_mob.glb"></a-asset-item>
+    <a-asset-item id="castle" src="assets/pixel_artvoxel_art_castle.glb"></a-asset-item>
+    <a-asset-item id="witch" src="assets/little_witch.glb"></a-asset-item>
+    <a-asset-item id="mushroom" src="assets/mushroom_bup_minecraft_mob.glb"></a-asset-item>
   </a-assets>
 
   <!-- Ground -->
@@ -31,8 +31,8 @@
            material="repeat: 30 30; shader: flat; src: #groundTexture"></a-plane>
 
   <!-- Paths -->
-<a-box width="1.5" height="0.05" depth="20" position="0 0.025 19.46702" 
-  material="repeat: 1 7; shader: flat; src: #pathTexture"></a-box>
+  <a-box width="1.5" height="0.05" depth="20" position="0 0.025 19.46702" 
+         material="repeat: 1 7; shader: flat; src: #pathTexture"></a-box>
   <a-box width="7" height="0.05" depth="1.5" position="0 0.03943 8.75"
          material="repeat: 7 1; shader: flat; src: #pathTexture"></a-box>
   <a-box class="left-branch" width="1.5" height="0.05" depth="14" position="-2.76655 0.025 1.00951"
@@ -45,13 +45,6 @@
          material="repeat: 7 1; shader: flat; src: #pathTexture"></a-box>
   <a-box width="1.5" height="0.05" depth="8" position="0 0.025 -10.75"
          material="repeat: 1 4; shader: flat; src: #pathTexture"></a-box>
-
-
-  <!-- Boundaries for first path -->
-<a-box id="left-boundary" position="-0.9 0 18" width="0.1" height="2" depth="24" color="red" visible="false"></a-box>
-<a-box id="right-boundary" position="0.9 0 18" width="0.1" height="2" depth="24" color="red" visible="false"></a-box>
-<a-box id="end-boundary" position="0 0 29.5" width="2" height="2" depth="0.1" color="red" visible="false"></a-box>
-
 
   <!-- Fork menu -->
   <a-entity id="forkMenu" visible="false" position="0 1.5 6">
@@ -68,52 +61,32 @@
     <a-entity camera look-controls></a-entity>
   </a-entity>
 
+  <!-- House -->
   <a-entity gltf-model="#house" position="-0.16089 0 30.2737" scale="0.15 0.18 0.15" rotation="0 180 0"></a-entity>
 
   <!-- Tree holder -->
   <a-entity id="trees"></a-entity>
 
-<a-entity id="fairies">
-  <a-entity gltf-model="#fairy1" position="3.74164 0.77241 7.10959" scale="0.08 0.08 0.08" rotation="0 155 0"
-            fairy-behavior="idleAnim:idle; reactAnim:interact1; reactDistance:2">
+  <!-- Fairies -->
+  <a-entity id="fairies">
+    <a-entity gltf-model="#fairy1" position="3.74164 0.77241 7.10959" scale="0.08 0.08 0.08" rotation="0 155 0" fairy-behavior="idleAnim:idle; reactAnim:interact1; reactDistance:2"></a-entity>
+    <a-entity gltf-model="#fairy2" position="3.7658 0.95 7.2" scale="0.08 0.08 0.08" rotation="-10.94 140.27 0" fairy-behavior="idleAnim:idle; reactAnim:interact2; reactDistance:2"></a-entity>
+    <a-entity gltf-model="#fairy3" position="3.6441 0.85 7.09739" scale="0.08 0.08 0.08" rotation="0 150 0" fairy-behavior="idleAnim:idle; reactAnim:cantar; reactDistance:2"></a-entity>
+    <a-entity gltf-model="#fairy4" position="3.82107 0.81339 7.2185" scale="0.08 0.08 0.08" rotation="0 132 0" fairy-behavior="idleAnim:idle; reactAnim:interact1; reactDistance:2"></a-entity>
+    <a-entity gltf-model="#fairy5" position="3.65 1 7.15" scale="0.08 0.08 0.08" rotation="-14.46 150 0" fairy-behavior="idleAnim:idle; reactAnim:interact1; reactDistance:2"></a-entity>
   </a-entity>
 
-  <a-entity gltf-model="#fairy2" position="3.7658 0.95 7.2" scale="0.08 0.08 0.08" rotation="-10.94 140.27 0"
-            fairy-behavior="idleAnim:idle; reactAnim:interact2; reactDistance:2">
+  <!-- Witch -->
+  <a-entity id="witch" position="2.35 0.04454 4.80785" rotation="0 -14.72 0">
+    <a-entity gltf-model="#witch" scale="0.3 0.3 0.3" rotation="0 -135 0" witch-behavior="reactAnim: bye; reactDistance: 2"></a-entity>
+    <a-text id="witchText" value="Γεια! Αν ψάχνεις το παλάτι, είσαι σε σωστό δρόμο. Αρκεί να μην αφήσεις τίποτα να σε αποσπάσει!" position="2.35 0.5 4.80785" align="center" color="#fff" visible="false" side="double" font="https://cdn.aframe.io/fonts/mozillavr.fnt" scale="0.5 0.5 0.5"></a-text>
   </a-entity>
 
-  <a-entity gltf-model="#fairy3" position="3.6441 0.85 7.09739" scale="0.08 0.08 0.08" rotation="0 150 0"
-            fairy-behavior="idleAnim:idle; reactAnim:cantar; reactDistance:2">
-  </a-entity>
-
-  <a-entity gltf-model="#fairy4" position="3.82107 0.81339 7.2185" scale="0.08 0.08 0.08" rotation="0 132 0"
-            fairy-behavior="idleAnim:idle; reactAnim:interact1; reactDistance:2">
-  </a-entity>
-
-  <a-entity gltf-model="#fairy5" position="3.65 1 7.15" scale="0.08 0.08 0.08" rotation="-14.46 150 0" 
-            fairy-behavior="idleAnim:idle; reactAnim:interact1; reactDistance:2">
-  </a-entity>
-</a-entity>
-
-<a-entity id="witch" position="2.35 0.04454 4.80785" rotation="0 -14.72 0">
-  <a-entity gltf-model="assets/little_witch.glb" scale="0.3 0.3 0.3" rotation="0 -135 0" witch-behavior="reactAnim: bye; reactDistance: 2">
-  </a-entity>
-
-<a-text id="witchText" value="Γεια! Αν ψάχνεις το παλάτι, είσαι σε σωστό δρόμο. Αρκεί να μην αφήσεις τίποτα να σε αποσπάσει!" 
-        position="2.35 0.5 4.80785" align="center" color="#fff" visible="false" side="double" font="https://cdn.aframe.io/fonts/mozillavr.fnt" scale="0.5 0.5 0.5">
-</a-text>
-  
-
-  
-<a-entity gltf-model="#mushroom" position="3.335 0.05 0" rotation="0 150 0" scale="0.15 0.15 0.15"
-          mushroom-behavior="idleAnim:idle">
-</a-entity>
-
+  <!-- Mushroom -->
+  <a-entity gltf-model="#mushroom" position="3.335 0.05 0" rotation="0 150 0" scale="0.15 0.15 0.15" mushroom-behavior="idleAnim:idle"></a-entity>
 
   <!-- Goblin -->
-  <a-entity gltf-model="#goblin" position="2.5 0 -4" scale="0.3 0.3 0.3"
-            goblin-behavior="walkIndex:0; lookDistance:4; startWalkDistance:1.6; speed:1.2">
-  </a-entity>
+  <a-entity gltf-model="#goblin" position="2.5 0 -4" scale="0.3 0.3 0.3" goblin-behavior="walkIndex:0; lookDistance:4; startWalkDistance:1.6; speed:1.2"></a-entity>
 
 
 
