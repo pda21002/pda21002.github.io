@@ -100,7 +100,7 @@
   </a-entity>
 
 <a-text id="witchText" value="Γεια! Αν ψάχνεις το παλάτι, είσαι σε σωστό δρόμο. Αρκεί να μην αφήσεις τίποτα να σε αποσπάσει!" 
-        position="2.35 1 4.80785" align="center" color="#fff" visible="false" side="double" font="https://cdn.aframe.io/fonts/mozillavr.fnt" scale="0.5 0.5 0.5">
+        position="2.35 0.5 4.80785" align="center" color="#fff" visible="false" side="double" font="https://cdn.aframe.io/fonts/mozillavr.fnt" scale="0.5 0.5 0.5">
 </a-text>
   
 
@@ -329,8 +329,7 @@ AFRAME.registerComponent('goblin-behavior', {
 AFRAME.registerComponent('witch-behavior', {
   schema: {
     reactAnim: { type: 'string', default: 'bye' },
-    reactDistance: { type: 'number', default: 2.5 },
-    textYOffset: { type: 'number', default: 2 } // how high above her head
+    reactDistance: { type: 'number', default: 2.5 }
   },
 
   init: function () {
@@ -339,69 +338,54 @@ AFRAME.registerComponent('witch-behavior', {
     this.clips = [];
     this.currentAction = null;
     this.playerNearby = false;
-
-    // Create text dynamically if it doesn't exist
-    if (!this.textEl) {
-      this.textEl = document.createElement('a-text');
-      this.textEl.setAttribute('value', 'Γεια! Αν ψάχνεις το παλάτι, είσαι σε σωστό δρόμο. Αρκεί να μην αφήσεις τίποτα να σε αποσπάσει!');
-      this.textEl.setAttribute('align', 'center');
-      this.textEl.setAttribute('color', '#fff');
-      this.textEl.setAttribute('visible', 'false');
-      this.textEl.setAttribute('side', 'double');
-      this.el.sceneEl.appendChild(this.textEl); // add to scene directly
-    }
+    this.textEl = document.getElementById('witchText');
 
     this.el.addEventListener('model-loaded', (e) => {
       const model = e.detail.model;
       if (!model) return;
-      this.mixer = new THREE.AnimationMixer(model);
-      this.clips = model.animations || [];
+
+      // Defer mixer setup slightly to prevent blocking
+      setTimeout(() => {
+        this.mixer = new THREE.AnimationMixer(model);
+        this.clips = model.animations || [];
+      }, 100); // 100ms delay
     });
   },
 
   tick: function (time, timeDelta) {
     if (!this.rig || !this.mixer) return;
 
+    const rigPos = this.rig.object3D.position;
+    const witchPos = this.el.object3D.position;
+    const dist = rigPos.distanceTo(witchPos);
     const dt = timeDelta / 1000;
+
     this.mixer.update(dt);
 
-    // Distance to player
-    const witchPos = new THREE.Vector3();
-    this.el.object3D.getWorldPosition(witchPos);
+    if (dist <= this.data.reactDistance) {
+      if (!this.playerNearby) {
+        this.playerNearby = true;
 
-    const rigPos = this.rig.object3D.position;
-    const dist = witchPos.distanceTo(rigPos);
+        if (this.textEl) {
+          this.textEl.setAttribute('visible', true);
+          setTimeout(() => this.textEl.setAttribute('visible', false), 3000);
+        }
 
-    // Show/hide text
-    if (dist <= this.data.reactDistance && !this.playerNearby) {
-      this.playerNearby = true;
-      this.textEl.setAttribute('visible', true);
-
-      setTimeout(() => { this.textEl.setAttribute('visible', false); }, 3000);
-
-      // Play animation
-      const clip = THREE.AnimationClip.findByName(this.clips, this.data.reactAnim);
-      if (clip) {
-        if (this.currentAction) this.currentAction.stop();
-        this.currentAction = this.mixer.clipAction(clip);
-        this.currentAction.setLoop(THREE.LoopOnce);
-        this.currentAction.clampWhenFinished = true;
-        this.currentAction.reset().play();
+        const clip = THREE.AnimationClip.findByName(this.clips, this.data.reactAnim);
+        if (clip) {
+          if (this.currentAction) this.currentAction.stop();
+          this.currentAction = this.mixer.clipAction(clip);
+          this.currentAction.setLoop(THREE.LoopOnce);
+          this.currentAction.clampWhenFinished = true;
+          this.currentAction.reset().play();
+        }
       }
-    } else if (dist > this.data.reactDistance) {
+    } else {
       this.playerNearby = false;
     }
-
-    // Position text above witch
-    const textPos = witchPos.clone();
-    textPos.y += this.data.textYOffset;
-    this.textEl.object3D.position.copy(textPos);
-
-    // Make text face camera
-    const camPos = this.el.sceneEl.camera.el.object3D.getWorldPosition(new THREE.Vector3());
-    this.textEl.object3D.lookAt(camPos);
   }
 });
+
 
 
   AFRAME.registerComponent('fairy-behavior', {
