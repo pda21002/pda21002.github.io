@@ -147,7 +147,8 @@ AFRAME.registerComponent('player-movement', {
       btn.object3D.renderOrder = 999;
     });
   },
-
+  
+tick: function () {
 const rig = this.el;
 
 // Wizard freeze → lock movement + camera
