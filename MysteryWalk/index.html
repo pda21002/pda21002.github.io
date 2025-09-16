@@ -473,9 +473,9 @@ function inPath(x, z) {
   if (x > -5.5 && x < 5.5 && z > 11 && z < 12.5) return true;
 
   // branches
-  if (x > -5 && x < -1 && z > -7 && z < 10) return true; // left
-  if (x > -1.2 && x < 1 && z > -7 && z < 10) return true; // middle
-  if (x > 1.25 && x < 5 && z > -7 && z < 10) return true; // right
+  if (x > -5 && x < -1 && z < -7 && z > 10) return true; // left
+  if (x > -1.2 && x < 1 && z < -7 && z > 10) return true; // middle
+  if (x > 1.25 && x < 5 && z < -7 && z > 10) return true; // right
 
   // other paths
   if (x > -4.5 && x < 4.5 && z > -8.5 && z < -7) return true;
