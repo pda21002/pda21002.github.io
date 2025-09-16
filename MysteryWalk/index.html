@@ -99,7 +99,7 @@
   <a-entity gltf-model="#sisters" position="-2.60894 0.58665 1.29681" scale="0.08 0.08 0.08" rotation="0 -110 0"></a-entity>
   <a-entity gltf-model="#dwarf" position="-0.29412 0.05046 4.64215" scale="0.008 0.008 0.008" rotation="0 20 0"></a-entity>
   <a-entity gltf-model="#wizard" position="-0.02192 0.04843 -1.66883" scale="0.4 0.4 0.4"></a-entity>
-  <a-entity gltf-model="#fox" position="0.33427 0.05 7.18987" scale="0.045 0.045 0.045" rotation="0 70 0"></a-entity>
+  <a-entity gltf-model="#fox" position="0.33427 0.05 7.18987" scale="0.045 0.045 0.045" rotation="0 70 0" animation-mixer="clip:6; loop:repeat"></a-entity>
   <a-entity gltf-model="#butterflies" position="-0.16089 0 30.2737" scale="1 1 1" rotation="0 0 0"></a-entity>
   <a-entity gltf-model="#ghost" position="-2.8142 0.08774 -3.2995" scale="0.2 0.2 0.2"></a-entity>
   
@@ -454,6 +454,116 @@ AFRAME.registerComponent('mushroom-behavior', {
   }
 });
 
+AFRAME.registerComponent('wizard-interact', {
+  schema: { range: {type: 'number', default: 3} },
+  init: function() {
+    this.player = document.querySelector('#camera'); // camera or player
+    this.wizard = this.el;
+    
+    // Text above wizard
+    this.text = document.createElement('a-text');
+    this.text.setAttribute('value', 'ΤΙ ΔΟΥΛΕΙΑ ΕΧΕΙΣ ΕΣΥ ΕΔΩ;!');
+    this.text.setAttribute('position', '0 2 0');
+    this.text.setAttribute('align', 'center');
+    this.text.setAttribute('visible', 'false');
+    this.wizard.appendChild(this.text);
+    
+    this.interacted = false;
+  },
+
+  tick: function() {
+    if (this.interacted) return;
+    
+    const wizardPos = this.wizard.object3D.position;
+    const playerPos = this.player.object3D.position;
+    const dist = wizardPos.distanceTo(playerPos);
+    
+    if (dist < this.data.range) {
+      this.startInteraction();
+      this.interacted = true;
+    }
+  },
+
+  startInteraction: function() {
+    const mixer = this.wizard.components['animation-mixer'];
+    
+    // Animation 2 loop + show text
+    this.wizard.setAttribute('animation-mixer', 'clip:2; loop:repeat');
+    this.text.setAttribute('visible', 'true');
+    
+    // Freeze player in place
+    this.player.setAttribute('movement-controls', 'enabled: false');
+
+    // Wait a short time then show choices
+    setTimeout(() => this.showChoices(), 500);
+  },
+
+  showChoices: function() {
+    // Simple prompt for demonstration; can be replaced by 3D buttons
+    const choice = prompt(
+      "1. Ignore him\n2. Explain message\n3. Tell him to get out of your way"
+    );
+    this.handleChoice(choice);
+  },
+
+ handleChoice: function(choice) {
+    const mixer = this.wizard.components['animation-mixer'];
+    const wizardPos = this.wizard.object3D.position;
+    
+    switch(choice) {
+      case "1": // Ignore
+        // Play animation 4 once
+        mixer.stopAllAction();
+        mixer.playAction(4, { loop: THREE.LoopOnce });
+        
+        // Move wizard slightly toward player
+        this.moveAndDie(wizardPos, 0.5);
+        break;
+
+      case "3": // Get out of the way
+        // Play animation 3 once first
+        mixer.stopAllAction();
+        mixer.playAction(3, { loop: THREE.LoopOnce });
+        
+        mixer.addEventListener('finished', () => {
+          // Then move wizard slightly toward player while playing animation 4 once
+          mixer.playAction(4, { loop: THREE.LoopOnce });
+          this.moveAndDie(wizardPos, 0.5);
+        });
+        break;
+
+      case "2": // Explain
+        mixer.stopAllAction();
+        mixer.playAction(1, { loop: THREE.LoopOnce });
+        
+        mixer.addEventListener('finished', () => {
+          mixer.playAction(2, { loop: Infinity });
+          this.player.setAttribute('movement-controls', 'enabled: true');
+          this.text.setAttribute('visible', 'false');
+        });
+        break;
+
+      default:
+        alert("Invalid choice. Wizard is angry!");
+        break;
+    }
+},
+
+moveAndDie: function(startPos, distance) {
+    const wizard = this.wizard.object3D;
+    const dir = new THREE.Vector3();
+    dir.subVectors(this.player.object3D.position, startPos).normalize();
+    const targetPos = startPos.clone().add(dir.multiplyScalar(distance));
+    
+    const mixer = this.wizard.components['animation-mixer'];
+    
+    this.smoothMove(targetPos, 1000, () => {
+      // After moving, play animation 5 multiple times
+      mixer.playAction(5, { loop: 5 });
+      setTimeout(() => alert("You died! Game over."), 2000);
+    });
+}
+
 
 
 /* -----------------------
@@ -473,9 +583,9 @@ function inPath(x, z) {
   if (x > -5.5 && x < 5.5 && z > 11 && z < 12.5) return true;
 
   // branches
-  if (x > -5 && x < -1 && z < -7 && z > 10) return true; // left
-  if (x > -1.2 && x < 1 && z < -7 && z > 10) return true; // middle
-  if (x > 1.25 && x < 5 && z < -7 && z > 10) return true; // right
+if (x > -5 && x < -1 && z > -7 && z < 10) return true; // left
+if (x > -1.2 && x < 1 && z > -7 && z < 10) return true; // middle
+if (x > 1.25 && x < 5 && z > -7 && z < 10) return true; // right
 
   // other paths
   if (x > -4.5 && x < 4.5 && z > -8.5 && z < -7) return true;
@@ -485,7 +595,7 @@ function inPath(x, z) {
   if (x > -3.3 && x < 3.8 && z > 27.5 && z < 33.7) return true;
 
 // Castle exclusion
-if (x > -8 && x < 7.5 && z < -12 && z > -30) return true;
+if (x > -8 && x < 7.5 && z > -30 && z < -12) return true;
 
 
   // Witch exclusion
