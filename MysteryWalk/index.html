@@ -215,7 +215,7 @@ if (!this.choiceMade && pos.z <= forkZ) {
   // --- Losing condition ---
   const origin = new THREE.Vector3(0,0,16);
   const playerPos = new THREE.Vector3(pos.x,pos.y,pos.z);
-  if(playerPos.distanceTo(origin) > 30){
+  if(playerPos.distanceTo(origin) > 35){
     alert('You wandered too far and got lost! Game over.');
     window.location.reload();
   }
@@ -244,22 +244,25 @@ AFRAME.registerComponent('goblin-behavior', {
     this.walkingStarted = false;
     this.rig = document.getElementById('rig');
 
+    // Start goblin at y=2.5 (on path)
+    const pos = this.el.getAttribute('position');
+    this.el.setAttribute('position', { x: pos.x, y: 2.5, z: pos.z });
+
     this.el.addEventListener('model-loaded', (e) => {
       const gltfScene = e.detail.model;
-      this.modelRoot = gltfScene;
-      this.animations = (gltfScene.animations || []).slice();
+      this.modelRoot = this.el.getObject3D('mesh') || gltfScene;
+      this.animations = (gltfScene?.animations?.slice()) || [];
 
-      // Initial rotation: face +X
-      this.el.object3D.rotation.y = THREE.MathUtils.degToRad(0);
-
-      const pos = this.el.getAttribute('position');
-      if (pos.y === 0) this.el.setAttribute('position', { x: pos.x, y: 0.05, z: pos.z });
+      if (this.modelRoot) {
+        // Rotate model so front faces +X
+        this.modelRoot.rotation.y = THREE.MathUtils.degToRad(-90);
+      }
+      this.el.object3D.rotation.set(0, 0, 0); // parent aligned with world axes
     });
   },
 
   tick: function(time, timeDelta) {
     if (!this.rig || !this.el.object3D) return;
-
     const gob3 = this.el.object3D;
     const rig3 = this.rig.object3D;
     const dx = rig3.position.x - gob3.position.x;
@@ -267,29 +270,33 @@ AFRAME.registerComponent('goblin-behavior', {
     const dist = Math.hypot(dx, dz);
     const dt = (timeDelta || 0) / 1000;
 
-    if (this.mixer) this.mixer.update(dt);
+    if (this.mixer) try { this.mixer.update(dt); } catch (err) {}
 
-// 1) Look at player once
-if (this.state === 'idle' && dist <= this.data.lookDistance && !this.hasLooked) {
-  const angleToPlayer = Math.atan2(
-    rig3.position.x - gob3.position.x,
-    rig3.position.z - gob3.position.z
-  );
-  gob3.rotation.y = angleToPlayer; // face player directly
-  this.hasLooked = true;
-}
+    // 1) Look at player once when approaching
+    if (this.state === 'idle' && dist <= this.data.lookDistance && !this.hasLooked) {
+      const angleToPlayer = Math.atan2(
+        rig3.position.x - gob3.position.x,
+        rig3.position.z - gob3.position.z
+      );
+      gob3.rotation.y = angleToPlayer - THREE.MathUtils.degToRad(90);
+      this.hasLooked = true;
+    }
 
-// 2) Start walking
-if (this.state === 'idle' && dist <= this.data.startWalkDistance && !this.walkingStarted) {
-  // Reset facing +X before walking
-  gob3.rotation.y = 0;
-
+    // 2) Start walking when player very close
+    if (this.state === 'idle' && dist <= this.data.startWalkDistance && !this.walkingStarted) {
+      gob3.rotation.y = 0; // face +X again
 
       if (this.modelRoot && this.animations.length > this.data.walkIndex) {
-        this.mixer = new THREE.AnimationMixer(this.modelRoot);
-        this.walkAction = this.mixer.clipAction(this.animations[this.data.walkIndex]);
-        this.walkAction.setLoop(THREE.LoopRepeat);
-        this.walkAction.play();
+        try {
+          this.mixer = new THREE.AnimationMixer(this.modelRoot);
+          this.walkAction = this.mixer.clipAction(this.animations[this.data.walkIndex]);
+          this.walkAction.setLoop(THREE.LoopRepeat);
+          this.walkAction.play();
+        } catch (err) {
+          console.warn(err);
+          this.mixer = null;
+          this.walkAction = null;
+        }
       }
 
       this.walkingStarted = true;
@@ -302,17 +309,23 @@ if (this.state === 'idle' && dist <= this.data.startWalkDistance && !this.walkin
     // 3) Walking motion
     if (this.state === 'walking') {
       const minSeparation = 0.6;
-      if (dist > minSeparation) gob3.position.x += this.data.speed * dt;
+      if (dist > minSeparation) {
+        gob3.position.x += this.data.speed * dt; // move right
 
-      const groundY = 0;
-      const stepDownSpeed = 1.5;
-      if (gob3.position.y > groundY) gob3.position.y = Math.max(groundY, gob3.position.y - stepDownSpeed * dt);
+        // Abrupt "step off" when past end of path
+        if (gob3.position.x > 3.525 && gob3.position.y > 0) {
+          gob3.position.y = 0;
+        }
 
-      this.el.setAttribute('position', gob3.position);
+        this.el.setAttribute('position', {
+          x: gob3.position.x,
+          y: gob3.position.y,
+          z: gob3.position.z
+        });
+      }
     }
   }
 });
-
 
   
 AFRAME.registerComponent('witch-behavior', {
@@ -326,7 +339,7 @@ AFRAME.registerComponent('witch-behavior', {
     this.mixer = null;
     this.clips = [];
     this.wrapper = this.el.parentEl;
-    this.textEl = this.wrapper.querySelector('#witchText');
+    this.textEl = document.getElementById('witchText'); // FIXED
     this.currentAction = null;
     this.playerNearby = false;
 
@@ -481,20 +494,33 @@ function inPath(x, z) {
   if (x > -0.9 && x < 0.9 && z > -15 && z < -6.25) return true;
 
   // other special areas (house, castle, etc.)
-  if (x > -3 && x < 3 && z > 28 && z < 33) return true; // house?
-  if (x > 4 && x < 10 && z < -70 && z > -80) return true; // castle?
+  if (x > -3 && x < 3 && z > 28 && z < 33) return true;
 
+  // Castle exclusion
+  if (x > 4 && x < 10 && z > -80 && z < -70) return true;
+
+  // Witch exclusion
+  if (x > 1 && x < 4 && z > 3 && z < 6) return true;
+
+  // Goblin exclusion
+  if (x > 2 && x < 4 && z > -6 && z < -2) return true;
+
+  // Fairies exclusion
+  if (x > 2 && x < 5 && z > 6 && z < 8) return true;
+
+  // Mushroom exclusion
+  if (x > 2 && x < 4 && z > -1 && z < 1) return true;
   return false;
 }
 
 
 
-  for(let i=0;i<380;i++){
+  for(let i=0;i<500;i++){
     let x=(Math.random()-0.5)*50, z=(Math.random()-0.5)*50;
     if(inPath(x,z)) continue;
     const type=treeTypes[Math.floor(Math.random()*treeTypes.length)];
     let scale=0.01+Math.random()*0.01;
-    if(type==='tree4') scale*=20; if(type==='tree3') scale*=4;
+    if(type==='tree4') scale*=25; if(type==='tree3') scale*=3.5;
     const rotY=Math.random()*360;
     let tree=document.createElement('a-entity');
     tree.setAttribute('gltf-model',`#${type}`);
@@ -508,7 +534,7 @@ function inPath(x, z) {
     const z=-6+Math.random()*14;
     let x = Math.random()<0.5 ? -2.0+(Math.random()*1.0) : 1.0+(Math.random()*1.0);
     const type=branchTreeTypes[Math.floor(Math.random()*branchTreeTypes.length)];
-    let scale=0.01+Math.random()*0.01; if(type==='tree3') scale*=4;
+    let scale=0.01+Math.random()*0.01; if(type==='tree3') scale*=3.5;
     const rotY=Math.random()*360;
     let tree=document.createElement('a-entity');
     tree.setAttribute('gltf-model',`#${type}`);
