@@ -95,7 +95,7 @@
   </a-entity>
 </a-entity>
 
-<a-entity id="witch-wrapper" position="2.35 0.04454 4.80785" rotation="0 -14.72 0">
+<a-entity id="witch" position="2.35 0.04454 4.80785" rotation="0 -14.72 0">
   <a-entity gltf-model="assets/little_witch.glb" scale="0.3 0.3 0.3" rotation="0 -135 0" witch-behavior="reactAnim: bye; reactDistance: 2">
   </a-entity>
 
@@ -329,16 +329,27 @@ AFRAME.registerComponent('goblin-behavior', {
 AFRAME.registerComponent('witch-behavior', {
   schema: {
     reactAnim: { type: 'string', default: 'bye' },
-    reactDistance: { type: 'number', default: 2.5 }
+    reactDistance: { type: 'number', default: 2.5 },
+    textYOffset: { type: 'number', default: 2 } // how high above her head
   },
 
   init: function () {
     this.rig = document.getElementById('rig');
     this.mixer = null;
     this.clips = [];
-    this.textEl = document.getElementById('witchText'); // FIXED
     this.currentAction = null;
     this.playerNearby = false;
+
+    // Create text dynamically if it doesn't exist
+    if (!this.textEl) {
+      this.textEl = document.createElement('a-text');
+      this.textEl.setAttribute('value', 'Γεια! Αν ψάχνεις το παλάτι, είσαι σε σωστό δρόμο. Αρκεί να μην αφήσεις τίποτα να σε αποσπάσει!');
+      this.textEl.setAttribute('align', 'center');
+      this.textEl.setAttribute('color', '#fff');
+      this.textEl.setAttribute('visible', 'false');
+      this.textEl.setAttribute('side', 'double');
+      this.el.sceneEl.appendChild(this.textEl); // add to scene directly
+    }
 
     this.el.addEventListener('model-loaded', (e) => {
       const model = e.detail.model;
@@ -348,29 +359,27 @@ AFRAME.registerComponent('witch-behavior', {
     });
   },
 
-tick: function (time, timeDelta) {
-  if (!this.rig || !this.mixer) return;
+  tick: function (time, timeDelta) {
+    if (!this.rig || !this.mixer) return;
 
-  const rigPos = this.rig.object3D.position;
-  const witchPos = this.wrapper.object3D.position;
-  const dist = rigPos.distanceTo(witchPos);
-  const dt = timeDelta / 1000;
+    const dt = timeDelta / 1000;
+    this.mixer.update(dt);
 
-  this.mixer.update(dt);
+    // Distance to player
+    const witchPos = new THREE.Vector3();
+    this.el.object3D.getWorldPosition(witchPos);
 
-  if (dist <= this.data.reactDistance) {
-    if (!this.playerNearby) {
+    const rigPos = this.rig.object3D.position;
+    const dist = witchPos.distanceTo(rigPos);
+
+    // Show/hide text
+    if (dist <= this.data.reactDistance && !this.playerNearby) {
       this.playerNearby = true;
-
-      // show text
       this.textEl.setAttribute('visible', true);
 
-      // auto-hide after 3s
-      setTimeout(() => {
-        this.textEl.setAttribute('visible', false);
-      }, 3000);
+      setTimeout(() => { this.textEl.setAttribute('visible', false); }, 3000);
 
-      // play animation once
+      // Play animation
       const clip = THREE.AnimationClip.findByName(this.clips, this.data.reactAnim);
       if (clip) {
         if (this.currentAction) this.currentAction.stop();
@@ -379,12 +388,21 @@ tick: function (time, timeDelta) {
         this.currentAction.clampWhenFinished = true;
         this.currentAction.reset().play();
       }
+    } else if (dist > this.data.reactDistance) {
+      this.playerNearby = false;
     }
-  } else {
-    this.playerNearby = false;
+
+    // Position text above witch
+    const textPos = witchPos.clone();
+    textPos.y += this.data.textYOffset;
+    this.textEl.object3D.position.copy(textPos);
+
+    // Make text face camera
+    const camPos = this.el.sceneEl.camera.el.object3D.getWorldPosition(new THREE.Vector3());
+    this.textEl.object3D.lookAt(camPos);
   }
-}
 });
+
 
   AFRAME.registerComponent('fairy-behavior', {
   schema: {
