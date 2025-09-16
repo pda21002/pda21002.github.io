@@ -105,11 +105,18 @@
     <!-- Wizard (replace previous wizard entity) -->
   <a-entity gltf-model="#wizard" position="-0.02192 0.04843 -1.66883" scale="0.4 0.4 0.4" rotation="0 0 0" wizard-behavior></a-entity>
 
- <a-entity id="wizardMenu" visible="false">
-  <a-plane class="wizard-choice" data-choice="ignore" position="-1 2 -3" width="1.5" height="0.5" color="red" text="value: Ignore him; align:center;"></a-plane>
-  <a-plane class="wizard-choice" data-choice="explain" position="0 2 -3" width="1.5" height="0.5" color="green" text="value: Explain; align:center;"></a-plane>
-  <a-plane class="wizard-choice" data-choice="getout" position="1 2 -3" width="1.5" height="0.5" color="blue" text="value: Get out of my way; align:center;"></a-plane>
+<a-entity id="wizardMenu" visible="false">
+  <a-plane class="wizard-choice fork-menu-button" data-choice="ignore"
+           position="-1 2 -3" width="1.5" height="0.5"
+           color="red" text="value: Ignore him; align:center;"></a-plane>
+  <a-plane class="wizard-choice fork-menu-button" data-choice="explain"
+           position="0 2 -3" width="1.5" height="0.5"
+           color="green" text="value: Explain; align:center;"></a-plane>
+  <a-plane class="wizard-choice fork-menu-button" data-choice="getout"
+           position="1 2 -3" width="1.5" height="0.5"
+           color="blue" text="value: Get out of my way; align:center;"></a-plane>
 </a-entity>
+
   
 <script>
 /* -----------------------
@@ -486,145 +493,62 @@ AFRAME.registerComponent('mushroom-behavior', {
   }
 });
 
+<script>
 AFRAME.registerComponent('wizard-behavior', {
-  schema: {
-    detectionDistance: {default: 12},   // notice player
-    engageDistance: {default: 4}        // freeze + choices
-  },
-
   init: function () {
-    this.playerRig = document.getElementById('rig');
+    this.player = document.querySelector('#rig');
+    this.menu = document.querySelector('#wizardMenu');
     this.state = 'idle';
+    this.distanceNotice = 2.5;
+    this.distanceDecision = 1.2;
 
-    // Default: animation 6 loop (wizard idle)
-    this.el.setAttribute('animation-mixer', {clip: '6', loop: 'repeat'});
+    // Start idle animation (6)
+    this.el.setAttribute('animation-mixer', {clip: 6, loop: 'repeat'});
 
-    // Reference to text bubble
-    this.textEl = document.createElement('a-text');
-    this.textEl.setAttribute('position', '0 2.5 0');
-    this.textEl.setAttribute('align', 'center');
-    this.textEl.setAttribute('color', '#FF0000');
-    this.textEl.setAttribute('value', '');
-    this.el.appendChild(this.textEl);
+    // Attach click listeners for wizard choices
+    this.menu.querySelectorAll('.fork-menu-button').forEach(choice => {
+      choice.addEventListener('click', () => {
+        const action = choice.getAttribute('data-choice');
+        if (action === 'ignore' || action === 'getout') {
+          // animation 4 → 5 × 5 → death
+          this.el.setAttribute('animation-mixer', {clip: 4, loop: 'once'});
+          setTimeout(() => {
+            this.el.setAttribute('animation-mixer', {clip: 5, loop: 5});
+            setTimeout(() => alert('You died! Game over.'), 1000);
+          }, 800); 
+        } else if (action === 'explain') {
+          this.el.setAttribute('animation-mixer', {clip: 1, loop: 'once'});
+          this.player.setAttribute('player-movement', 'frozen', false);
+          // return to idle
+          setTimeout(() => this.el.setAttribute('animation-mixer', {clip: 2, loop: 'repeat'}), 800);
+        }
 
-    // Set up menu (hidden at start)
-    this.menu = document.getElementById('wizardMenu');
-    if (this.menu) {
-      this.menu.setAttribute('visible', false);
-      this.setupChoices();
-    }
-  },
-
-  tick: function () {
-    if (!this.playerRig) return;
-
-    const wizardPos = new THREE.Vector3().copy(this.el.object3D.position);
-    const playerPos = new THREE.Vector3().copy(this.playerRig.object3D.position);
-    const dist = wizardPos.distanceTo(playerPos);
-
-    if (this.state === 'idle' && dist < this.data.detectionDistance) {
-      this.enterAlertState();
-    }
-
-    if (this.state === 'alert' && dist < this.data.engageDistance) {
-      this.enterEngageState();
-    }
-  },
-
-  enterAlertState: function () {
-    this.state = 'alert';
-    this.el.setAttribute('animation-mixer', {clip: '2', loop: 'repeat'});
-    this.textEl.setAttribute('value', 'ΤΙ ΔΟΥΛΕΙΑ ΕΧΕΙΣ ΕΣΥ ΕΔΩ;!');
-  },
-
-  enterEngageState: function () {
-    this.state = 'engage';
-    this.playerRig.components['player-movement'].frozen = true;
-    if (this.menu) this.menu.setAttribute('visible', true);
-  },
-
-  setupChoices: function () {
-    const scene = this.el.sceneEl;
-
-    this.menu.querySelectorAll('.wizard-choice').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const choice = btn.getAttribute('data-choice');
-        this.resolveChoice(choice);
+        this.menu.setAttribute('visible', false);
       });
     });
   },
 
-  resolveChoice: function (choice) {
-    this.menu.setAttribute('visible', false);
+  tick: function () {
+    if (this.state === 'decision') return;
 
-    if (choice === 'ignore') {
-      // Approaches slightly + anim 4 once + anim 5 loop (kill)
-      this.approachPlayer(() => {
-        this.playSequence(['4'], () => {
-          this.playLoop('5', 6, () => this.gameOver());
-        });
-      });
+    const playerPos = this.player.object3D.position;
+    const wizardPos = this.el.object3D.position;
+    const dist = playerPos.distanceTo(wizardPos);
 
-    } else if (choice === 'explain') {
-      // Anim 1 once → back to anim 2 loop, unfreeze player
-      this.playSequence(['1'], () => {
-        this.el.setAttribute('animation-mixer', {clip: '2', loop: 'repeat'});
-        this.playerRig.components['player-movement'].frozen = false;
-        this.state = 'alert'; // stays alert idle
-      });
-
-    } else if (choice === 'getout') {
-      // Anim 3 once + approach + anim 4 once + anim 5 spam (kill)
-      this.playSequence(['3'], () => {
-        this.approachPlayer(() => {
-          this.playSequence(['4'], () => {
-            this.playLoop('5', 6, () => this.gameOver());
-          });
-        });
-      });
+    if (this.state === 'idle' && dist < this.distanceNotice) {
+      this.state = 'noticed';
+      this.el.setAttribute('animation-mixer', {clip: 2, loop: 'repeat'});
     }
-  },
 
-  approachPlayer: function (onDone) {
-    // Move wizard closer by 0.5 units on Z for drama
-    const pos = this.el.getAttribute('position');
-    this.el.setAttribute('position', {x: pos.x, y: pos.y, z: pos.z + 0.5});
-    if (onDone) setTimeout(onDone, 1000);
-  },
-
-  playSequence: function (clips, onDone) {
-    let i = 0;
-    const next = () => {
-      if (i >= clips.length) {
-        if (onDone) onDone();
-        return;
-      }
-      this.el.setAttribute('animation-mixer', {clip: clips[i], loop: 'once'});
-      i++;
-      setTimeout(next, 1500); // wait ~1.5s per anim
-    };
-    next();
-  },
-
-  playLoop: function (clip, times, onDone) {
-    let count = 0;
-    const playOnce = () => {
-      if (count >= times) {
-        if (onDone) onDone();
-        return;
-      }
-      this.el.setAttribute('animation-mixer', {clip: clip, loop: 'once'});
-      count++;
-      setTimeout(playOnce, 1200); // time per loop
-    };
-    playOnce();
-  },
-
-  gameOver: function () {
-    alert('The wizard destroyed you! Game over.');
-    window.location.reload();
+    if (this.state === 'noticed' && dist <= this.distanceDecision) {
+      this.state = 'decision';
+      this.player.setAttribute('player-movement', 'frozen', true);
+      this.menu.setAttribute('visible', true);
+    }
   }
 });
+</script>
+
 
   
 
