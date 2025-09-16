@@ -101,7 +101,7 @@
   <a-entity gltf-model="#wizard" position="-0.02192 0.04843 -1.66883" scale="0.4 0.4 0.4"></a-entity>
   <a-entity gltf-model="#fox" position="0.33427 0.05 7.18987" scale="0.045 0.045 0.045" rotation="0 70 0"></a-entity>
   <a-entity gltf-model="#butterflies" position="-0.16089 0 30.2737" scale="1 1 1" rotation="0 0 0"></a-entity>
-  <a-entity gltf-model="#ghost" position="-0.16089 0 30.2737" scale="1 1 1" rotation="0 0 0"></a-entity>
+  <a-entity gltf-model="#ghost" position="-2.8142 0.08774 -3.2995" scale="0.2 0.2 0.2"></a-entity>
   
 <script>
 /* -----------------------
@@ -473,9 +473,9 @@ function inPath(x, z) {
   if (x > -3.5 && x < 3.5 && z > 8 && z < 9.5) return true;
 
   // branches
-  if (x > -4 && x < -2.3 && z > -6.25 && z < 8.75) return true; // left
-  if (x > -0.75 && x < 0.75 && z > -6.25 && z < 8.75) return true; // middle
-  if (x > 2.3 && x < 4.5 && z > -6.25 && z < 8.75) return true; // right
+  if (x > -5 && x < -1.5 && z > -7 && z < 10) return true; // left
+  if (x > -1 && x < 1 && z > -7 && z < 10 return true; // middle
+  if (x > 2.8 && x < 5 && z > -7 && z < 10) return true; // right
 
   // other paths
   if (x > -3.5 && x < 3.5 && z > -7.5 && z < -6) return true;
@@ -485,7 +485,7 @@ function inPath(x, z) {
   if (x > -3.3 && x < 3.8 && z > 27.5 && z < 33.7) return true;
 
   // Castle exclusion
-  if (x > -7 && x < 6.5 && z > -13 && z < -28) return true;
+  if (x > -8 && x < 7.5 && z > -12 && z < -30) return true;
 
   // Witch exclusion
   if (x > 1 && x < 4 && z > 3 && z < 6) return true;
@@ -503,10 +503,11 @@ function inPath(x, z) {
 
 
 
-  for(let i=0;i<500;i++){
+  for(let i=0;i<600;i++){
     let x=(Math.random()-0.5)*70, z=(Math.random()-0.5)*70;
     if(inPath(x,z)) continue;
     const type=treeTypes[Math.floor(Math.random()*treeTypes.length)];
+    if (type === 'tree4' && z > -7 && z < 9) continue;
     let scale=0.01+Math.random()*0.01;
     if(type==='tree4') scale*=35; if(type==='tree3') scale*=3.5;
     const rotY=Math.random()*360;
