@@ -103,7 +103,7 @@
   <a-entity gltf-model="#butterflies" position="-0.16089 0 30.2737" scale="1 1 1" rotation="0 0 0"></a-entity>
   <a-entity gltf-model="#ghost" position="-2.8142 0.08774 -3.2995" scale="0.2 0.2 0.2"></a-entity>
 
-</a-scene>
+
 <script>
 /* -----------------------
    Player movement
@@ -563,7 +563,7 @@ moveAndDie: function(startPos, distance) {
       mixer.playAction(5, { loop: 5 });
       setTimeout(() => alert("You died! Game over."), 2000);
     });
-}
+},
 
 
 
@@ -647,5 +647,6 @@ if (x > -8 && x < 7.5 && z > -30 && z < -12) return true;
 })();
 
 </script>
+</a-scene>
 </body>
 </html>
