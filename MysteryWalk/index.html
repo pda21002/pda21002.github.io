@@ -515,8 +515,8 @@ function inPath(x, z) {
 
 
 
-  for(let i=0;i<600;i++){
-    let x=(Math.random()-0.5)*80, z=(Math.random()-0.5)*80;
+  for(let i=0;i<500;i++){
+    let x=(Math.random()-0.5)*70, z=(Math.random()-0.5)*70;
     if(inPath(x,z)) continue;
     const type=treeTypes[Math.floor(Math.random()*treeTypes.length)];
     let scale=0.01+Math.random()*0.01;
@@ -530,7 +530,7 @@ function inPath(x, z) {
     trees.appendChild(tree);
   }
 
-  for(let i=0;i<100;i++){
+  for(let i=0;i<80;i++){
     const z=-6+Math.random()*14;
     let x = Math.random()<0.5 ? -2.0+(Math.random()*1.0) : 1.0+(Math.random()*1.0);
     const type=branchTreeTypes[Math.floor(Math.random()*branchTreeTypes.length)];
