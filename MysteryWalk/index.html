@@ -215,7 +215,7 @@ if (!this.choiceMade && pos.z <= forkZ) {
   // --- Losing condition ---
   const origin = new THREE.Vector3(0,0,16);
   const playerPos = new THREE.Vector3(pos.x,pos.y,pos.z);
-  if(playerPos.distanceTo(origin) > 35){
+  if(playerPos.distanceTo(origin) > 30){
     alert('You wandered too far and got lost! Game over.');
     window.location.reload();
   }
@@ -269,17 +269,21 @@ AFRAME.registerComponent('goblin-behavior', {
 
     if (this.mixer) this.mixer.update(dt);
 
-    // 1) Look at player once
-    if (this.state === 'idle' && dist <= this.data.lookDistance && !this.hasLooked) {
-      const angleToPlayer = Math.atan2(rig3.position.x - gob3.position.x, rig3.position.z - gob3.position.z);
-      gob3.rotation.y = angleToPlayer + Math.PI; // 180° offset to face correctly
-      this.hasLooked = true;
-    }
+// 1) Look at player once
+if (this.state === 'idle' && dist <= this.data.lookDistance && !this.hasLooked) {
+  const angleToPlayer = Math.atan2(
+    rig3.position.x - gob3.position.x,
+    rig3.position.z - gob3.position.z
+  );
+  gob3.rotation.y = angleToPlayer; // face player directly
+  this.hasLooked = true;
+}
 
-    // 2) Start walking
-    if (this.state === 'idle' && dist <= this.data.startWalkDistance && !this.walkingStarted) {
-      // Reset facing +X before walking
-      gob3.rotation.y = 0;
+// 2) Start walking
+if (this.state === 'idle' && dist <= this.data.startWalkDistance && !this.walkingStarted) {
+  // Reset facing +X before walking
+  gob3.rotation.y = 0;
+
 
       if (this.modelRoot && this.animations.length > this.data.walkIndex) {
         this.mixer = new THREE.AnimationMixer(this.modelRoot);
@@ -314,19 +318,17 @@ AFRAME.registerComponent('goblin-behavior', {
 AFRAME.registerComponent('witch-behavior', {
   schema: {
     reactAnim: { type: 'string', default: 'bye' },
-    reactDistance: { type: 'number', default: 2.5 } // match wrapper distance
+    reactDistance: { type: 'number', default: 2.5 }
   },
 
   init: function () {
     this.rig = document.getElementById('rig');
     this.mixer = null;
     this.clips = [];
-    this.action = null;
-    this.playerNearby = false;
-    this.animationPlayed = false;
-
-    this.wrapper = this.el.parentEl; // wrapper entity
+    this.wrapper = this.el.parentEl;
     this.textEl = this.wrapper.querySelector('#witchText');
+    this.currentAction = null;
+    this.playerNearby = false;
 
     this.el.addEventListener('model-loaded', (e) => {
       const model = e.detail.model;
@@ -340,7 +342,7 @@ AFRAME.registerComponent('witch-behavior', {
     if (!this.rig || !this.mixer) return;
 
     const rigPos = this.rig.object3D.position;
-    const witchPos = this.wrapper.object3D.position; // use wrapper for distance
+    const witchPos = this.wrapper.object3D.position;
     const dist = rigPos.distanceTo(witchPos);
     const dt = timeDelta / 1000;
 
@@ -351,26 +353,24 @@ AFRAME.registerComponent('witch-behavior', {
         this.playerNearby = true;
         this.textEl.setAttribute('visible', true);
 
-        if (!this.animationPlayed) {
-          const clip = THREE.AnimationClip.findByName(this.clips, this.data.reactAnim);
-          if (clip) {
-            this.action = this.mixer.clipAction(clip);
-            this.action.setLoop(THREE.LoopOnce);
-            this.action.clampWhenFinished = true;
-            this.action.reset().play();
-          }
-          this.animationPlayed = true;
+        const clip = THREE.AnimationClip.findByName(this.clips, this.data.reactAnim);
+        if (clip) {
+          if (this.currentAction) this.currentAction.stop();
+          this.currentAction = this.mixer.clipAction(clip);
+          this.currentAction.setLoop(THREE.LoopOnce);
+          this.currentAction.clampWhenFinished = true;
+          this.currentAction.reset().play();
         }
       }
     } else {
       if (this.playerNearby) {
         this.playerNearby = false;
         this.textEl.setAttribute('visible', false);
-        this.animationPlayed = false;
       }
     }
   }
 });
+
 
 
   AFRAME.registerComponent('fairy-behavior', {
