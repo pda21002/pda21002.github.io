@@ -96,14 +96,12 @@
 </a-entity>
 
 <a-entity id="witch-wrapper" position="2.35 0.04454 4.80785" rotation="0 -14.72 0">
-  <!-- Witch model with behavior -->
   <a-entity gltf-model="assets/little_witch.glb" scale="0.3 0.3 0.3" rotation="0 -135 0" witch-behavior="reactAnim: bye; reactDistance: 2">
   </a-entity>
 
-  <!-- Text NOT affected by witch scale -->
-  <a-text id="witchText" value="Γεια! Αν ψάχνεις το παλάτι, είσαι σε σωστό δρόμο. Αρκεί να μην αφήσεις τίποτα να σε αποσπάσει!" position="0 2 0" align="center" color="#fff" visible="false" side="double">
-  </a-text>
-</a-entity>
+<a-text id="witchText" value="Γεια! Αν ψάχνεις το παλάτι, είσαι σε σωστό δρόμο. Αρκεί να μην αφήσεις τίποτα να σε αποσπάσει!" 
+        position="2.35 2.5 4.80785" align="center" color="#fff" visible="false" side="double">
+</a-text>
   
 
   
@@ -246,7 +244,7 @@ AFRAME.registerComponent('goblin-behavior', {
 
     // Start goblin at y=2.5 (on path)
     const pos = this.el.getAttribute('position');
-    this.el.setAttribute('position', { x: pos.x, y: 0.5, z: pos.z });
+    this.el.setAttribute('position', { x: pos.x, y: 0.05, z: pos.z });
 
     this.el.addEventListener('model-loaded', (e) => {
       const gltfScene = e.detail.model;
@@ -338,7 +336,6 @@ AFRAME.registerComponent('witch-behavior', {
     this.rig = document.getElementById('rig');
     this.mixer = null;
     this.clips = [];
-    this.wrapper = this.el.parentEl;
     this.textEl = document.getElementById('witchText'); // FIXED
     this.currentAction = null;
     this.playerNearby = false;
@@ -518,12 +515,12 @@ function inPath(x, z) {
 
 
 
-  for(let i=0;i<700;i++){
+  for(let i=0;i<600;i++){
     let x=(Math.random()-0.5)*80, z=(Math.random()-0.5)*80;
     if(inPath(x,z)) continue;
     const type=treeTypes[Math.floor(Math.random()*treeTypes.length)];
     let scale=0.01+Math.random()*0.01;
-    if(type==='tree4') scale*=30; if(type==='tree3') scale*=3.5;
+    if(type==='tree4') scale*=35; if(type==='tree3') scale*=3.5;
     const rotY=Math.random()*360;
     let tree=document.createElement('a-entity');
     tree.setAttribute('gltf-model',`#${type}`);
@@ -533,7 +530,7 @@ function inPath(x, z) {
     trees.appendChild(tree);
   }
 
-  for(let i=0;i<150;i++){
+  for(let i=0;i<100;i++){
     const z=-6+Math.random()*14;
     let x = Math.random()<0.5 ? -2.0+(Math.random()*1.0) : 1.0+(Math.random()*1.0);
     const type=branchTreeTypes[Math.floor(Math.random()*branchTreeTypes.length)];
