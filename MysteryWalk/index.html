@@ -148,25 +148,41 @@ AFRAME.registerComponent('player-movement', {
     });
   },
 
-tick: function () {
-  if (this.wizardFrozen) return;
-  
-  const rig = this.el;
-  let pos = rig.getAttribute('position');
-  const speed = 0.025;
+const rig = this.el;
 
-  // --- Camera-relative movement ---
-  const camera = this.el.sceneEl.camera.el.object3D;
-  const camDir = new THREE.Vector3();
-  camera.getWorldDirection(camDir);
-  camDir.y = 0; camDir.normalize();
-  const right = new THREE.Vector3().crossVectors(new THREE.Vector3(0,1,0), camDir).normalize();
-  let dx=0, dz=0;
-  if(this.keys.ArrowUp){ dx -= camDir.x*speed; dz -= camDir.z*speed; }
-  if(this.keys.ArrowDown){ dx += camDir.x*speed; dz += camDir.z*speed; }
-  if(this.keys.ArrowLeft){ dx -= right.x*speed; dz -= right.z*speed; }
-  if(this.keys.ArrowRight){ dx += right.x*speed; dz += right.z*speed; }
-  pos.x += dx; pos.z += dz;
+// Wizard freeze → lock movement + camera
+if (this.frozen) {
+  const cam = rig.querySelector('[camera]');
+  if (cam) cam.setAttribute('look-controls', 'enabled: false'); // freeze camera rotation
+  return; // stop movement completely
+} else {
+  const cam = rig.querySelector('[camera]');
+  if (cam) cam.setAttribute('look-controls', 'enabled: true'); // re-enable camera
+}
+
+// Fork menu freeze → lock movement only, camera stays active
+if (this.forkFrozen) {
+  return; // skip movement but allow looking around
+}
+
+// --- movement code below ---
+let pos = rig.getAttribute('position');
+const speed = 0.025;
+
+// Camera-relative movement
+const camera = this.el.sceneEl.camera.el.object3D;
+const camDir = new THREE.Vector3();
+camera.getWorldDirection(camDir);
+camDir.y = 0;
+camDir.normalize();
+const right = new THREE.Vector3().crossVectors(new THREE.Vector3(0,1,0), camDir).normalize();
+let dx=0, dz=0;
+if(this.keys.ArrowUp){ dx -= camDir.x*speed; dz -= camDir.z*speed; }
+if(this.keys.ArrowDown){ dx += camDir.x*speed; dz += camDir.z*speed; }
+if(this.keys.ArrowLeft){ dx -= right.x*speed; dz -= right.z*speed; }
+if(this.keys.ArrowRight){ dx += right.x*speed; dz += right.z*speed; }
+pos.x += dx; pos.z += dz;
+
 
   // --- Fork menu enforcement ---
 const forkZ = 9.5;
@@ -468,164 +484,127 @@ AFRAME.registerComponent('mushroom-behavior', {
 
 AFRAME.registerComponent('wizard-behavior', {
   schema: {
-    idleAnim: { type: 'int', default: 5 },       // animation 6 (0-indexed)
-    alertAnim: { type: 'int', default: 1 },      // animation 2
-    explainAnim: { type: 'int', default: 0 },    // animation 1
-    ignoreAnim: { type: 'int', default: 3 },     // animation 4
-    deathAnim: { type: 'int', default: 4 },      // animation 5
-    getOutAnim: { type: 'int', default: 2 },     // animation 3
-    triggerDistance: { type: 'number', default: 3 }, // distance to detect player
-    approachDistance: { type: 'number', default: 1.2 } // how close to freeze player
+    idleAnim: { default: 6 },      // animation index 6
+    seePlayerAnim: { default: 2 }, // animation index 2
+    explainAnim: { default: 1 },   // animation index 1
+    ignoreAnim: { default: 4 },    // animation index 4
+    dieAnim: { default: 5 },       // animation index 5
+    getOutAnim: { default: 3 }     // animation index 3
   },
 
   init: function() {
-    this.mixer = null;
-    this.animations = [];
-    this.modelRoot = null;
     this.player = document.getElementById('rig');
-    this.frozenPlayer = false;
-    this.choicesShown = false;
+    this.mixer = null;
+    this.modelRoot = null;
+    this.hasSeenPlayer = false;
+    this.menuOpen = false;
 
-    this.el.addEventListener('model-loaded', e => {
-      const gltf = e.detail.model;
-      this.modelRoot = this.el.getObject3D('mesh') || gltf;
-      this.animations = (gltf?.animations?.slice()) || [];
+    this.el.addEventListener('model-loaded', (e) => {
+      this.modelRoot = this.el.getObject3D('mesh') || e.detail.model;
+      this.animations = e.detail.model?.animations || [];
 
-      // Start idle animation (animation 6)
-      if (this.modelRoot && this.animations.length > this.data.idleAnim) {
-        this.mixer = new THREE.AnimationMixer(this.modelRoot);
-        const idleAction = this.mixer.clipAction(this.animations[this.data.idleAnim]);
-        idleAction.setLoop(THREE.LoopRepeat);
-        idleAction.play();
-      }
-    });
-
-    // Reference to wizard text and menu
-    this.textEl = document.getElementById('wizardText');
-    this.menuEl = document.getElementById('wizardMenu');
-
-    // Handle clicks on options
-    this.menuEl.querySelectorAll('.wizard-choice').forEach(option => {
-      option.addEventListener('click', e => {
-        const choice = option.getAttribute('data-choice');
-        this.handleChoice(choice);
-      });
+      // Start idle animation
+      this.playAnim(this.data.idleAnim, true);
     });
   },
 
-  tick: function(time, deltaTime) {
-    const dt = (deltaTime || 0) / 1000;
-    if (this.mixer) this.mixer.update(dt);
+  tick: function() {
+    if (!this.modelRoot || !this.player) return;
 
-    if (!this.player || !this.modelRoot) return;
+    const wizardPos = this.el.object3D.position;
+    const playerPos = this.player.object3D.position;
+    const dist = wizardPos.distanceTo(playerPos);
 
-    const playerPos = new THREE.Vector3().copy(this.player.object3D.position);
-    const wizardPos = new THREE.Vector3().copy(this.el.object3D.position);
-    const dist = playerPos.distanceTo(wizardPos);
-
-    if (!this.frozenPlayer && dist <= this.data.triggerDistance) {
-      // Switch to alert animation
-      if (this.animations.length > this.data.alertAnim) {
-        this.mixer.stopAllAction();
-        const alertAction = this.mixer.clipAction(this.animations[this.data.alertAnim]);
-        alertAction.setLoop(THREE.LoopRepeat);
-        alertAction.play();
-      }
-
-      // Freeze player in place slightly in front of wizard
-      const dir = new THREE.Vector3().subVectors(wizardPos, playerPos).normalize();
-      const freezePos = wizardPos.clone().add(dir.multiplyScalar(-this.data.approachDistance));
-      this.player.setAttribute('position', freezePos);
-      this.frozenPlayer = true;
-
-      // Show wizard text
-      this.textEl.setAttribute('value', 'ΤΙ ΔΟΥΛΕΙΑ ΕΧΕΙΣ ΕΣΥ ΕΔΩ;!');
-      this.textEl.setAttribute('visible', true);
-
-      // Show menu
-      this.menuEl.setAttribute('visible', true);
-      this.choicesShown = true;
+    // Distance-based reaction
+    if (!this.hasSeenPlayer && dist < 3.5) { // adjust distance as you like
+      this.hasSeenPlayer = true;
+      this.playAnim(this.data.seePlayerAnim, true);
+      this.player.components['player-movement'].frozen = true; // freeze player + camera
+      this.showText("ΤΙ ΔΟΥΛΕΙΑ ΕΧΕΙΣ ΕΣΥ ΕΔΩ;!");
+      this.openMenu();
     }
+  },
+
+  playAnim: function(index, loop) {
+    if (!this.animations || index >= this.animations.length) return;
+    if (this.mixer) this.mixer.stopAllAction();
+
+    this.mixer = new THREE.AnimationMixer(this.modelRoot);
+    const action = this.mixer.clipAction(this.animations[index]);
+    action.setLoop(loop ? THREE.LoopRepeat : THREE.LoopOnce);
+    action.clampWhenFinished = true;
+    action.play();
+
+    this.el.sceneEl.addEventListener('tick', (t, dt) => {
+      if (this.mixer) this.mixer.update((dt||0)/1000);
+    });
+  },
+
+  showText: function(msg) {
+    let textEl = this.el.querySelector('a-text');
+    if (!textEl) {
+      textEl = document.createElement('a-text');
+      textEl.setAttribute('position', '0 2 0');
+      textEl.setAttribute('align', 'center');
+      textEl.setAttribute('color', '#fff');
+      textEl.setAttribute('side', 'double');
+      this.el.appendChild(textEl);
+    }
+    textEl.setAttribute('value', msg);
+    textEl.setAttribute('visible', true);
+  },
+
+  openMenu: function() {
+    if (this.menuOpen) return;
+    this.menuOpen = true;
+
+    const menu = document.getElementById('wizardMenu');
+    menu.setAttribute('visible', true);
+
+    menu.querySelectorAll('.wizard-choice').forEach(btn => {
+      btn.addEventListener('click', () => this.handleChoice(btn.getAttribute('data-choice')));
+      btn.setAttribute('material','depthTest:false;');
+      btn.object3D.renderOrder = 999;
+    });
   },
 
   handleChoice: function(choice) {
-    if (!this.choicesShown) return;
+    const menu = document.getElementById('wizardMenu');
+    menu.setAttribute('visible', false);
+    this.menuOpen = false;
+
     const playerComp = this.player.components['player-movement'];
-    const mixer = this.mixer;
-    const anims = this.animations;
 
-    // Hide menu and text immediately
-    this.menuEl.setAttribute('visible', false);
-    this.textEl.setAttribute('visible', false);
-    this.choicesShown = false;
+    switch(choice) {
+      case 'ignore':
+        this.playAnim(this.data.ignoreAnim, false);
+        setTimeout(() => {
+          this.playAnim(this.data.dieAnim, false); // repeated 5-6 times manually if needed
+          alert("Game Over! You died ignoring the wizard.");
+          window.location.reload();
+        }, 1000); // adjust timing for animation 4 finish
+        break;
 
-    if (choice === 'ignore') {
-      // Animation 4 once, then 5 repeat 5-6x
-      if (anims.length > this.data.ignoreAnim) {
-        mixer.stopAllAction();
-        const act = mixer.clipAction(anims[this.data.ignoreAnim]);
-        act.setLoop(THREE.LoopOnce);
-        act.clampWhenFinished = true;
-        act.play();
-        act.onFinished = () => {
-          if (anims.length > this.data.deathAnim) {
-            const deathAction = mixer.clipAction(anims[this.data.deathAnim]);
-            deathAction.setLoop(THREE.LoopRepeat, 5);
-            deathAction.play();
-            setTimeout(() => alert('You died! Game over.') || window.location.reload(), 2500);
-          }
-        };
-      }
-    } else if (choice === 'explain') {
-      // Animation 1 once, then return to alertAnim idle
-      if (anims.length > this.data.explainAnim) {
-        mixer.stopAllAction();
-        const act = mixer.clipAction(anims[this.data.explainAnim]);
-        act.setLoop(THREE.LoopOnce);
-        act.clampWhenFinished = true;
-        act.play();
-        act.onFinished = () => {
-          // Unfreeze player
-          if (playerComp) playerComp.frozen = false;
-          // Back to alert idle (animation 2)
-          if (anims.length > this.data.alertAnim) {
-            const idle = mixer.clipAction(anims[this.data.alertAnim]);
-            idle.setLoop(THREE.LoopRepeat);
-            idle.play();
-          }
-        };
-      }
-    } else if (choice === 'getout') {
-      // Animation 3 once, approach player a bit, then death
-      if (anims.length > this.data.getOutAnim) {
-        mixer.stopAllAction();
-        const act = mixer.clipAction(anims[this.data.getOutAnim]);
-        act.setLoop(THREE.LoopOnce);
-        act.clampWhenFinished = true;
-        act.play();
-        act.onFinished = () => {
-          if (anims.length > this.data.ignoreAnim) {
-            const warnAction = mixer.clipAction(anims[this.data.ignoreAnim]);
-            warnAction.setLoop(THREE.LoopOnce);
-            warnAction.clampWhenFinished = true;
-            warnAction.play();
-            warnAction.onFinished = () => {
-              if (anims.length > this.data.deathAnim) {
-                const deathAction = mixer.clipAction(anims[this.data.deathAnim]);
-                deathAction.setLoop(THREE.LoopRepeat, 5);
-                deathAction.play();
-                setTimeout(() => alert('You died! Game over.') || window.location.reload(), 2500);
-              }
-            };
-          }
-        };
-      }
+      case 'explain':
+        this.playAnim(this.data.explainAnim, false);
+        setTimeout(() => {
+          this.playAnim(this.data.seePlayerAnim, true); // return to idle/see-player animation
+          playerComp.frozen = false; // unfreeze player
+        }, 1000);
+        break;
+
+      case 'getout':
+        this.playAnim(this.data.getOutAnim, false);
+        setTimeout(() => {
+          this.playAnim(this.data.dieAnim, false); // repeated 5-6 times manually if needed
+          alert("Game Over! The wizard attacked you.");
+          window.location.reload();
+        }, 1000);
+        break;
     }
-
-    // Keep player frozen during animations that should block movement
-    if (playerComp) playerComp.frozen = true;
   }
 });
+
 
 /* -----------------------
    Scatter trees
