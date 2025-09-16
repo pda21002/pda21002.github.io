@@ -149,54 +149,56 @@ AFRAME.registerComponent('player-movement', {
   },
   
 tick: function () {
-const rig = this.el;
+  const rig = this.el;
+  let pos = rig.getAttribute('position'); // only once at the top
 
-// Wizard freeze → lock movement + camera
-if (this.frozen) {
+  // --- Wizard freeze: lock movement + camera ---
   const cam = rig.querySelector('[camera]');
-  if (cam) cam.setAttribute('look-controls', 'enabled: false'); // freeze camera rotation
-  return; // stop movement completely
-} else {
-  const cam = rig.querySelector('[camera]');
-  if (cam) cam.setAttribute('look-controls', 'enabled: true'); // re-enable camera
-}
+  if (this.frozen) {
+    if (cam) cam.setAttribute('look-controls', 'enabled: false');
+  } else {
+    if (cam) cam.setAttribute('look-controls', 'enabled: true');
+  }
 
-// Fork menu freeze → lock movement only, camera stays active
-if (this.forkFrozen) {
-  return; // skip movement but allow looking around
-}
+  // --- Fork menu freeze: lock movement only, camera stays active ---
+  let skipMovement = !!this.forkFrozen;
 
-// --- movement code below ---
-let pos = rig.getAttribute('position');
-const speed = 0.025;
+  // --- Movement code ---
+  if (!skipMovement && !this.frozen) {
+    const speed = 0.025;
 
-// Camera-relative movement
-const camera = this.el.sceneEl.camera.el.object3D;
-const camDir = new THREE.Vector3();
-camera.getWorldDirection(camDir);
-camDir.y = 0;
-camDir.normalize();
-const right = new THREE.Vector3().crossVectors(new THREE.Vector3(0,1,0), camDir).normalize();
-let dx=0, dz=0;
-if(this.keys.ArrowUp){ dx -= camDir.x*speed; dz -= camDir.z*speed; }
-if(this.keys.ArrowDown){ dx += camDir.x*speed; dz += camDir.z*speed; }
-if(this.keys.ArrowLeft){ dx -= right.x*speed; dz -= right.z*speed; }
-if(this.keys.ArrowRight){ dx += right.x*speed; dz += right.z*speed; }
-pos.x += dx; pos.z += dz;
-
+    // Camera-relative movement
+    const cameraObj = this.el.sceneEl.camera.el.object3D;
+    const camDir = new THREE.Vector3();
+    cameraObj.getWorldDirection(camDir);
+    camDir.y = 0; camDir.normalize();
+    const right = new THREE.Vector3().crossVectors(new THREE.Vector3(0,1,0), camDir).normalize();
+    let dx=0, dz=0;
+    if(this.keys.ArrowUp){ dx -= camDir.x*speed; dz -= camDir.z*speed; }
+    if(this.keys.ArrowDown){ dx += camDir.x*speed; dz += camDir.z*speed; }
+    if(this.keys.ArrowLeft){ dx -= right.x*speed; dz -= right.z*speed; }
+    if(this.keys.ArrowRight){ dx += right.x*speed; dz += right.z*speed; }
+    pos.x += dx;
+    pos.z += dz;
+    rig.setAttribute('position', pos);
+  }
 
   // --- Fork menu enforcement ---
-const forkZ = 9.5;
-if (!this.choiceMade && pos.z <= forkZ) {
-  // Lock player exactly at the fork position
-  rig.setAttribute('position', {x: 0, y: pos.y, z: forkZ});
-  
-  // Show menu
-  document.getElementById('forkMenu').setAttribute('visible', true);
+  const forkZ = 9.5;
+  if (!this.choiceMade && pos.z <= forkZ) {
+    // Lock player exactly at the fork position
+    rig.setAttribute('position', {x: 0, y: pos.y, z: forkZ});
+    
+    // Show menu
+    document.getElementById('forkMenu').setAttribute('visible', true);
 
-  // ❌ Skip movement updates
-  return;
-}
+    // Make raycaster detect buttons
+    const scene = this.el.sceneEl;
+    scene.querySelectorAll('.fork-menu-button').forEach(btn => btn.classList.add('fork-menu-button'));
+    const cursorEl = scene.querySelector('[cursor]');
+    if(cursorEl && cursorEl.components && cursorEl.components.raycaster)
+      cursorEl.components.raycaster.data.objects = '.fork-menu-button';
+  }
 
   // --- Movement bounds ---
   let bounds;
@@ -569,12 +571,12 @@ AFRAME.registerComponent('wizard-behavior', {
     });
   },
 
-  handleChoice: function(choice) {
-    const menu = document.getElementById('wizardMenu');
-    menu.setAttribute('visible', false);
-    this.menuOpen = false;
+handleChoice: function(choice) {
+  const player = document.getElementById('rig').components['player-movement'];
+  if (!player) return;
 
-    const playerComp = this.player.components['player-movement'];
+  player.frozen = false;    // unfreeze player after choice if needed
+  player.forkFrozen = false;
 
     switch(choice) {
       case 'ignore':
