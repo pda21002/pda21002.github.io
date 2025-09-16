@@ -98,21 +98,36 @@
 <a-entity gltf-model="#creepygirl" position="-3.20252 0.04765 5.73719" scale="0.0007 0.0007 0.0007" rotation="0 25 0"></a-entity>
   <a-entity gltf-model="#sisters" position="-2.60894 0.58665 1.29681" scale="0.08 0.08 0.08" rotation="0 -110 0"></a-entity>
   <a-entity gltf-model="#dwarf" position="-0.29412 0.05046 4.64215" scale="0.008 0.008 0.008" rotation="0 20 0"></a-entity>
-  <a-entity gltf-model="#wizard" position="-0.02192 0.04843 -1.66883" scale="0.4 0.4 0.4" animation-mixer="clip:6; loop:repeat" wizard-interact></a-entity>
   <a-entity gltf-model="#fox" position="0.33427 0.05 7.18987" scale="0.045 0.045 0.045" rotation="0 70 0"></a-entity>
   <a-entity gltf-model="#butterflies" position="-0.16089 0 30.2737" scale="1 1 1" rotation="0 0 0"></a-entity>
   <a-entity gltf-model="#ghost" position="-2.8142 0.08774 -3.2995" scale="0.2 0.2 0.2"></a-entity>
 
-  <a-entity id="wizardChoices" visible="false">
-  <a-box id="choice1" color="red" position="-1 1 -4" depth="0.2" height="0.5" width="1"></a-box>
-  <a-text value="1. Ignore him" position="-1 1.5 -4" align="center"></a-text>
-  <a-box id="choice2" color="green" position="1 1 -4" depth="0.2" height="0.5" width="1"></a-box>
-  <a-text value="2. Explain message" position="1 1.5 -4" align="center"></a-text>
-  <a-box id="choice3" color="blue" position="3 1 -4" depth="0.2" height="0.5" width="1"></a-box>
-  <a-text value="3. Get out of way" position="3 1.5 -4" align="center"></a-text>
-</a-entity>
+    <!-- Wizard (replace previous wizard entity) -->
+  <a-entity gltf-model="#wizard" position="-0.02192 0.04843 -1.66883" scale="0.4 0.4 0.4" rotation="0 0 0" wizard-behavior></a-entity>
 
+  <!-- Wizard UI: text + choice menu -->
+  <a-entity id="wizardUi" position="0 0 0">
+    <!-- The speech text will be re-positioned by the component above the wizard's head -->
+    <a-text id="wizardText" value="" align="center" color="#fff" visible="false" side="double"
+            font="https://cdn.aframe.io/fonts/mozillavr.fnt" scale="0.6 0.6 0.6"></a-text>
 
+    <!-- Choices: hidden until interaction -->
+    <a-entity id="wizardMenu" visible="false" position="0 0 0">
+      <a-box class="wizard-choice" data-choice="ignore" position="-1 0 0" width="1.2" height="0.6" depth="0.2" 
+             material="color: #aaa" rounded="true"></a-box>
+      <a-text value="1. Αγνόησε" position="-1 0.25 0.11" align="center" anchor="center" scale="0.4 0.4 0.4"></a-text>
+
+      <a-box class="wizard-choice" data-choice="explain" position="0 0 0" width="1.6" height="0.6" depth="0.2" 
+             material="color: #6fa" rounded="true"></a-box>
+      <a-text value="2. Εξηγώ για τον βασιλιά" position="0 0.25 0.11" align="center" anchor="center" scale="0.38 0.38 0.38"></a-text>
+
+      <a-box class="wizard-choice" data-choice="shove" position="1 0 0" width="1.2" height="0.6" depth="0.2" 
+             material="color: #f66" rounded="true"></a-box>
+      <a-text value="3. Φύγε απ' το δρόμο" position="1 0.25 0.11" align="center" anchor="center" scale="0.4 0.4 0.4"></a-text>
+    </a-entity>
+  </a-entity>
+
+  
 <script>
 /* -----------------------
    Player movement
@@ -122,100 +137,124 @@ AFRAME.registerComponent('player-movement', {
     this.choiceMade = false;
     this.chosenPath = null;
     this.followingGoblin = false;
-    this.keys = {ArrowUp:false, ArrowDown:false, ArrowLeft:false, ArrowRight:false};
+    this.frozen = false;
+    this.keys = {
+      ArrowUp: false,
+      ArrowDown: false,
+      ArrowLeft: false,
+      ArrowRight: false
+    };
+
     const scene = this.el.sceneEl;
 
-    // Key handling
-    window.addEventListener('keydown', e => { if(this.keys.hasOwnProperty(e.key)) this.keys[e.key]=true; });
-    window.addEventListener('keyup', e => { if(this.keys.hasOwnProperty(e.key)) this.keys[e.key]=false; });
+    // --- Keyboard input ---
+    window.addEventListener('keydown', e => {
+      if (this.keys.hasOwnProperty(e.key)) this.keys[e.key] = true;
+    });
+    window.addEventListener('keyup', e => {
+      if (this.keys.hasOwnProperty(e.key)) this.keys[e.key] = false;
+    });
 
-    // Fork menu buttons
+    // --- Fork menu buttons ---
     scene.querySelectorAll('.fork-menu-button').forEach(btn => {
       btn.addEventListener('click', () => {
         this.chosenPath = btn.getAttribute('data-choice');
         this.choiceMade = true;
+
+        // Hide menu
         document.getElementById('forkMenu').setAttribute('visible', false);
 
-        // remove button class so raycaster stops detecting them
+        // Remove detection class so raycaster ignores them
         scene.querySelectorAll('.fork-menu-button').forEach(b => b.classList.remove('fork-menu-button'));
+
+        // Clear raycaster targets
         const cursorEl = scene.querySelector('[cursor]');
-        if(cursorEl && cursorEl.components && cursorEl.components.raycaster)
+        if (cursorEl && cursorEl.components && cursorEl.components.raycaster) {
           cursorEl.components.raycaster.data.objects = '';
+        }
       });
-      btn.setAttribute('material','depthTest:false;');
+
+      // Make sure menu buttons render on top
+      btn.setAttribute('material', 'depthTest:false;');
       btn.object3D.renderOrder = 999;
     });
   },
 
-tick: function () {
-  const rig = this.el;
-  let pos = rig.getAttribute('position');
-  const speed = 0.025;
+  tick: function () {
+    if (this.frozen) return; // Early exit if player is frozen
 
-  // --- Camera-relative movement ---
-  const camera = this.el.sceneEl.camera.el.object3D;
-  const camDir = new THREE.Vector3();
-  camera.getWorldDirection(camDir);
-  camDir.y = 0; camDir.normalize();
-  const right = new THREE.Vector3().crossVectors(new THREE.Vector3(0,1,0), camDir).normalize();
-  let dx=0, dz=0;
-  if(this.keys.ArrowUp){ dx -= camDir.x*speed; dz -= camDir.z*speed; }
-  if(this.keys.ArrowDown){ dx += camDir.x*speed; dz += camDir.z*speed; }
-  if(this.keys.ArrowLeft){ dx -= right.x*speed; dz -= right.z*speed; }
-  if(this.keys.ArrowRight){ dx += right.x*speed; dz += right.z*speed; }
-  pos.x += dx; pos.z += dz;
+    const rig = this.el;
+    let pos = rig.getAttribute('position');
+    const speed = 0.025;
 
-  // --- Fork menu enforcement ---
-const forkZ = 9.5;
-if (!this.choiceMade && pos.z <= forkZ) {
-  // Lock player exactly at the fork position
-  rig.setAttribute('position', {x: 0, y: pos.y, z: forkZ});
-  
-  // Show menu
-  document.getElementById('forkMenu').setAttribute('visible', true);
+    // --- Camera-relative movement ---
+    const camera = this.el.sceneEl.camera.el.object3D;
+    const camDir = new THREE.Vector3();
+    camera.getWorldDirection(camDir);
+    camDir.y = 0; 
+    camDir.normalize();
 
-  // ❌ Skip movement updates
-  return;
-}
+    const right = new THREE.Vector3().crossVectors(new THREE.Vector3(0,1,0), camDir).normalize();
 
-  // --- Movement bounds ---
-  let bounds;
+    let dx = 0, dz = 0;
+    if (this.keys.ArrowUp)    { dx -= camDir.x * speed; dz -= camDir.z * speed; }
+    if (this.keys.ArrowDown)  { dx += camDir.x * speed; dz += camDir.z * speed; }
+    if (this.keys.ArrowLeft)  { dx -= right.x * speed;  dz -= right.z * speed; }
+    if (this.keys.ArrowRight) { dx += right.x * speed;  dz += right.z * speed; }
 
-  if (!this.choiceMade) {
-    // Player is still on the first path before choice
-    bounds = {xMin:-0.75, xMax:0.75, zMin:9.5, zMax:29}; 
-  } else {
-    // After choice → branch paths
-    if (pos.z <= 8.75 && pos.z > -6) {
-      if (this.chosenPath === 'left') 
-        bounds = {xMin:-3.3,xMax:-2.3,zMin:-6.25,zMax:8.75};
-      else if (this.chosenPath === 'middle') 
-        bounds = {xMin:-0.75,xMax:0.75,zMin:-6.25,zMax:8.75};
-      else if (this.chosenPath === 'right' && !this.followingGoblin) 
-        bounds = {xMin:2.2,xMax:3.2,zMin:-6.25,zMax:8.75};
-      else 
-        bounds = {xMin:-25,xMax:25,zMin:-25,zMax:25};
+    pos.x += dx;
+    pos.z += dz;
+
+    // --- Fork menu enforcement ---
+    const forkZ = 9.5;
+    if (!this.choiceMade && pos.z <= forkZ) {
+      // Lock player exactly at fork position
+      rig.setAttribute('position', {x: 0, y: pos.y, z: forkZ});
+
+      // Show fork menu
+      document.getElementById('forkMenu').setAttribute('visible', true);
+
+      return; // stop movement until choice is made
+    }
+
+    // --- Path boundaries ---
+    let bounds;
+    if (!this.choiceMade) {
+      // Before fork → single corridor
+      bounds = {xMin: -0.75, xMax: 0.75, zMin: 9.5, zMax: 29};
     } else {
-      // Free roaming after fork
-      bounds = {xMin:-25,xMax:25,zMin:-25,zMax:25};
+      // After fork → branch logic
+      if (pos.z <= 8.75 && pos.z > -6) {
+        if (this.chosenPath === 'left') {
+          bounds = {xMin: -3.3, xMax: -2.3, zMin: -6.25, zMax: 8.75};
+        } else if (this.chosenPath === 'middle') {
+          bounds = {xMin: -0.75, xMax: 0.75, zMin: -6.25, zMax: 8.75};
+        } else if (this.chosenPath === 'right' && !this.followingGoblin) {
+          bounds = {xMin: 2.2, xMax: 3.2, zMin: -6.25, zMax: 8.75};
+        } else {
+          // Free roaming
+          bounds = {xMin: -25, xMax: 25, zMin: -25, zMax: 25};
+        }
+      } else {
+        // After the fork section → open world
+        bounds = {xMin: -25, xMax: 25, zMin: -25, zMax: 25};
+      }
+    }
+
+    // Apply boundary clamping
+    pos.x = Math.max(bounds.xMin, Math.min(bounds.xMax, pos.x));
+    pos.z = Math.max(bounds.zMin, Math.min(bounds.zMax, pos.z));
+    rig.setAttribute('position', pos);
+
+    // --- Losing condition ---
+    const origin = new THREE.Vector3(0,0,16);
+    const playerPos = new THREE.Vector3(pos.x, pos.y, pos.z);
+    if (playerPos.distanceTo(origin) > 35) {
+      alert('You wandered too far and got lost! Game over.');
+      window.location.reload();
     }
   }
-
-  // Apply boundaries
-  pos.x = Math.max(bounds.xMin, Math.min(bounds.xMax, pos.x));
-  pos.z = Math.max(bounds.zMin, Math.min(bounds.zMax, pos.z));
-  rig.setAttribute('position', pos);
-
-  // --- Losing condition ---
-  const origin = new THREE.Vector3(0,0,16);
-  const playerPos = new THREE.Vector3(pos.x,pos.y,pos.z);
-  if(playerPos.distanceTo(origin) > 35){
-    alert('You wandered too far and got lost! Game over.');
-    window.location.reload();
-  }
-  }
-}); 
-
+});
 
 /* -----------------------
    Goblin behavior
@@ -464,103 +503,244 @@ AFRAME.registerComponent('mushroom-behavior', {
   }
 });
 
-AFRAME.registerComponent('wizard-interact', {
-  schema: { range: { type: 'number', default: 3 } },
-
-  init: function() {
-    this.player = document.querySelector('#rig'); // camera rig or player entity
-    this.el.setAttribute('animation-mixer', 'clip:6; loop:repeat'); // default idle
-    this.text = document.createElement('a-text');
-    this.text.setAttribute('value', 'ΤΙ ΔΟΥΛΕΙΑ ΕΧΕΙΣ ΕΣΥ ΕΔΩ;!');
-    this.text.setAttribute('position', '0 2 0');
-    this.text.setAttribute('align', 'center');
-    this.text.setAttribute('visible', 'false');
-    this.el.appendChild(this.text);
-
-    this.choices = document.querySelector('#wizardChoices');
-    this.interacted = false;
-
-    // Bind choice handlers
-    this.onChoice1 = this.onChoice1.bind(this);
-    this.onChoice2 = this.onChoice2.bind(this);
-    this.onChoice3 = this.onChoice3.bind(this);
+AFRAME.registerComponent('wizard-behavior', {
+  schema: {
+    reactDistance: { type: 'number', default: 2.5 }, // distance to trigger the encounter
   },
 
-  tick: function() {
-    if (this.interacted) return;
+  init: function () {
+    this.rig = document.getElementById('rig');
+    this.textEl = document.getElementById('wizardText');
+    this.menuEl = document.getElementById('wizardMenu');
+    this.uiRoot = document.getElementById('wizardUi');
 
+    this.mixer = null;
+    this.clips = [];
+    this.currentAction = null;
+    this.idleAction = null;
+    this.inEncounter = false;
+    this.ended = false;
+
+    // Animation index mapping (user-specified numbering 1..6 -> indices 0..5)
+    // animation1 -> index 0
+    // animation2 -> index 1 (encounter idle)
+    // animation3 -> index 2
+    // animation4 -> index 3
+    // animation5 -> index 4 (death)
+    // animation6 -> index 5 (default global idle)
+    this.AN = { a1:0, a2:1, a3:2, a4:3, a5:4, a6:5 };
+
+    // click handlers for menu choices (set below once menu exists)
+    const scene = this.el.sceneEl;
+
+    // Wait for model loaded to create mixer and clips
+    this.el.addEventListener('model-loaded', (e) => {
+      const model = e.detail.model;
+      if (!model) return;
+      this.modelRoot = model.scene || model;
+      this.clips = model.animations || [];
+
+      // Create mixer
+      this.mixer = new THREE.AnimationMixer(this.modelRoot);
+
+      // Start with animation6 (index 5) looping as global idle if it exists
+      this.playIndexed(this.AN.a6, true);
+    });
+
+    // Hook up choice clicks (use event delegation on scene)
+    scene.querySelectorAll('.wizard-choice').forEach(btn => {
+      btn.addEventListener('click', (ev) => {
+        const choice = btn.getAttribute('data-choice');
+        if (!this.inEncounter) return;
+        this.handleChoice(choice);
+      });
+      // make sure raycaster detects them and they render above others
+      btn.object3D && (btn.object3D.renderOrder = 1000);
+    });
+  },
+
+  tick: function (time, timeDelta) {
+    if (!this.rig || !this.el.object3D || !this.mixer) return;
     const wizardPos = this.el.object3D.position;
-    const playerPos = this.player.object3D.position;
-    const dist = wizardPos.distanceTo(playerPos);
+    const rigPos = this.rig.object3D.position;
+    const dist = wizardPos.distanceTo(rigPos);
+    const dt = (timeDelta || 0) / 1000;
+    if (this.mixer) this.mixer.update(dt);
 
-    if (dist < this.data.range) {
-      this.interacted = true;
-      this.startInteraction();
+    // If encounter already started, nothing to do in tick (menu logic handles)
+    if (this.inEncounter) return;
+
+    // Trigger encounter when close enough
+    if (dist <= this.data.reactDistance) {
+      this.startEncounter();
     }
   },
 
-  startInteraction: function() {
-    // Show text and switch wizard to "react" animation 2
-    this.text.setAttribute('visible', 'true');
-    this.el.setAttribute('animation-mixer', 'clip:2; loop:repeat');
-
-    // Freeze player
-    this.player.components['player-movement'].pause = true;
-
-    // Show choice buttons
-    this.choices.setAttribute('visible', true);
-    this.choices.querySelector('#choice1').addEventListener('click', this.onChoice1);
-    this.choices.querySelector('#choice2').addEventListener('click', this.onChoice2);
-    this.choices.querySelector('#choice3').addEventListener('click', this.onChoice3);
+  playIndexed: function(index, loop, loopCount) {
+    // safe guard
+    if (!this.clips || !this.mixer || index == null || !this.clips[index]) return null;
+    try {
+      if (this.currentAction) {
+        this.currentAction.stop();
+        this.currentAction = null;
+      }
+      const clip = this.clips[index];
+      const action = this.mixer.clipAction(clip);
+      if (loop) {
+        // If loopCount provided, use LoopRepeat with count
+        if (typeof loopCount === 'number') {
+          action.setLoop(THREE.LoopRepeat, loopCount);
+        } else {
+          action.setLoop(THREE.LoopRepeat, Infinity);
+        }
+      } else {
+        action.setLoop(THREE.LoopOnce, 0);
+        action.clampWhenFinished = true;
+      }
+      action.reset().play();
+      this.currentAction = action;
+      return action;
+    } catch (err) {
+      console.warn('playIndexed error', err);
+      return null;
+    }
   },
 
-  hideChoices: function() {
-    this.choices.setAttribute('visible', false);
-    this.choices.querySelector('#choice1').removeEventListener('click', this.onChoice1);
-    this.choices.querySelector('#choice2').removeEventListener('click', this.onChoice2);
-    this.choices.querySelector('#choice3').removeEventListener('click', this.onChoice3);
+  startEncounter: function() {
+    // mark encounter started
+    this.inEncounter = true;
+
+    // show Greek text above head
+    if (this.textEl) {
+      this.textEl.setAttribute('value', 'ΤΙ ΔΟΥΛΕΙΑ ΕΧΕΙΣ ΕΣΥ ΕΔΩ;!');
+      // position the text above the wizard head
+      const wizardWorldPos = new THREE.Vector3();
+      this.el.object3D.getWorldPosition(wizardWorldPos);
+      // place text a little above wizard
+      this.textEl.setAttribute('position', `${wizardWorldPos.x} ${wizardWorldPos.y + 1.6} ${wizardWorldPos.z}`);
+      this.textEl.setAttribute('visible', true);
+    }
+
+    // stop player movement (freeze)
+    if (this.rig && this.rig.components && this.rig.components['player-movement']) {
+      this.rig.components['player-movement'].frozen = true;
+    }
+
+    // Move player to an exact 'meeting' position in front of the wizard.
+    // We'll compute a point slightly in front of the wizard and set rig there.
+    const wizardForward = new THREE.Vector3(0, 0, 1);
+    // Get wizard world rotation
+    const q = this.el.object3D.getWorldQuaternion(new THREE.Quaternion());
+    wizardForward.applyQuaternion(q);
+    wizardForward.normalize();
+    // meeting point: wizard position + forward * -1 (so player stands in front)
+    const wizardPos = new THREE.Vector3();
+    this.el.object3D.getWorldPosition(wizardPos);
+    const meetPos = wizardPos.clone().add(wizardForward.clone().multiplyScalar(-1.2));
+    // keep player's y as before
+    const rigPos = this.rig.getAttribute('position');
+    this.rig.setAttribute('position', { x: meetPos.x, y: rigPos.y, z: meetPos.z });
+
+    // switch wizard to animation2 looping (encounter idle)
+    this.playIndexed(this.AN.a2, true);
+
+    // show the menu (position it relative to wizard)
+    if (this.menuEl) {
+      // place menu slightly in front of wizard and a bit above ground
+      this.menuEl.setAttribute('position', `${wizardPos.x} ${wizardPos.y + 0.8} ${wizardPos.z - 0.5}`);
+      this.menuEl.setAttribute('visible', true);
+    }
   },
 
-  // Choices
-  onChoice1: function() { this.killPlayer(0.5); },
-  onChoice3: function() { this.killPlayer(0.5, 3); },
+  handleChoice: function(choice) {
+    // hide text immediately
+    if (this.textEl) this.textEl.setAttribute('visible', false);
 
-  onChoice2: function() {
-    // Animation 1 plays once
-    this.el.setAttribute('animation-mixer', 'clip:1; loop:once');
+    // choices: 'ignore', 'explain', 'shove'
+    if (choice === 'explain') {
+      // Play animation1 once, then return to idle (animation2) and unfreeze player
+      const act = this.playIndexed(this.AN.a1, false);
+      if (act) {
+        // after finished, resume
+        act.getMixer().addEventListener('finished', () => {
+          // return to encounter idle (or global idle if you prefer)
+          this.playIndexed(this.AN.a2, true);
+          // unfreeze player and hide menu
+          if (this.rig && this.rig.components && this.rig.components['player-movement']) {
+            this.rig.components['player-movement'].frozen = false;
+          }
+          if (this.menuEl) this.menuEl.setAttribute('visible', false);
+          this.inEncounter = false;
+        }, { once: true });
+      } else {
+        // fallback: immediate unfreeze
+        if (this.rig && this.rig.components && this.rig.components['player-movement']) {
+          this.rig.components['player-movement'].frozen = false;
+        }
+        if (this.menuEl) this.menuEl.setAttribute('visible', false);
+        this.inEncounter = false;
+      }
+    } else if (choice === 'ignore' || choice === 'shove') {
+      // Two dead-end flows (ignore and shove) share pattern:
+      // - optionally play animation3 (for shove) or skip (for ignore)
+      // - wizard "approaches" a bit (tweak position)
+      // - play animation4 once, then play animation5 several times (repeat) -> trigger game over
 
-    setTimeout(() => {
-      // Back to react animation 2 loop
-      this.el.setAttribute('animation-mixer', 'clip:2; loop:repeat');
-      this.text.setAttribute('visible', 'false');
-      this.player.components['player-movement'].pause = false; // unfreeze
-      this.hideChoices();
-    }, 1500);
-  },
+      const doShove = (choice === 'shove');
 
-  killPlayer: function(moveDist, anim3Index) {
-    const mixer = this.el.components['animation-mixer'];
-    // Play animation 3 if specified (for "get out of way")
-    if (anim3Index) this.el.setAttribute('animation-mixer', `clip:${anim3Index}; loop:once`);
+      const proceedToAttack = () => {
+        // small approach: move wizard a bit forward to intimidate
+        const wizardPos = new THREE.Vector3();
+        this.el.object3D.getWorldPosition(wizardPos);
+        const forward = new THREE.Vector3(0, 0, 1);
+        const q = this.el.object3D.getWorldQuaternion(new THREE.Quaternion());
+        forward.applyQuaternion(q).normalize();
+        // approach by 0.5 units
+        const newPos = wizardPos.clone().add(forward.clone().multiplyScalar(-0.5));
+        this.el.setAttribute('position', `${newPos.x} ${newPos.y} ${newPos.z}`);
 
-    // Move wizard slightly toward player
-    const wizard3D = this.el.object3D;
-    const dir = new THREE.Vector3().subVectors(this.player.object3D.position, wizard3D.position).normalize();
-    wizard3D.position.add(dir.multiplyScalar(moveDist));
+        // play animation4 once
+        const a4 = this.playIndexed(this.AN.a4, false);
+        if (a4) {
+          a4.getMixer().addEventListener('finished', () => {
+            // then play animation5 repeat 6 times (or 5)
+            const a5 = this.playIndexed(this.AN.a5, true, 6);
+            // after it finishes its repeats -> game over
+            if (a5) {
+              a5.getMixer().addEventListener('finished', () => {
+                alert('Ο μάγος σε εξόντωσε. Game over.');
+                window.location.reload();
+              }, { once: true });
+            } else {
+              alert('Ο μάγος σε εξόντωσε. Game over.');
+              window.location.reload();
+            }
+          }, { once: true });
+        } else {
+          // fallback: immediate death
+          alert('Ο μάγος σε εξόντωσε. Game over.');
+          window.location.reload();
+        }
+      };
 
-    // Play attack/death animation 4 then 5 (loop 5-6 times)
-    setTimeout(() => {
-      this.el.setAttribute('animation-mixer', 'clip:4; loop:once');
-      setTimeout(() => {
-        this.el.setAttribute('animation-mixer', 'clip:5; loop:5');
-        setTimeout(() => alert('You died! Game over.'), 2000);
-      }, 1000);
-    }, 500);
-
-    this.hideChoices();
+      if (doShove) {
+        // play animation3 once then proceed
+        const a3 = this.playIndexed(this.AN.a3, false);
+        if (a3) {
+          a3.getMixer().addEventListener('finished', () => {
+            proceedToAttack();
+          }, { once: true });
+        } else {
+          proceedToAttack();
+        }
+      } else {
+        // ignore: directly proceed
+        proceedToAttack();
+      }
+    }
   }
 });
-
+  
 
 /* -----------------------
    Scatter trees
