@@ -528,13 +528,15 @@ AFRAME.registerComponent('mushroom-behavior', {
   
 AFRAME.registerComponent('wizard-interact', {
   schema: {
-    idleAnim: { type: 'number', default: 6 },      // idle loop
-    reactAnim: { type: 'number', default: 2 },     // animation when approached
-    approachAnim: { type: 'number', default: 4 },  // "approach" animation for ignore/getOut
-    dieAnim: { type: 'number', default: 5 },       // death animation loop
-    explainAnim: { type: 'number', default: 1 },   // explaining animation
-    getOutAnim: { type: 'number', default: 3 },    // telling him to get out
-    reactDistance: { type: 'number', default: 3 }
+    idleAnim: { type: 'number', default: 6 },
+    approachAnim: { type: 'number', default: 2 },
+    explainAnim: { type: 'number', default: 1 },
+    ignoreStartAnim: { type: 'number', default: 4 },
+    ignoreDeathAnim: { type: 'number', default: 5 },
+    getOutStartAnim: { type: 'number', default: 3 },
+    getOutDeathAnim: { type: 'number', default: 4 },
+    reactDistance: { type: 'number', default: 3 },
+    approachStep: { type: 'number', default: 0.05 } // movement step toward player
   },
 
   init: function() {
@@ -543,34 +545,36 @@ AFRAME.registerComponent('wizard-interact', {
     this.mixer = null;
     this.actions = {};
     this.interacted = false;
+    this.sequenceQueue = [];
 
-    this.el.addEventListener('model-loaded', (e) => {
+    this.el.addEventListener('model-loaded', e => {
       const model = e.detail.model;
       if (!model) return;
-
       this.mixer = new THREE.AnimationMixer(model);
+      const animations = model.animations || [];
 
-      model.animations.forEach((clip, i) => {
+      // Store actions by your numbering
+      animations.forEach((clip, idx) => {
         const action = this.mixer.clipAction(clip);
         action.clampWhenFinished = true;
-
-        // set loop for idle only
-        if (i === this.data.idleAnim) action.setLoop(THREE.LoopRepeat);
-        else action.setLoop(THREE.LoopOnce);
-
-        this.actions[i] = action;
+        action.setLoop(THREE.LoopOnce); // default
+        this.actions[idx + 1] = action; // map 1,2,3,... to your numbering
       });
 
-      // Start idle animation
-      if (this.actions[this.data.idleAnim]) this.actions[this.data.idleAnim].play();
+      // Idle loop
+      if (this.actions[this.data.idleAnim]) {
+        this.actions[this.data.idleAnim].setLoop(THREE.LoopRepeat);
+        this.actions[this.data.idleAnim].play();
+      }
     });
 
-    // Choice buttons
     this.createChoiceUI();
   },
 
   tick: function(time, deltaTime) {
     if (!this.mixer) return;
+
+    this.mixer.update(deltaTime / 1000);
 
     const playerPos = new THREE.Vector3();
     const wizardPos = new THREE.Vector3();
@@ -583,54 +587,59 @@ AFRAME.registerComponent('wizard-interact', {
       this.startInteraction();
     }
 
-    this.mixer.update(deltaTime / 1000);
+    // Move wizard along Z toward player if needed
+    if (this.sequenceQueue.length && this.sequenceQueue[0].moveTowardPlayer) {
+      const step = this.sequenceQueue[0].step || this.data.approachStep;
+      const dir = new THREE.Vector3().subVectors(playerPos, wizardPos).normalize();
+      this.el.object3D.position.add(dir.multiplyScalar(step));
+    }
   },
 
   startInteraction: function() {
     this.interacted = true;
-
-    // Freeze player
     this.player.components['player-movement'].pause = true;
 
     // Stop idle, play approach animation
     if (this.actions[this.data.idleAnim]) this.actions[this.data.idleAnim].stop();
-    if (this.actions[this.data.reactAnim]) this.actions[this.data.reactAnim].play();
+    if (this.actions[this.data.approachAnim]) {
+      this.actions[this.data.approachAnim].setLoop(THREE.LoopRepeat);
+      this.actions[this.data.approachAnim].play();
+    }
 
     // Show text
     if (this.textEl) this.textEl.setAttribute('visible', true);
 
-    // Show choices
+    // Show choice UI
     this.showChoiceUI();
   },
 
   createChoiceUI: function() {
     const scene = this.el.sceneEl;
+    const labels = ['ignore', 'explain', 'getOut'];
     this.buttons = [];
 
-    const choices = [
-      { id: 'ignore', label: 'Ignore him' },
-      { id: 'explain', label: 'Explain' },
-      { id: 'getOut', label: 'Get out of way' }
-    ];
-
-    choices.forEach((choice, i) => {
+    labels.forEach((label, i) => {
       const btn = document.createElement('a-box');
       btn.setAttribute('width', 1);
       btn.setAttribute('height', 0.5);
       btn.setAttribute('depth', 0.2);
       btn.setAttribute('color', i===0?'blue':i===1?'green':'red');
       btn.setAttribute('class', 'clickable');
-      btn.setAttribute('position', {x: i-1, y: 2, z: -2}); // above wizard
+      btn.setAttribute('position', {x: i-1, y: 2, z: 0}); // relative, will follow wizard
       scene.appendChild(btn);
 
-      btn.addEventListener('click', () => this.handleChoice(choice.id));
-      this.buttons.push(btn);
+      btn.addEventListener('click', () => this.handleChoice(label));
       btn.setAttribute('visible', false);
+      this.buttons.push(btn);
     });
   },
 
   showChoiceUI: function() {
-    this.buttons.forEach(btn => btn.setAttribute('visible', true));
+    const wizardPos = this.el.object3D.position;
+    this.buttons.forEach((btn, i) => {
+      btn.setAttribute('position', {x: wizardPos.x + i - 1, y: wizardPos.y + 2, z: wizardPos.z});
+      btn.setAttribute('visible', true);
+    });
   },
 
   hideChoiceUI: function() {
@@ -643,58 +652,65 @@ AFRAME.registerComponent('wizard-interact', {
 
     switch(choice) {
       case 'ignore':
-        this.playSequence([this.data.approachAnim, {anim:this.data.dieAnim, repeat:5}], () => {
-          alert("You died! Game over.");
-        });
+        this.playSequence([
+          {anim:this.data.ignoreStartAnim, moveTowardPlayer:true},
+          {anim:this.data.ignoreDeathAnim, repeat:5}
+        ], () => { alert('You died! Game over.'); });
         break;
 
       case 'getOut':
-        this.playSequence([this.data.getOutAnim, this.data.approachAnim, {anim:this.data.dieAnim, repeat:5}], () => {
-          alert("You died! Game over.");
-        });
+        this.playSequence([
+          {anim:this.data.getOutStartAnim, moveTowardPlayer:true},
+          {anim:this.data.getOutDeathAnim, repeat:5}
+        ], () => { alert('You died! Game over.'); });
         break;
 
       case 'explain':
-        this.playSequence([this.data.explainAnim], () => {
-          // Unfreeze player
+        this.playSequence([{anim:this.data.explainAnim}], () => {
           this.player.components['player-movement'].pause = false;
-          // Idle animation loop
-          if (this.actions[this.data.reactAnim]) this.actions[this.data.reactAnim].stop();
-          if (this.actions[this.data.idleAnim]) this.actions[this.data.idleAnim].play();
+          // Return to idle animation 2
+          if(this.actions[this.data.approachAnim]) this.actions[this.data.approachAnim].stop();
+          if(this.actions[this.data.approachAnim]) { 
+            this.actions[this.data.approachAnim].setLoop(THREE.LoopRepeat);
+            this.actions[this.data.approachAnim].play();
+          }
         });
         break;
     }
   },
 
-  playSequence: function(sequence, callback) {
-    if (!sequence || sequence.length === 0) {
-      if(callback) callback();
-      return;
-    }
+  playSequence: function(queue, callback) {
+    if (!queue || queue.length === 0) { if(callback) callback(); return; }
 
-    const item = sequence.shift();
-    let animIndex, repeat = 1;
+    this.sequenceQueue = queue;
 
-    if (typeof item === 'object') { animIndex = item.anim; repeat = item.repeat || 1; }
-    else animIndex = item;
+    const next = queue.shift();
+    const animIndex = next.anim;
+    const repeat = next.repeat || 1;
+    const moveTowardPlayer = next.moveTowardPlayer || false;
 
     if (!this.actions[animIndex]) {
-      this.playSequence(sequence, callback);
+      this.playSequence(queue, callback);
       return;
     }
 
     this.actions[animIndex].reset().play();
     let count = 1;
+
     this.actions[animIndex].onLoop = () => {
       count++;
       if(count > repeat) this.actions[animIndex].stop();
     };
 
-    this.actions[animIndex].getMixer().addEventListener('finished', () => {
-      this.playSequence(sequence, callback);
-    });
+    const finishedHandler = () => {
+      this.actions[animIndex].getMixer().removeEventListener('finished', finishedHandler);
+      this.playSequence(queue, callback);
+    };
+
+    this.actions[animIndex].getMixer().addEventListener('finished', finishedHandler);
   }
 });
+
 
 
 
