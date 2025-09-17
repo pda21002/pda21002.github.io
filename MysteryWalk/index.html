@@ -128,7 +128,7 @@
   <!-- Foreground text -->
 <a-text value="WHERE DO YOU THINK YOU'RE GOING?!" position="0 0.46284 0.01" color="#fff" align="center" side="double" scale="0.25 0.25 0.25" visible="false" id="wizardText"></a-text>
     
-<a-entity id="wizardChoices" position="0 0.91704 0" scale="0.42 0.56 1" visible="false">
+<a-entity id="wizardChoices" position="0 0.79118 0" scale="0.42 0.56 1" visible="false">
     <a-box class="wizard-choice" data-choice="ignore" color="red" width="1" height="0.5" depth="0.2" position="-1 0 0"></a-box>
     <a-box class="wizard-choice" data-choice="explain" color="green" width="1" height="0.5" depth="0.2"></a-box>
     <a-box class="wizard-choice" data-choice="push" color="blue" width="1" height="0.5" depth="0.2" position="1 0 0"></a-box>
@@ -526,6 +526,7 @@ AFRAME.registerComponent('wizard-interact', {
   init: function() {
     this.player = document.querySelector('#rig');
     this.textEl = document.querySelector('#wizardText'); // global query
+    this.shadowEl = document.querySelector('#wizardTextShadow'); // shadow
     this.mixer = null;
     this.actions = {};
     this.interacted = false;
@@ -642,9 +643,203 @@ hideChoiceUI: function() {
   handleChoice: function(choice) {
     this.hideChoiceUI();
     if (this.textEl) this.textEl.setAttribute('visible', false);
-    
+    AFRAME.registerComponent('wizard-interact', {
+  schema: {
+    idleAnim: { type: 'number', default: 6 },
+    approachAnim: { type: 'number', default: 2 },
+    explainAnim: { type: 'number', default: 1 },
+    ignoreStartAnim: { type: 'number', default: 4 },
+    ignoreDeathAnim: { type: 'number', default: 5 },
+    getOutStartAnim: { type: 'number', default: 3 },
+    getOutDeathAnim: { type: 'number', default: 5 },
+    reactDistance: { type: 'number', default: 3 },
+    approachStep: { type: 'number', default: 0.02 }, // smaller for smooth movement
+    choiceDelay: { type: 'number', default: 700 } // ms delay before freeze & choices
+  },
+
+  init: function() {
+    this.player = document.querySelector('#rig');
+    this.textEl = document.querySelector('#wizardText'); // global query
+    this.mixer = null;
+    this.actions = {};
+    this.interacted = false;
+    this.sequenceQueue = [];
+
+    // Load wizard model animations
+    this.el.addEventListener('model-loaded', e => {
+      const model = e.detail.model;
+      if (!model) return;
+      this.mixer = new THREE.AnimationMixer(model);
+      const animations = model.animations || [];
+
+      animations.forEach((clip, idx) => {
+        const action = this.mixer.clipAction(clip);
+        action.clampWhenFinished = true;
+        action.setLoop(THREE.LoopOnce);
+        this.actions[idx + 1] = action; // map 1,2,3,... to your numbering
+      });
+
+      // Idle loop
+      if (this.actions[this.data.idleAnim]) {
+        this.actions[this.data.idleAnim].setLoop(THREE.LoopRepeat);
+        this.actions[this.data.idleAnim].play();
+      }
+    });
+
+    this.createChoiceUI();
+  },
+
+  tick: function(time, deltaTime) {
+    if (!this.mixer) return;
+    this.mixer.update(deltaTime / 1000);
+
+    // Check distance to player to trigger reaction
+    if (!this.interacted) {
+      const playerPos = new THREE.Vector3();
+      const wizardPos = new THREE.Vector3();
+      this.player.object3D.getWorldPosition(playerPos);
+      this.el.object3D.getWorldPosition(wizardPos);
+      const distance = playerPos.distanceTo(wizardPos);
+
+      if (distance < this.data.reactDistance) {
+        this.interacted = true;
+        this.startReaction();
+      }
+    }
+
+    // Handle wizard movement toward player if a sequence step requests it
+    if (this.sequenceQueue.length) {
+      const step = this.sequenceQueue[0];
+      if (step.moveTowardPlayer) {
+        const playerPos = new THREE.Vector3();
+        const wizardPos = new THREE.Vector3();
+        this.player.object3D.getWorldPosition(playerPos);
+        this.el.object3D.getWorldPosition(wizardPos);
+
+        const dir = new THREE.Vector3().subVectors(playerPos, wizardPos);
+        const dist = dir.length();
+        if (dist > 0.01) {
+          dir.normalize();
+          this.el.object3D.position.add(dir.multiplyScalar(step.step || this.data.approachStep));
+        }
+      }
+    }
+  },
+
+  startReaction: function() {
+    // Stop idle
+    if (this.actions[this.data.idleAnim]) this.actions[this.data.idleAnim].stop();
+
+    // Play approach animation (2) loop
+    if (this.actions[this.data.approachAnim]) {
+      this.actions[this.data.approachAnim].setLoop(THREE.LoopRepeat);
+      this.actions[this.data.approachAnim].play();
+    }
+
+    // Show text above wizard
+    if (this.textEl) this.textEl.setAttribute('visible', true);
+
     const shadowEl = this.el.querySelector('#wizardTextShadow');
-    if (shadowEl) shadowEl.setAttribute('visible', false);
+if (shadowEl) shadowEl.setAttribute('visible', true);
+
+    // Move player slightly closer before freeze
+    const playerPos = this.player.object3D.position;
+    playerPos.z -= 0.3; // small nudge
+
+    // After delay, freeze player and show choices
+    setTimeout(() => {
+      if (this.player.components['player-movement'])
+        this.player.components['player-movement'].pause = true;
+      this.showChoiceUI();
+    }, this.data.choiceDelay);
+  },
+
+ createChoiceUI: function() {
+  this.choiceContainer = document.querySelector('#wizardChoices');
+  this.buttons = Array.from(this.choiceContainer.querySelectorAll('.wizard-choice'));
+
+  this.buttons.forEach(btn => {
+    btn.setAttribute('visible', false);
+    btn.addEventListener('click', () => this.handleChoice(btn.getAttribute('data-choice')));
+  });
+},
+
+showChoiceUI: function() {
+  this.choiceContainer.object3D.position.copy(this.el.object3D.position); // place above wizard
+  this.buttons.forEach(btn => btn.setAttribute('visible', true));
+},
+
+hideChoiceUI: function() {
+  this.buttons.forEach(btn => btn.setAttribute('visible', false));
+},
+
+  handleChoice: function(choice) {
+    this.hideChoiceUI();
+    if (this.textEl) this.textEl.setAttribute('visible', false);
+    if (this.shadowEl) this.shadowEl.setAttribute('visible', false);
+
+    switch(choice) {
+      case 'ignore':
+        this.playSequence([
+          { anim: this.data.ignoreStartAnim, moveTowardPlayer: true, step: 0.05 },
+          { anim: this.data.ignoreDeathAnim, repeat: 7 }
+        ], () => { alert('You died! Game over.'); });
+        break;
+
+      case 'getOut':
+        this.playSequence([
+          { anim: this.data.getOutStartAnim, moveTowardPlayer: true, step: 0.05 },
+          { anim: this.data.getOutDeathAnim, repeat: 7 }
+        ], () => { alert('You died! Game over.'); });
+        break;
+
+      case 'explain':
+        this.playSequence([{ anim: this.data.explainAnim }], () => {
+          if (this.player.components['player-movement'])
+            this.player.components['player-movement'].pause = false;
+          // Return to idle animation (6)
+          if (this.actions[this.data.idleAnim]) this.actions[this.data.idleAnim].stop();
+          if (this.actions[this.data.idleAnim]) { 
+            this.actions[this.data.idleAnim].setLoop(THREE.LoopRepeat);
+            this.actions[this.data.idleAnim].play();
+          }
+        });
+        break;
+    }
+  },
+
+  playSequence: function(queue, callback) {
+    if (!queue || queue.length === 0) { if(callback) callback(); return; }
+
+    this.sequenceQueue = queue;
+    const next = queue.shift();
+    const animIndex = next.anim;
+    const repeat = next.repeat || 1;
+
+    if (!this.actions[animIndex]) {
+      this.playSequence(queue, callback);
+      return;
+    }
+
+    // Stop current actions
+    Object.values(this.actions).forEach(a => a.stop());
+    const action = this.actions[animIndex];
+    action.reset().play();
+    let count = 1;
+
+    // Listen for finished events
+    const finishedHandler = () => {
+      count++;
+      if(count > repeat) action.stop();
+      action.getMixer().removeEventListener('finished', finishedHandler);
+      this.playSequence(queue, callback);
+    };
+
+    action.getMixer().addEventListener('finished', finishedHandler);
+  }
+});
+
+
 
     switch(choice) {
       case 'ignore':
