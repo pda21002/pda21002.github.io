@@ -618,39 +618,24 @@ AFRAME.registerComponent('wizard-interact', {
     }, this.data.choiceDelay);
   },
 
-  createChoiceUI: function() {
-    const scene = this.el.sceneEl;
-    const labels = ['ignore', 'explain', 'getOut'];
-    this.buttons = [];
+createChoiceUI: function() {
+  this.choiceContainer = document.querySelector('#wizardChoices');
+  this.buttons = Array.from(this.choiceContainer.querySelectorAll('.wizard-choice'));
 
-    labels.forEach((label, i) => {
-      const btn = document.createElement('a-box');
-      btn.setAttribute('width', 1);
-      btn.setAttribute('height', 0.5);
-      btn.setAttribute('depth', 0.2);
-      btn.setAttribute('color', i === 0 ? 'blue' : i === 1 ? 'green' : 'red');
-      btn.setAttribute('class', 'clickable fork-menu-button'); // now clickable
-      btn.setAttribute('visible', false);
-      btn.setAttribute('material','depthTest:false;');
-      btn.object3D.renderOrder = 999;
-      scene.appendChild(btn);
+  this.buttons.forEach(btn => {
+    btn.setAttribute('visible', false);
+    btn.addEventListener('click', () => this.handleChoice(btn.getAttribute('data-choice')));
+  });
+},
 
-      btn.addEventListener('click', () => this.handleChoice(label));
-      this.buttons.push(btn);
-    });
-  },
+showChoiceUI: function() {
+  this.choiceContainer.object3D.position.copy(this.el.object3D.position); // place above wizard
+  this.buttons.forEach(btn => btn.setAttribute('visible', true));
+},
 
-  showChoiceUI: function() {
-    const wizardPos = this.el.object3D.position;
-    this.buttons.forEach((btn, i) => {
-      btn.setAttribute('position', {x: wizardPos.x + i - 1, y: wizardPos.y + 1, z: wizardPos.z});
-      btn.setAttribute('visible', true);
-    });
-  },
-
-  hideChoiceUI: function() {
-    this.buttons.forEach(btn => btn.setAttribute('visible', false));
-  },
+hideChoiceUI: function() {
+  this.buttons.forEach(btn => btn.setAttribute('visible', false));
+},
 
   handleChoice: function(choice) {
     this.hideChoiceUI();
