@@ -2,6 +2,9 @@
 <head>
   <meta charset="utf-8" />
   <script src="https://aframe.io/releases/1.7.0/aframe.min.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/aframevr/aframe@1.5.0/dist/aframe-master.min.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/aframevr/aframe@1.5.0/dist/aframe-text-component.min.js"></script>
+
 </head>
 <body>
 <a-scene cursor="rayOrigin: mouse" raycaster="objects: .fork-menu-button" keyboard-shortcuts="">
@@ -31,7 +34,6 @@
       <a-asset-item id="fox" src="assets/voxel_fox.glb"></a-asset-item>
       <a-asset-item id="butterflies" src="assets/the_butterflies.glb"></a-asset-item>
           <a-asset-item id="ghost" src="assets/nightmare_creature_3.glb"></a-asset-item>
-      <a-asset-item id="font" src="assets/Play_Bold.json"></a-asset-item>
   </a-assets>
 
   <!-- Ground -->
@@ -87,7 +89,7 @@
   <!-- Witch -->
   <a-entity id="witch" position="2.35 0.04454 4.80785" rotation="0 -14.72 0">
     <a-entity gltf-model="#witch" scale="0.25 0.25 0.25" rotation="0 -135 0" witch-behavior="reactAnim: bye; reactDistance: 2"></a-entity>
-    <a-text id="witchText" value="Γεια! Αν ψάχνεις το παλάτι, είσαι σε σωστό δρόμο. Αρκεί να μην αφήσεις τίποτα να σε αποσπάσει!" position="2.35 0.5 4.80785" align="center" color="#fff" visible="false" side="double" font="#font" scale="0.5 0.5 0.5"></a-text>
+    <a-text id="witchText" value="Γεια! Αν ψάχνεις το παλάτι, είσαι σε σωστό δρόμο. Αρκεί να μην αφήσεις τίποτα να σε αποσπάσει!" position="2.35 0.5 4.80785" align="center" color="#fff" visible="false" side="double" scale="0.5 0.5 0.5"></a-text>
   </a-entity>
 
   <!-- Mushroom -->
