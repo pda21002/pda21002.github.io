@@ -323,8 +323,8 @@ AFRAME.registerComponent('witch-behavior', {
     this.player = document.querySelector('#rig');
     this.mixer = null;
     this.actions = {};
-    this.textEl = document.querySelector('#witchText');
-    this.playerWasNear = false;
+    this.textEl = this.el.querySelector('#witchText'); // **child of witch**
+    this.hasPlayed = false;
 
     this.el.addEventListener('model-loaded', (e) => {
       const model = e.detail.model;
@@ -334,13 +334,18 @@ AFRAME.registerComponent('witch-behavior', {
 
       const animations = model.animations || [];
       animations.forEach(clip => {
-        this.actions[clip.name] = this.mixer.clipAction(clip);
+        const action = this.mixer.clipAction(clip);
+        if (clip.name === this.data.reactAnim) {
+          action.setLoop(THREE.LoopOnce);
+          action.clampWhenFinished = true;
+        }
+        this.actions[clip.name] = action;
       });
     });
   },
 
   tick: function(time, deltaTime) {
-    if (!this.player || !this.mixer) return;
+    if (!this.player || !this.mixer || !this.actions[this.data.reactAnim]) return;
 
     const playerPos = new THREE.Vector3();
     const witchPos = new THREE.Vector3();
@@ -350,23 +355,28 @@ AFRAME.registerComponent('witch-behavior', {
     const distance = playerPos.distanceTo(witchPos);
 
     if (distance < this.data.reactDistance) {
-      // Player has just approached
-      if (!this.playerWasNear) {
-        if (this.actions[this.data.reactAnim]) {
-          this.actions[this.data.reactAnim].reset().play(); // play once
-        }
+      if (!this.hasPlayed) {
+        // Play animation once
+        this.actions[this.data.reactAnim].reset().play();
+        this.hasPlayed = true;
+
+        // Show text
         if (this.textEl) this.textEl.setAttribute('visible', true);
+
+        // Hide text after 3 seconds
+        setTimeout(() => {
+          if (this.textEl) this.textEl.setAttribute('visible', false);
+        }, 3000);
       }
-      this.playerWasNear = true;
     } else {
-      // Player left
-      this.playerWasNear = false;
-      if (this.textEl) this.textEl.setAttribute('visible', false);
+      // Reset so it can play next time player re-approaches
+      this.hasPlayed = false;
     }
 
     this.mixer.update(deltaTime / 1000);
   }
 });
+
 
   
   AFRAME.registerComponent('fairy-behavior', {
