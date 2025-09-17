@@ -83,12 +83,38 @@
     <a-entity gltf-model="#fairy5" position="3.65 1 7.15" scale="0.08 0.08 0.08" rotation="-14.46 150 0" fairy-behavior="idleAnim:idle; reactAnim:interact1; reactDistance:2"></a-entity>
   </a-entity>
 
+  
   <!-- Witch -->
-  <a-entity id="witchWrapper" position="2.35 0.04454 4.80785" rotation="0 -14.72 0">
-    <a-entity gltf-model="#witch" scale="0.25 0.25 0.25" rotation="0 -135 0" witch-behavior="reactAnim: bye; reactDistance: 2"></a-entity>
-     <a-text value="Hello! If you're looking for the palace, you're on the right path. Just don't get distracted!" position="0.15725 0.44674 0.12229" align="center" color="#000" visible="false" side="double" scale="0.15 0.15 0.15" rotation="0 40 0"></a-text>
-  <a-text id="witchText" value="Hello! If you're looking for the palace, you're on the right path. Just don't get distracted!" position="0.15725 0.44674 0.12232" align="center" color="#fff" visible="false" side="double" scale="0.15 0.15 0.15" rotation="0 40 0"></a-text>
+  
+<a-entity id="witchWrapper" position="2.35 0.04454 4.80785" rotation="0 -14.72 0">
+  <a-entity gltf-model="#witch"
+            scale="0.25 0.25 0.25"
+            rotation="0 -135 0"
+            witch-behavior="reactAnim: bye; reactDistance: 2">
+  </a-entity>
+
+  <!-- Shadow + main text grouped -->
+  <a-entity id="witchTextWrapper" visible="false">
+    <a-text value="Hello! If you're looking for the palace, you're on the right path. Just don't get distracted!"
+            position="0.15816 0.44674 0.11927"
+            align="center"
+            color="#000"
+            side="double"
+            scale="0.15 0.15 0.15"
+            rotation="0 40 0">
+    </a-text>
+
+    <a-text value="Hello! If you're looking for the palace, you're on the right path. Just don't get distracted!"
+            position="0.15725 0.44674 0.12232"
+            align="center"
+            color="#fff"
+            side="double"
+            scale="0.15 0.15 0.15"
+            rotation="0 40 0">
+    </a-text>
+  </a-entity>
 </a-entity>
+
 
 
 
@@ -325,7 +351,7 @@ AFRAME.registerComponent('witch-behavior', {
     this.player = document.querySelector('#rig');
     this.mixer = null;
     this.actions = {};
-    this.textEl = this.el.querySelector('#witchText'); // **child of witch**
+this.textEl = this.el.parentNode.querySelector('#witchTextWrapper');
     this.hasPlayed = false;
 
     this.el.addEventListener('model-loaded', (e) => {
