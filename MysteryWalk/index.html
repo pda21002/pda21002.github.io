@@ -622,8 +622,8 @@ AFRAME.registerComponent('wizard-interact', {
 
     labels.forEach((label, i) => {
       const btn = document.createElement('a-box');
-      btn.setAttribute('width', 1);
-      btn.setAttribute('height', 0.5);
+      btn.setAttribute('width', 0.5);
+      btn.setAttribute('height', 0.3);
       btn.setAttribute('depth', 0.2);
       btn.setAttribute('color', colors[i]);
       btn.setAttribute('class', 'wizard-choice clickable');
@@ -638,7 +638,7 @@ AFRAME.registerComponent('wizard-interact', {
   showChoiceUI: function() {
     const wizardPos = this.el.object3D.position;
     this.buttons.forEach((btn, i) => {
-      btn.setAttribute('position', {x: wizardPos.x + i - 1, y: wizardPos.y + 1, z: wizardPos.z});
+      btn.setAttribute('position', {x: wizardPos.x, y: wizardPos.y + 0.5, z: wizardPos.z - 10});
       btn.setAttribute('visible', true);
     });
   },
@@ -655,14 +655,14 @@ AFRAME.registerComponent('wizard-interact', {
     switch(choice) {
       case 'ignore':
         this.playSequence([
-          { anim: this.data.ignoreStartAnim, moveTowardPlayer: true, step: 0.05 },
+          { anim: this.data.ignoreStartAnim, moveTowardPlayer: true, step: 3 },
           { anim: this.data.ignoreDeathAnim, repeat: 7 }
         ], () => { alert('You died! Game over.'); });
         break;
 
       case 'getOut':
         this.playSequence([
-          { anim: this.data.getOutStartAnim, moveTowardPlayer: true, step: 0.05 },
+          { anim: this.data.getOutStartAnim, moveTowardPlayer: true, step: 3 },
           { anim: this.data.getOutDeathAnim, repeat: 7 }
         ], () => { alert('You died! Game over.'); });
         break;
