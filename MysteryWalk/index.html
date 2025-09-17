@@ -115,6 +115,33 @@
   </a-entity>
 </a-entity>
 
+  <a-entity id="wizardWrapper" position="-0.02192 0.04843 -1.66883">
+  <a-entity gltf-model="#wizard" scale="0.4 0.4 0.4"
+            wizard-interact="range: 3; textId: wizardText"></a-entity>
+    
+  <!-- Shadow text -->
+  <a-text value="ΤΙ ΔΟΥΛΕΙΑ ΕΧΕΙΣ ΕΣΥ ΕΔΩ;!" 
+          position="0 2 0" 
+          color="#000" 
+          align="center" 
+          side="double" 
+          scale="0.5 0.5 0.5" 
+          visible="false"
+          rotation="0 0 0"
+          id="wizardTextShadow"></a-text>
+
+  <!-- Foreground text -->
+  <a-text value="WHERE DO YOU THINK YOU'RE GOING?!" 
+          position="0 2 0.01" 
+          color="#fff" 
+          align="center" 
+          side="double" 
+          scale="0.5 0.5 0.5" 
+          visible="false"
+          rotation="0 0 0"
+          id="wizardText"></a-text>
+</a-entity>
+
 
 
 
@@ -127,7 +154,6 @@
 <a-entity gltf-model="#creepygirl" position="-3.20252 0.04765 5.73719" scale="0.0007 0.0007 0.0007" rotation="0 25 0"></a-entity>
   <a-entity gltf-model="#sisters" position="-2.60894 0.58665 1.29681" scale="0.08 0.08 0.08" rotation="0 -110 0"></a-entity>
   <a-entity gltf-model="#dwarf" position="-0.29412 0.05046 4.64215" scale="0.008 0.008 0.008" rotation="0 20 0"></a-entity>
-  <a-entity gltf-model="#wizard" position="-0.02192 0.04843 -1.66883" scale="0.4 0.4 0.4"></a-entity>
   <a-entity gltf-model="#fox" position="0.33427 0.05 7.18987" scale="0.045 0.045 0.045" rotation="0 70 0"></a-entity>
   <a-entity gltf-model="#butterflies" position="-0.16089 0 30.2737" scale="1 1 1" rotation="0 0 0"></a-entity>
   <a-entity gltf-model="#ghost" position="-2.8142 0.08774 -3.2995" scale="0.2 0.2 0.2"></a-entity>
@@ -488,6 +514,190 @@ AFRAME.registerComponent('mushroom-behavior', {
   }
 });
 
+  
+AFRAME.registerComponent('wizard-interact', {
+  schema: {
+    range: { type: 'number', default: 3 },
+    textId: { type: 'string', default: 'wizardText' } // ID of a-text above wizard
+  },
+
+  init: function() {
+    this.player = document.querySelector('#rig');
+    this.wizardEl = this.el;
+    this.mixer = null;
+    this.actions = {};
+    this.interacted = false;
+    this.isFrozen = false;
+
+    // Text above wizard
+    this.textEl = document.getElementById(this.data.textId);
+    if (this.textEl) this.textEl.setAttribute('visible', false);
+
+    this.wizardEl.addEventListener('model-loaded', e => {
+      const model = e.detail.model;
+      if (!model) return;
+
+      this.mixer = new THREE.AnimationMixer(model);
+      const animations = model.animations || [];
+      animations.forEach(clip => {
+        const action = this.mixer.clipAction(clip);
+        this.actions[clip.name] = action;
+      });
+
+      // Start idle loop (animation 6)
+      if (this.actions['6']) {
+        this.actions['6'].play();
+        this.actions['6'].setLoop(THREE.LoopRepeat);
+      }
+    });
+  },
+
+  tick: function(time, deltaTime) {
+    if (!this.mixer) return;
+
+    // Update animations
+    this.mixer.update(deltaTime / 1000);
+
+    if (this.interacted) return;
+
+    // Check distance
+    const playerPos = new THREE.Vector3();
+    const wizardPos = new THREE.Vector3();
+    this.player.object3D.getWorldPosition(playerPos);
+    this.wizardEl.object3D.getWorldPosition(wizardPos);
+
+    const dist = playerPos.distanceTo(wizardPos);
+    if (dist <= this.data.range) {
+      this.startInteraction();
+    }
+  },
+
+  startInteraction: function() {
+    if (!this.actions['2']) return;
+
+    this.interacted = true;
+    this.isFrozen = true;
+
+    // Stop idle animation
+    if (this.actions['6']) this.actions['6'].stop();
+
+    // Play approach/interaction animation (2) on loop
+    this.actions['2'].reset();
+    this.actions['2'].play();
+    this.actions['2'].setLoop(THREE.LoopRepeat);
+
+    // Show text
+    if (this.textEl) this.textEl.setAttribute('visible', true);
+
+    // Freeze player at fork (assuming player-movement component handles freeze)
+    if (this.player.components['player-movement']) {
+      this.player.components['player-movement'].pause = true;
+    }
+
+    // Wait a short time then show choices
+    setTimeout(() => this.showChoices(), 500);
+  },
+
+  showChoices: function() {
+    // Could be replaced with 3D buttons, but simple prompt for now
+    const choice = prompt(
+      "1. Ignore him\n2. Explain message\n3. Tell him to get out of your way"
+    );
+    this.handleChoice(choice);
+  },
+
+  handleChoice: function(choice) {
+    if (!this.mixer) return;
+
+    const wizardPos = this.wizardEl.object3D.position;
+
+    switch(choice) {
+      case "1": // Ignore
+        this.playThenDie('4', 0.5, '5', 5);
+        break;
+
+      case "2": // Explain
+        this.playThenContinue('1', '2');
+        break;
+
+      case "3": // Get out of the way
+        this.playThenDie('3', 0.5, '4', '5', 5);
+        break;
+
+      default:
+        alert("Invalid choice! Wizard is angry!");
+        this.interacted = false;
+        break;
+    }
+  },
+
+  playThenDie: function(anim1, moveDistance, anim2, loopAnim = null, loopCount = 5) {
+    const action1 = this.actions[anim1];
+    if (!action1) return;
+
+    action1.reset().play();
+    action1.setLoop(THREE.LoopOnce);
+    action1.clampWhenFinished = true;
+
+    // After first animation finishes
+    action1.onFinished = () => {
+      // Move wizard slightly toward player
+      this.smoothMove(moveDistance, () => {
+        if (loopAnim && this.actions[loopAnim]) {
+          this.actions[loopAnim].reset().play();
+          this.actions[loopAnim].setLoop(loopCount);
+        }
+        setTimeout(() => alert("You died! Game over."), 2000);
+      });
+    };
+  },
+
+  playThenContinue: function(animOnce, animLoop) {
+    const actionOnce = this.actions[animOnce];
+    if (!actionOnce) return;
+
+    // Stop current animation (2)
+    if (this.actions['2']) this.actions['2'].stop();
+
+    actionOnce.reset().play();
+    actionOnce.setLoop(THREE.LoopOnce);
+    actionOnce.clampWhenFinished = true;
+
+    actionOnce.onFinished = () => {
+      // Resume idle/interaction loop (animation 2)
+      if (this.actions[animLoop]) {
+        this.actions[animLoop].reset().play();
+        this.actions[animLoop].setLoop(THREE.LoopRepeat);
+      }
+      if (this.textEl) this.textEl.setAttribute('visible', false);
+      if (this.player.components['player-movement'])
+        this.player.components['player-movement'].pause = false;
+    };
+  },
+
+  smoothMove: function(distance, callback) {
+    // Move wizard slightly toward player along z-axis
+    const dir = new THREE.Vector3();
+    dir.subVectors(this.player.object3D.position, this.wizardEl.object3D.position).normalize();
+    const targetPos = this.wizardEl.object3D.position.clone().add(dir.multiplyScalar(distance));
+
+    const duration = 1000;
+    const start = this.wizardEl.object3D.position.clone();
+    let elapsed = 0;
+
+    const moveTick = (delta) => {
+      elapsed += delta;
+      const t = Math.min(elapsed / duration, 1);
+      this.wizardEl.object3D.position.lerpVectors(start, targetPos, t);
+      if (t < 1) {
+        requestAnimationFrame(() => moveTick(delta));
+      } else {
+        if (callback) callback();
+      }
+    };
+    requestAnimationFrame(() => moveTick(16));
+  }
+});
 
 
 /* -----------------------
