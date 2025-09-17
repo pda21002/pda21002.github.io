@@ -563,47 +563,51 @@ tick: function(time, deltaTime) {
 
   this.mixer.update(deltaTime / 1000);
 
+  const playerPos = new THREE.Vector3();
+  const wizardPos = new THREE.Vector3();
+  this.player.object3D.getWorldPosition(playerPos);
+  this.el.object3D.getWorldPosition(wizardPos);
+  const distance = playerPos.distanceTo(wizardPos);
+
+  // --- 1. Wizard reacts when player comes within reactDistance ---
+  if (!this.interacted && distance < this.data.reactDistance) {
+    this.interacted = true;
+    this.startReaction(); // triggers animation 2 + text + delayed freeze + choices
+  }
+
+  // --- 2. Move wizard if a sequence step has moveTowardPlayer:true ---
   if (this.sequenceQueue.length) {
     const step = this.sequenceQueue[0];
-
     if (step.moveTowardPlayer) {
-      const playerPos = new THREE.Vector3();
-      const wizardPos = new THREE.Vector3();
-      this.player.object3D.getWorldPosition(playerPos);
-      this.el.object3D.getWorldPosition(wizardPos);
-
-     const distance = playerPos.distanceTo(wizardPos);
-
-if (!this.interacted && distance < this.data.reactDistance) {
-  this.interacted = true;
-  this.startReaction(); // <-- this triggers animation 2 and text
+      const dir = new THREE.Vector3().subVectors(playerPos, wizardPos).normalize();
+      this.el.object3D.position.add(dir.multiplyScalar(step.step || this.data.approachStep));
     }
   }
-}
 },
 
-  startReaction: function() {
-    // Stop idle
-    if (this.actions[this.data.idleAnim]) this.actions[this.data.idleAnim].stop();
+ startReaction: function() {
+  // Stop idle
+  if (this.actions[this.data.idleAnim]) this.actions[this.data.idleAnim].stop();
 
-    // Play approach animation loop (2)
-    if (this.actions[this.data.approachAnim]) {
-      this.actions[this.data.approachAnim].setLoop(THREE.LoopRepeat);
-      this.actions[this.data.approachAnim].play();
-    }
+  // Play approach animation loop (2)
+  if (this.actions[this.data.approachAnim]) {
+    this.actions[this.data.approachAnim].setLoop(THREE.LoopRepeat);
+    this.actions[this.data.approachAnim].play();
+  }
 
-    // Show text
-    if (this.textEl) this.textEl.setAttribute('visible', true);
+  // Show text
+  if (this.textEl) this.textEl.setAttribute('visible', true);
 
-    // Step 3 → move player a little closer before freeze
-    this.player.object3D.position.z -= 0.5; // adjust as needed
+  // Step 3 → move player a little closer before freeze
+  this.player.object3D.position.z -= 0.5;
 
-    // Step 4 → delay freeze + show choices
-    setTimeout(() => {
-      if (this.player.components['player-movement']) this.player.components['player-movement'].pause = true;
-      this.showChoiceUI();
-    }, this.data.choiceDelay);
-  },
+  // Step 4 → delay freeze + show choices
+  setTimeout(() => {
+    if (this.player.components['player-movement']) 
+        this.player.components['player-movement'].pause = true;
+    this.showChoiceUI();
+  }, this.data.choiceDelay);
+},
 
   createChoiceUI: function() {
     const scene = this.el.sceneEl;
@@ -637,39 +641,40 @@ if (!this.interacted && distance < this.data.reactDistance) {
     this.buttons.forEach(btn => btn.setAttribute('visible', false));
   },
 
-  handleChoice: function(choice) {
-    this.hideChoiceUI();
-    if (this.textEl) this.textEl.setAttribute('visible', false);
+handleChoice: function(choice) {
+  this.hideChoiceUI();
+  if (this.textEl) this.textEl.setAttribute('visible', false);
 
-    switch(choice) {
-      case 'ignore':
-        this.stepTowardPlayer(1);
-  this.playSequence([
-    {anim:this.data.ignoreStartAnim},
-    {anim:this.data.ignoreDeathAnim, repeat:7}
-  ], () => { alert('You died! Game over.'); });
-  break;
-        
-      case 'getOut':
-this.playSequence([
-  { anim: this.data.ignoreStartAnim, moveTowardPlayer:true, step: 0.5 },
-  { anim: this.data.ignoreDeathAnim, repeat:7 }
-], () => { alert('You died! Game over.'); });
-        break;
+  switch(choice) {
+    case 'ignore':
+      this.playSequence([
+        {anim:this.data.ignoreStartAnim, moveTowardPlayer:true, step:0.02},
+        {anim:this.data.ignoreDeathAnim, repeat:7}
+      ], () => { alert('You died! Game over.'); });
+      break;
 
-      case 'explain':
-        this.playSequence([{anim:this.data.explainAnim}], () => {
-          if(this.player.components['player-movement']) this.player.components['player-movement'].pause = false;
-          // Return to approach/idle animation
-          if(this.actions[this.data.idleAnim]) this.actions[this.data.idleAnim].stop();
-          if(this.actions[this.data.idleAnim]) { 
-            this.actions[this.data.idleAnim].setLoop(THREE.LoopRepeat);
-            this.actions[this.data.idleAnim].play();
-          }
-        });
-        break;
-    }
-  },
+    case 'getOut':
+      this.playSequence([
+        {anim:this.data.getOutStartAnim, moveTowardPlayer:true, step:0.02},
+        {anim:this.data.getOutDeathAnim, repeat:7}
+      ], () => { alert('You died! Game over.'); });
+      break;
+
+    case 'explain':
+      this.playSequence([{anim:this.data.explainAnim}], () => {
+        if(this.player.components['player-movement']) 
+            this.player.components['player-movement'].pause = false;
+
+        // Return to idle animation
+        if(this.actions[this.data.idleAnim]) this.actions[this.data.idleAnim].stop();
+        if(this.actions[this.data.idleAnim]) { 
+          this.actions[this.data.idleAnim].setLoop(THREE.LoopRepeat);
+          this.actions[this.data.idleAnim].play();
+        }
+      });
+      break;
+  }
+},
 
   playSequence: function(queue, callback) {
     if (!queue || queue.length === 0) { if(callback) callback(); return; }
