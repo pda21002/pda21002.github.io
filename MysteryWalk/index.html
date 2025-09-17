@@ -526,54 +526,49 @@ AFRAME.registerComponent('mushroom-behavior', {
 });
 
   
-AFRAME.registerComponent('wizard-behavior', {
+AFRAME.registerComponent('wizard-interact', {
   schema: {
-    reactAnim: { type: 'string', default: '2' },
+    idleAnim: { type: 'number', default: 6 },      // animation 6 looped when idle
+    reactAnim: { type: 'number', default: 2 },     // animation 2 looped when approached
+    approachAnim: { type: 'number', default: 4 },  // animation 4 for "ignore" or "get out of way"
+    dieAnim: { type: 'number', default: 5 },       // animation 5 looped multiple times for death
+    explainAnim: { type: 'number', default: 1 },   // animation 1 for explaining
     reactDistance: { type: 'number', default: 3 }
   },
 
-  init: function () {
+  init: function() {
     this.player = document.querySelector('#rig');
+    this.textEl = this.el.querySelector('#wizardText'); // your <a-text> above wizard
     this.mixer = null;
     this.actions = {};
-    this.hasReacted = false;
+    this.interacted = false;
 
-    // Elements
-    this.textEl = this.el.parentEl.querySelector('#wizardText');
-    this.choicesEl = this.el.parentEl.querySelector('#wizardChoices');
-
-    // Click handlers for choice boxes
-    this.choicesEl.querySelectorAll('.choice-button').forEach(btn => {
-      btn.addEventListener('click', (evt) => {
-        const choice = evt.target.dataset.choice;
-        this.handleChoice(choice);
-      });
-    });
-
-    // Load animations
     this.el.addEventListener('model-loaded', (e) => {
       const model = e.detail.model;
       if (!model) return;
 
       this.mixer = new THREE.AnimationMixer(model);
-      const animations = model.animations || [];
 
-      animations.forEach((clip, idx) => {
+      model.animations.forEach((clip, i) => {
         const action = this.mixer.clipAction(clip);
         action.clampWhenFinished = true;
-        this.actions[(idx + 1).toString()] = action; // use numbers as keys
+
+        if (i === this.data.idleAnim) action.setLoop(THREE.LoopRepeat);
+        else action.setLoop(THREE.LoopOnce);
+
+        this.actions[i] = action;
       });
 
-      // Play idle animation 6 looping initially
-      if (this.actions['6']) {
-        this.actions['6'].setLoop(THREE.LoopRepeat);
-        this.actions['6'].play();
-      }
+      // Start idle animation
+      if (this.actions[this.data.idleAnim]) this.actions[this.data.idleAnim].play();
     });
+
+    // Create clickable choice buttons (hidden initially)
+    this.createChoiceUI();
   },
 
-  tick: function (time, deltaTime) {
-    if (!this.player || !this.mixer) return;
+  tick: function(time, deltaTime) {
+    if (!this.mixer) return;
 
     const playerPos = new THREE.Vector3();
     const wizardPos = new THREE.Vector3();
@@ -582,81 +577,108 @@ AFRAME.registerComponent('wizard-behavior', {
 
     const distance = playerPos.distanceTo(wizardPos);
 
-    if (!this.hasReacted && distance < this.data.reactDistance) {
-      this.triggerInteraction();
-      this.hasReacted = true;
+    // If player is close and hasn't interacted yet
+    if (!this.interacted && distance < this.data.reactDistance) {
+      this.startInteraction();
     }
 
-    if (this.mixer) this.mixer.update(deltaTime / 1000);
+    this.mixer.update(deltaTime / 1000);
   },
 
-  triggerInteraction: function () {
+  startInteraction: function() {
+    this.interacted = true;
+
     // Freeze player
-    if (this.player.components['player-movement'])
-      this.player.components['player-movement'].pause = true;
+    this.player.components['player-movement'].pause = true;
+
+    // Stop idle and play approach animation
+    if (this.actions[this.data.idleAnim]) this.actions[this.data.idleAnim].stop();
+    if (this.actions[this.data.reactAnim]) this.actions[this.data.reactAnim].play();
 
     // Show text
     if (this.textEl) this.textEl.setAttribute('visible', true);
 
-    // Play animation 2 on loop
-    if (this.actions['2']) {
-      this.actions['2'].setLoop(THREE.LoopRepeat);
-      this.actions['2'].play();
-    }
-
-    // Show choices
-    if (this.choicesEl) this.choicesEl.setAttribute('visible', true);
+    // Show choice buttons
+    this.showChoiceUI();
   },
 
-  handleChoice: function (choice) {
-    // Hide choices
-    if (this.choicesEl) this.choicesEl.setAttribute('visible', false);
+  createChoiceUI: function() {
+    // Buttons should be children of scene or wizard, positioned near player
+    const scene = this.el.sceneEl;
+    this.buttons = [];
+
+    const choices = [
+      { id: 'ignore', label: 'Ignore him' },
+      { id: 'explain', label: 'Explain' },
+      { id: 'getOut', label: 'Tell him to get out of your way' }
+    ];
+
+    choices.forEach((choice, i) => {
+      const btn = document.createElement('a-box');
+      btn.setAttribute('width', 1);
+      btn.setAttribute('height', 0.5);
+      btn.setAttribute('depth', 0.2);
+      btn.setAttribute('color', i===0?'blue':i===1?'green':'red');
+      btn.setAttribute('class', 'clickable');
+      btn.setAttribute('position', {x: i-1, y: 1.5, z: -2}); // relative to wizard
+      scene.appendChild(btn);
+
+      btn.addEventListener('click', () => this.handleChoice(choice.id));
+
+      this.buttons.push(btn);
+      btn.setAttribute('visible', false);
+    });
+  },
+
+  showChoiceUI: function() {
+    this.buttons.forEach(btn => btn.setAttribute('visible', true));
+  },
+
+  hideChoiceUI: function() {
+    this.buttons.forEach(btn => btn.setAttribute('visible', false));
+  },
+
+  handleChoice: function(choice) {
+    const mixer = this.mixer;
+
+    this.hideChoiceUI();
+    this.textEl.setAttribute('visible', false);
 
     switch(choice) {
       case 'ignore':
-        this.playThenDie('4', '5');
+        if (this.actions[this.data.approachAnim]) this.actions[this.data.approachAnim].reset().play();
+        setTimeout(() => {
+          if (this.actions[this.data.dieAnim]) this.actions[this.data.dieAnim].reset().play();
+          for (let i=0;i<5;i++) this.actions[this.data.dieAnim].play(); // repeat 5 times
+          setTimeout(()=>alert("You died! Game over."), 1500);
+        }, 1000);
         break;
-      case 'get-out':
-        this.playThenDie('3', '5');
+
+      case 'getOut':
+        if (this.actions[3]) this.actions[3].reset().play(); // animation 3
+        setTimeout(() => {
+          if (this.actions[this.data.approachAnim]) this.actions[this.data.approachAnim].reset().play();
+          setTimeout(() => {
+            if (this.actions[this.data.dieAnim]) this.actions[this.data.dieAnim].reset().play();
+            for (let i=0;i<5;i++) this.actions[this.data.dieAnim].play(); 
+            setTimeout(()=>alert("You died! Game over."), 1500);
+          }, 1000);
+        }, 1000);
         break;
+
       case 'explain':
-        this.explainMessage();
+        if (this.actions[this.data.explainAnim]) this.actions[this.data.explainAnim].reset().play();
+        setTimeout(() => {
+          // Unfreeze player
+          this.player.components['player-movement'].pause = false;
+          // Back to idle animation
+          if (this.actions[this.data.reactAnim]) this.actions[this.data.reactAnim].play();
+        }, 1000);
         break;
     }
-  },
-
-  playThenDie: function(firstAnim, deathAnim) {
-    if (this.actions[firstAnim]) {
-      this.actions[firstAnim].reset().setLoop(THREE.LoopOnce).play();
-    }
-
-    setTimeout(() => {
-      if (this.actions[deathAnim]) {
-        this.actions[deathAnim].reset().setLoop(THREE.LoopRepeat, 6).play();
-      }
-      alert("You died! Game over.");
-    }, 1000);
-  },
-
-  explainMessage: function() {
-    if (this.actions['1']) {
-      this.actions['1'].reset().setLoop(THREE.LoopOnce).play();
-    }
-
-    // Unfreeze player
-    if (this.player.components['player-movement'])
-      this.player.components['player-movement'].pause = false;
-
-    // Continue idle
-    if (this.actions['2']) {
-      this.actions['2'].setLoop(THREE.LoopRepeat);
-      this.actions['2'].play();
-    }
-
-    // Hide text
-    if (this.textEl) this.textEl.setAttribute('visible', false);
   }
 });
+
 
 
 /* -----------------------
