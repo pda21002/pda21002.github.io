@@ -140,7 +140,7 @@
 <a-entity gltf-model="#creepygirl" position="-3.20252 0.04765 5.73719" scale="0.0007 0.0007 0.0007" rotation="0 25 0"></a-entity>
   <a-entity gltf-model="#sisters" position="-2.60894 0.58665 1.29681" scale="0.08 0.08 0.08" rotation="0 -110 0"></a-entity>
   <a-entity gltf-model="#dwarf" position="-0.29412 0.05046 4.64215" scale="0.008 0.008 0.008" rotation="0 20 0"></a-entity>
-  <a-entity gltf-model="#fox" position="0.33427 0.05 7.18987" scale="0.045 0.045 0.045" rotation="0 70 0"></a-entity>
+  <a-entity gltf-model="#fox" position="0.33427 0.05 7.18987" scale="0.045 0.045 0.045" rotation="0 70 0" fox-behavior="idleAnim:Sleeping"></a-entity>
   <a-entity gltf-model="#butterflies" position="-0.16089 0 30.2737" scale="1 1 1" rotation="0 0 0"></a-entity>
   <a-entity gltf-model="#ghost" position="-2.8142 0.08774 -3.2995" scale="0.2 0.2 0.2"></a-entity>
   
@@ -516,7 +516,7 @@ AFRAME.registerComponent('fox-behavior', {
       if (!model) return;
       this.mixer = new THREE.AnimationMixer(model);
       const clips = model.animations || [];
-      const idle = clips.find(c => c.name === this.data.SleepingAnim);
+      const idle = clips.find(c => c.name === this.data.idleAnim);
       if (idle) {
         this.idleAction = this.mixer.clipAction(Sleeping);
         this.idleAction.setLoop(THREE.LoopRepeat);
