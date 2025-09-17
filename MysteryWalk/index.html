@@ -528,17 +528,18 @@ AFRAME.registerComponent('mushroom-behavior', {
   
 AFRAME.registerComponent('wizard-interact', {
   schema: {
-    idleAnim: { type: 'number', default: 6 },      // animation 6 looped when idle
-    reactAnim: { type: 'number', default: 2 },     // animation 2 looped when approached
-    approachAnim: { type: 'number', default: 4 },  // animation 4 for "ignore" or "get out of way"
-    dieAnim: { type: 'number', default: 5 },       // animation 5 looped multiple times for death
-    explainAnim: { type: 'number', default: 1 },   // animation 1 for explaining
+    idleAnim: { type: 'number', default: 6 },      // idle loop
+    reactAnim: { type: 'number', default: 2 },     // animation when approached
+    approachAnim: { type: 'number', default: 4 },  // "approach" animation for ignore/getOut
+    dieAnim: { type: 'number', default: 5 },       // death animation loop
+    explainAnim: { type: 'number', default: 1 },   // explaining animation
+    getOutAnim: { type: 'number', default: 3 },    // telling him to get out
     reactDistance: { type: 'number', default: 3 }
   },
 
   init: function() {
     this.player = document.querySelector('#rig');
-    this.textEl = this.el.querySelector('#wizardText'); // your <a-text> above wizard
+    this.textEl = this.el.querySelector('#wizardText');
     this.mixer = null;
     this.actions = {};
     this.interacted = false;
@@ -553,6 +554,7 @@ AFRAME.registerComponent('wizard-interact', {
         const action = this.mixer.clipAction(clip);
         action.clampWhenFinished = true;
 
+        // set loop for idle only
         if (i === this.data.idleAnim) action.setLoop(THREE.LoopRepeat);
         else action.setLoop(THREE.LoopOnce);
 
@@ -563,7 +565,7 @@ AFRAME.registerComponent('wizard-interact', {
       if (this.actions[this.data.idleAnim]) this.actions[this.data.idleAnim].play();
     });
 
-    // Create clickable choice buttons (hidden initially)
+    // Choice buttons
     this.createChoiceUI();
   },
 
@@ -577,7 +579,6 @@ AFRAME.registerComponent('wizard-interact', {
 
     const distance = playerPos.distanceTo(wizardPos);
 
-    // If player is close and hasn't interacted yet
     if (!this.interacted && distance < this.data.reactDistance) {
       this.startInteraction();
     }
@@ -591,26 +592,25 @@ AFRAME.registerComponent('wizard-interact', {
     // Freeze player
     this.player.components['player-movement'].pause = true;
 
-    // Stop idle and play approach animation
+    // Stop idle, play approach animation
     if (this.actions[this.data.idleAnim]) this.actions[this.data.idleAnim].stop();
     if (this.actions[this.data.reactAnim]) this.actions[this.data.reactAnim].play();
 
     // Show text
     if (this.textEl) this.textEl.setAttribute('visible', true);
 
-    // Show choice buttons
+    // Show choices
     this.showChoiceUI();
   },
 
   createChoiceUI: function() {
-    // Buttons should be children of scene or wizard, positioned near player
     const scene = this.el.sceneEl;
     this.buttons = [];
 
     const choices = [
       { id: 'ignore', label: 'Ignore him' },
       { id: 'explain', label: 'Explain' },
-      { id: 'getOut', label: 'Tell him to get out of your way' }
+      { id: 'getOut', label: 'Get out of way' }
     ];
 
     choices.forEach((choice, i) => {
@@ -620,11 +620,10 @@ AFRAME.registerComponent('wizard-interact', {
       btn.setAttribute('depth', 0.2);
       btn.setAttribute('color', i===0?'blue':i===1?'green':'red');
       btn.setAttribute('class', 'clickable');
-      btn.setAttribute('position', {x: i-1, y: 1.5, z: -2}); // relative to wizard
+      btn.setAttribute('position', {x: i-1, y: 2, z: -2}); // above wizard
       scene.appendChild(btn);
 
       btn.addEventListener('click', () => this.handleChoice(choice.id));
-
       this.buttons.push(btn);
       btn.setAttribute('visible', false);
     });
@@ -639,45 +638,64 @@ AFRAME.registerComponent('wizard-interact', {
   },
 
   handleChoice: function(choice) {
-    const mixer = this.mixer;
-
     this.hideChoiceUI();
-    this.textEl.setAttribute('visible', false);
+    if (this.textEl) this.textEl.setAttribute('visible', false);
 
     switch(choice) {
       case 'ignore':
-        if (this.actions[this.data.approachAnim]) this.actions[this.data.approachAnim].reset().play();
-        setTimeout(() => {
-          if (this.actions[this.data.dieAnim]) this.actions[this.data.dieAnim].reset().play();
-          for (let i=0;i<5;i++) this.actions[this.data.dieAnim].play(); // repeat 5 times
-          setTimeout(()=>alert("You died! Game over."), 1500);
-        }, 1000);
+        this.playSequence([this.data.approachAnim, {anim:this.data.dieAnim, repeat:5}], () => {
+          alert("You died! Game over.");
+        });
         break;
 
       case 'getOut':
-        if (this.actions[3]) this.actions[3].reset().play(); // animation 3
-        setTimeout(() => {
-          if (this.actions[this.data.approachAnim]) this.actions[this.data.approachAnim].reset().play();
-          setTimeout(() => {
-            if (this.actions[this.data.dieAnim]) this.actions[this.data.dieAnim].reset().play();
-            for (let i=0;i<5;i++) this.actions[this.data.dieAnim].play(); 
-            setTimeout(()=>alert("You died! Game over."), 1500);
-          }, 1000);
-        }, 1000);
+        this.playSequence([this.data.getOutAnim, this.data.approachAnim, {anim:this.data.dieAnim, repeat:5}], () => {
+          alert("You died! Game over.");
+        });
         break;
 
       case 'explain':
-        if (this.actions[this.data.explainAnim]) this.actions[this.data.explainAnim].reset().play();
-        setTimeout(() => {
+        this.playSequence([this.data.explainAnim], () => {
           // Unfreeze player
           this.player.components['player-movement'].pause = false;
-          // Back to idle animation
-          if (this.actions[this.data.reactAnim]) this.actions[this.data.reactAnim].play();
-        }, 1000);
+          // Idle animation loop
+          if (this.actions[this.data.reactAnim]) this.actions[this.data.reactAnim].stop();
+          if (this.actions[this.data.idleAnim]) this.actions[this.data.idleAnim].play();
+        });
         break;
     }
+  },
+
+  playSequence: function(sequence, callback) {
+    if (!sequence || sequence.length === 0) {
+      if(callback) callback();
+      return;
+    }
+
+    const item = sequence.shift();
+    let animIndex, repeat = 1;
+
+    if (typeof item === 'object') { animIndex = item.anim; repeat = item.repeat || 1; }
+    else animIndex = item;
+
+    if (!this.actions[animIndex]) {
+      this.playSequence(sequence, callback);
+      return;
+    }
+
+    this.actions[animIndex].reset().play();
+    let count = 1;
+    this.actions[animIndex].onLoop = () => {
+      count++;
+      if(count > repeat) this.actions[animIndex].stop();
+    };
+
+    this.actions[animIndex].getMixer().addEventListener('finished', () => {
+      this.playSequence(sequence, callback);
+    });
   }
 });
+
 
 
 
