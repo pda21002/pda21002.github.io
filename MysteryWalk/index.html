@@ -2,9 +2,6 @@
 <head>
   <meta charset="utf-8" />
   <script src="https://aframe.io/releases/1.7.0/aframe.min.js"></script>
-<script src="https://cdn.jsdelivr.net/gh/aframevr/aframe@1.5.0/dist/aframe-master.min.js"></script>
-<script src="https://cdn.jsdelivr.net/gh/aframevr/aframe@1.5.0/dist/aframe-text-component.min.js"></script>
-
 </head>
 <body>
 <a-scene cursor="rayOrigin: mouse" raycaster="objects: .fork-menu-button" keyboard-shortcuts="">
@@ -89,8 +86,9 @@
   <!-- Witch -->
   <a-entity id="witch" position="2.35 0.04454 4.80785" rotation="0 -14.72 0">
     <a-entity gltf-model="#witch" scale="0.25 0.25 0.25" rotation="0 -135 0" witch-behavior="reactAnim: bye; reactDistance: 2"></a-entity>
-    <a-text id="witchText" value="Γεια! Αν ψάχνεις το παλάτι, είσαι σε σωστό δρόμο. Αρκεί να μην αφήσεις τίποτα να σε αποσπάσει!" position="2.35 0.5 4.80785" align="center" color="#fff" visible="false" side="double" scale="0.5 0.5 0.5"></a-text>
+    <a-text id="witchText" value="Hello! If you're searching for the castle, you're on the right path. Just don't let anyone distract you!" position="0.22644 0.48118 0.08835" align="center" color="#fff" visible="false" side="double" scale="0.3 0.3 0.3" rotation="0 -135 0"></a-text>
   </a-entity>
+
 
   <!-- Mushroom -->
   <a-entity gltf-model="#mushroom" position="3.335 0.05 0" rotation="0 150 0" scale="0.15 0.15 0.15" mushroom-behavior="idleAnim:idle"></a-entity>
