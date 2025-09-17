@@ -315,57 +315,55 @@ AFRAME.registerComponent('goblin-behavior', {
   
 AFRAME.registerComponent('witch-behavior', {
   schema: {
-    reactAnim: {type: 'string', default: 'bye'},
-    reactDistance: {type: 'number', default: 2}
+    reactAnim: { type: 'string', default: 'bye' },
+    reactDistance: { type: 'number', default: 2 }
   },
+
   init: function() {
     this.player = document.querySelector('#rig');
-    this.model = this.el.getObject3D('mesh');
     this.mixer = null;
+    this.actions = {};
     this.playing = false;
 
-    this.el.addEventListener('model-loaded', () => {
-      this.mixer = new THREE.AnimationMixer(this.el.getObject3D('mesh'));
-      this.actions = {};
-      const animations = this.el.getObject3D('mesh').animations;
-      if (animations && animations.length) {
-        animations.forEach(clip => {
-          this.actions[clip.name] = this.mixer.clipAction(clip);
-        });
-      }
+    // Grab the existing text element
+    this.textEl = document.querySelector('#witchText');
+
+    this.el.addEventListener('model-loaded', (e) => {
+      const model = e.detail.model;
+      if (!model) return;
+
+      this.mixer = new THREE.AnimationMixer(model);
+
+      const animations = model.animations || [];
+      animations.forEach(clip => {
+        this.actions[clip.name] = this.mixer.clipAction(clip);
+      });
     });
   },
-tick: function(time, deltaTime) {
-  if (!this.player || !this.mixer || !this.actions[this.data.reactAnim]) return;
 
-  // Get positions
-  const playerPos = new THREE.Vector3();
-  const witchPos = new THREE.Vector3();
-  this.player.object3D.getWorldPosition(playerPos);
-  this.el.object3D.getWorldPosition(witchPos);
+  tick: function(time, deltaTime) {
+    if (!this.player || !this.mixer) return;
 
-  const distance = playerPos.distanceTo(witchPos);
+    const playerPos = new THREE.Vector3();
+    const witchPos = new THREE.Vector3();
+    this.player.object3D.getWorldPosition(playerPos);
+    this.el.object3D.getWorldPosition(witchPos);
 
-  // Show text and play animation when player is near
-  if (distance < this.data.reactDistance) {
-    if (!this.playing) {
-      // Play animation
-      this.actions[this.data.reactAnim].reset().play();
-      this.playing = true;
+    const distance = playerPos.distanceTo(witchPos);
+
+    if (distance < this.data.reactDistance) {
+      if (!this.playing && this.actions[this.data.reactAnim]) {
+        this.actions[this.data.reactAnim].reset().play();
+        this.playing = true;
+      }
+      if (this.textEl) this.textEl.setAttribute('visible', true);
+    } else {
+      this.playing = false;
+      if (this.textEl) this.textEl.setAttribute('visible', false);
     }
 
-    // Show Greek text
-    if (this.textEl) this.textEl.setAttribute('visible', true);
-  } 
-  // Hide text and stop flag when player moves away
-  else {
-    if (this.playing) this.playing = false;
-    if (this.textEl) this.textEl.setAttribute('visible', false);
+    if (this.mixer) this.mixer.update(deltaTime / 1000);
   }
-
-  // Update the animation mixer
-  this.mixer.update(deltaTime / 1000);
-}
 });
 
   
