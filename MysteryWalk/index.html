@@ -31,6 +31,7 @@
       <a-asset-item id="fox" src="assets/voxel_fox.glb"></a-asset-item>
       <a-asset-item id="butterflies" src="assets/the_butterflies.glb"></a-asset-item>
           <a-asset-item id="ghost" src="assets/nightmare_creature_3.glb"></a-asset-item>
+      <a-asset-item id="font" src="assets/basis33.ttf"></a-asset-item>
   </a-assets>
 
   <!-- Ground -->
@@ -86,7 +87,7 @@
   <!-- Witch -->
   <a-entity id="witch" position="2.35 0.04454 4.80785" rotation="0 -14.72 0">
     <a-entity gltf-model="#witch" scale="0.25 0.25 0.25" rotation="0 -135 0" witch-behavior="reactAnim: bye; reactDistance: 2"></a-entity>
-    <a-text id="witchText" value="Γεια! Αν ψάχνεις το παλάτι, είσαι σε σωστό δρόμο. Αρκεί να μην αφήσεις τίποτα να σε αποσπάσει!" position="2.35 0.5 4.80785" align="center" color="#fff" visible="false" side="double" font="https://cdn.aframe.io/fonts/mozillavr.fnt" scale="0.5 0.5 0.5"></a-text>
+    <a-text id="witchText" value="Γεια! Αν ψάχνεις το παλάτι, είσαι σε σωστό δρόμο. Αρκεί να μην αφήσεις τίποτα να σε αποσπάσει!" position="2.35 0.5 4.80785" align="center" color="#fff" visible="false" side="double" font="#font" scale="0.5 0.5 0.5"></a-text>
   </a-entity>
 
   <!-- Mushroom -->
@@ -314,66 +315,60 @@ AFRAME.registerComponent('goblin-behavior', {
   
 AFRAME.registerComponent('witch-behavior', {
   schema: {
-    reactAnim: { type: 'string', default: 'bye' },
-    reactDistance: { type: 'number', default: 2.5 }
+    reactAnim: {type: 'string', default: 'bye'},
+    reactDistance: {type: 'number', default: 2}
   },
-
-  init: function () {
-    this.rig = document.getElementById('rig');
+  init: function() {
+    this.player = document.querySelector('#rig');
+    this.model = this.el.getObject3D('mesh');
     this.mixer = null;
-    this.clips = [];
-    this.currentAction = null;
-    this.playerNearby = false;
-    this.textEl = document.getElementById('witchText');
+    this.playing = false;
 
-    this.el.addEventListener('model-loaded', (e) => {
-      const model = e.detail.model;
-      if (!model) return;
-
-      // Defer mixer setup slightly to prevent blocking
-      setTimeout(() => {
-        this.mixer = new THREE.AnimationMixer(model);
-        this.clips = model.animations || [];
-      }, 100); // 100ms delay
+    this.el.addEventListener('model-loaded', () => {
+      this.mixer = new THREE.AnimationMixer(this.el.getObject3D('mesh'));
+      this.actions = {};
+      const animations = this.el.getObject3D('mesh').animations;
+      if (animations && animations.length) {
+        animations.forEach(clip => {
+          this.actions[clip.name] = this.mixer.clipAction(clip);
+        });
+      }
     });
   },
+tick: function(time, deltaTime) {
+  if (!this.player || !this.mixer || !this.actions[this.data.reactAnim]) return;
 
-  tick: function (time, timeDelta) {
-    if (!this.rig || !this.mixer) return;
+  // Get positions
+  const playerPos = new THREE.Vector3();
+  const witchPos = new THREE.Vector3();
+  this.player.object3D.getWorldPosition(playerPos);
+  this.el.object3D.getWorldPosition(witchPos);
 
-    const rigPos = this.rig.object3D.position;
-    const witchPos = this.el.object3D.position;
-    const dist = rigPos.distanceTo(witchPos);
-    const dt = timeDelta / 1000;
+  const distance = playerPos.distanceTo(witchPos);
 
-    this.mixer.update(dt);
-
-    if (dist <= this.data.reactDistance) {
-      if (!this.playerNearby) {
-        this.playerNearby = true;
-
-        if (this.textEl) {
-          this.textEl.setAttribute('visible', true);
-          setTimeout(() => this.textEl.setAttribute('visible', false), 3000);
-        }
-
-        const clip = THREE.AnimationClip.findByName(this.clips, this.data.reactAnim);
-        if (clip) {
-          if (this.currentAction) this.currentAction.stop();
-          this.currentAction = this.mixer.clipAction(clip);
-          this.currentAction.setLoop(THREE.LoopOnce);
-          this.currentAction.clampWhenFinished = true;
-          this.currentAction.reset().play();
-        }
-      }
-    } else {
-      this.playerNearby = false;
+  // Show text and play animation when player is near
+  if (distance < this.data.reactDistance) {
+    if (!this.playing) {
+      // Play animation
+      this.actions[this.data.reactAnim].reset().play();
+      this.playing = true;
     }
+
+    // Show Greek text
+    if (this.textEl) this.textEl.setAttribute('visible', true);
+  } 
+  // Hide text and stop flag when player moves away
+  else {
+    if (this.playing) this.playing = false;
+    if (this.textEl) this.textEl.setAttribute('visible', false);
   }
+
+  // Update the animation mixer
+  this.mixer.update(deltaTime / 1000);
+}
 });
 
-
-
+  
   AFRAME.registerComponent('fairy-behavior', {
   schema: {
     idleAnim: {type:'string', default:'Idle'},
