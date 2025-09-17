@@ -315,67 +315,69 @@ AFRAME.registerComponent('goblin-behavior', {
   
 AFRAME.registerComponent('witch-behavior', {
   schema: {
-    reactAnim: { type: 'string', default: 'bye' },
-    reactDistance: { type: 'number', default: 2 }
+    reactAnim: { type: 'string', default: 'wave' },
+    reactDistance: { type: 'number', default: 3 }
   },
 
-  init: function() {
-    this.player = document.querySelector('#rig');
+  init: function () {
+    this.rig = document.getElementById('rig');
     this.mixer = null;
-    this.actions = {};
-    this.textEl = this.el.querySelector('#witchText'); // **child of witch**
-    this.hasPlayed = false;
+    this.clips = [];
+    this.action = null;
+    this.hasReacted = false;
+
+    // Select the text above the witch
+    this.textEl = document.querySelector('#witchText');
 
     this.el.addEventListener('model-loaded', (e) => {
       const model = e.detail.model;
       if (!model) return;
 
       this.mixer = new THREE.AnimationMixer(model);
-
-      const animations = model.animations || [];
-      animations.forEach(clip => {
-        const action = this.mixer.clipAction(clip);
-        if (clip.name === this.data.reactAnim) {
-          action.setLoop(THREE.LoopOnce);
-          action.clampWhenFinished = true;
-        }
-        this.actions[clip.name] = action;
-      });
+      this.clips = model.animations || [];
     });
   },
 
-  tick: function(time, deltaTime) {
-    if (!this.player || !this.mixer || !this.actions[this.data.reactAnim]) return;
+  tick: function (time, deltaTime) {
+    if (!this.rig || !this.el.object3D || !this.mixer) return;
 
-    const playerPos = new THREE.Vector3();
-    const witchPos = new THREE.Vector3();
-    this.player.object3D.getWorldPosition(playerPos);
-    this.el.object3D.getWorldPosition(witchPos);
+    // Update the mixer
+    this.mixer.update(deltaTime / 1000);
 
-    const distance = playerPos.distanceTo(witchPos);
+    // Calculate distance to player
+    const rigPos = this.rig.object3D.position;
+    const witchPos = this.el.object3D.position;
+    const dist = rigPos.distanceTo(witchPos);
 
-    if (distance < this.data.reactDistance) {
-      if (!this.hasPlayed) {
-        // Play animation once
-        this.actions[this.data.reactAnim].reset().play();
-        this.hasPlayed = true;
+    // Trigger reaction if close enough
+    if (!this.hasReacted && dist <= this.data.reactDistance) {
+      this.hasReacted = true;
 
-        // Show text
-        if (this.textEl) this.textEl.setAttribute('visible', true);
-
-        // Hide text after 3 seconds
-        setTimeout(() => {
-          if (this.textEl) this.textEl.setAttribute('visible', false);
-        }, 3000);
+      // Play the named animation once
+      const clip = THREE.AnimationClip.findByName(this.clips, this.data.reactAnim);
+      if (clip) {
+        this.action = this.mixer.clipAction(clip);
+        this.action.setLoop(THREE.LoopOnce);
+        this.action.clampWhenFinished = true;
+        this.action.play();
       }
-    } else {
-      // Reset so it can play next time player re-approaches
-      this.hasPlayed = false;
+
+      // Show text above her head
+      if (this.textEl) this.textEl.setAttribute('visible', 'true');
+
+      // Hide text after 3 seconds
+      setTimeout(() => {
+        if (this.textEl) this.textEl.setAttribute('visible', 'false');
+      }, 3000);
     }
 
-    this.mixer.update(deltaTime / 1000);
+    // Reset reaction when player walks away, so it can trigger again
+    if (this.hasReacted && dist > this.data.reactDistance) {
+      this.hasReacted = false;
+    }
   }
 });
+
 
 
   
