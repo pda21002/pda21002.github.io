@@ -518,7 +518,7 @@ AFRAME.registerComponent('fox-behavior', {
       const clips = model.animations || [];
       const idle = clips.find(c => c.name === this.data.idleAnim);
       if (idle) {
-        this.idleAction = this.mixer.clipAction(Sleeping);
+        this.idleAction = this.mixer.clipAction(idle);
         this.idleAction.setLoop(THREE.LoopRepeat);
         this.idleAction.play();
       }
