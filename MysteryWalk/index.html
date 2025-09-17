@@ -323,10 +323,8 @@ AFRAME.registerComponent('witch-behavior', {
     this.player = document.querySelector('#rig');
     this.mixer = null;
     this.actions = {};
-    this.playing = false;
-
-    // Grab the existing text element
     this.textEl = document.querySelector('#witchText');
+    this.playerWasNear = false;
 
     this.el.addEventListener('model-loaded', (e) => {
       const model = e.detail.model;
@@ -352,17 +350,21 @@ AFRAME.registerComponent('witch-behavior', {
     const distance = playerPos.distanceTo(witchPos);
 
     if (distance < this.data.reactDistance) {
-      if (!this.playing && this.actions[this.data.reactAnim]) {
-        this.actions[this.data.reactAnim].reset().play();
-        this.playing = true;
+      // Player has just approached
+      if (!this.playerWasNear) {
+        if (this.actions[this.data.reactAnim]) {
+          this.actions[this.data.reactAnim].reset().play(); // play once
+        }
+        if (this.textEl) this.textEl.setAttribute('visible', true);
       }
-      if (this.textEl) this.textEl.setAttribute('visible', true);
+      this.playerWasNear = true;
     } else {
-      this.playing = false;
+      // Player left
+      this.playerWasNear = false;
       if (this.textEl) this.textEl.setAttribute('visible', false);
     }
 
-    if (this.mixer) this.mixer.update(deltaTime / 1000);
+    this.mixer.update(deltaTime / 1000);
   }
 });
 
