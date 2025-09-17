@@ -522,56 +522,59 @@ AFRAME.registerComponent('mushroom-behavior', {
 
   
 AFRAME.registerComponent('wizard-interact', {
-  schema: { range: { type: 'number', default: 3 } },
-
-  init: function() {
-    this.player = document.querySelector('#rig');
-    this.mixer = null;
-    this.actions = {};
-    this.hasTriggered = false;
-
-    this.text = document.querySelector('#wizardText');
-    this.shadowText = document.querySelector('#wizardTextShadow');
-    this.choices = document.querySelector('#wizardChoices');
-
-    this.modelRoot = null;
-    this.animations = [];
-
-    this.el.addEventListener('model-loaded', (e) => {
-      this.modelRoot = e.detail.model;
-      if (!this.modelRoot) return;
-
-      this.animations = this.modelRoot.animations || [];
-      if (this.animations.length === 0) return;
-
-      try {
-        this.mixer = new THREE.AnimationMixer(this.modelRoot);
-
-        // Map animations by name (or index if no names)
-        this.animations.forEach((clip, i) => {
-          this.actions[clip.name || i] = this.mixer.clipAction(clip);
-        });
-
-        // Start idle animation 6
-        if (this.actions['6']) {
-          this.actions['6'].setLoop(THREE.LoopRepeat);
-          this.actions['6'].play();
-        }
-      } catch (err) {
-        console.warn('Wizard animation failed:', err);
-        this.mixer = null;
-      }
-    });
-
-    // Choice clicks
-    this.choices.addEventListener('click', (evt) => {
-      const choice = evt.target.getAttribute('data-choice');
-      this.handleChoice(choice);
-    });
+  schema: {
+    idleAnim: { type: 'string', default: '6' }, // idle animation name
+    approachAnim: { type: 'string', default: '2' }, // loop while talking
+    explainAnim: { type: 'string', default: '1' }, // play once then unfreeze
+    annoyedAnim: { type: 'string', default: '3' }, // play once when blocking
+    attackAnim: { type: 'string', default: '4' }, // approach animation
+    dieAnim: { type: 'string', default: '5' }, // repeated death animation
+    reactDistance: { type: 'number', default: 3 },
+    textId: { type: 'string', default: 'wizardText' },
+    choicesId: { type: 'string', default: 'wizardChoices' } // container for 3 buttons
   },
 
-  tick: function(time, deltaTime) {
-    if (!this.player || !this.modelRoot || !this.mixer) return;
+  init: function () {
+    this.player = document.querySelector('#rig');
+    this.textEl = document.getElementById(this.data.textId);
+    this.choicesEl = document.getElementById(this.data.choicesId);
+
+    this.mixer = null;
+    this.actions = {};
+    this.hasInteracted = false;
+
+    this.el.addEventListener('model-loaded', (e) => {
+      const model = e.detail.model;
+      if (!model) return;
+
+      this.mixer = new THREE.AnimationMixer(model);
+      const animations = model.animations || [];
+
+      // Store all actions
+      animations.forEach((clip) => {
+        const action = this.mixer.clipAction(clip);
+        this.actions[clip.name] = action;
+        if (clip.name === this.data.idleAnim) {
+          action.setLoop(THREE.LoopRepeat);
+          action.play();
+        }
+      });
+    });
+
+    // Setup clickable choice buttons
+    if (this.choicesEl) {
+      const buttons = this.choicesEl.querySelectorAll('.fork-menu-button');
+      buttons.forEach(btn => {
+        btn.addEventListener('click', (evt) => {
+          const choice = btn.getAttribute('data-choice');
+          this.handleChoice(choice);
+        });
+      });
+    }
+  },
+
+  tick: function (time, deltaTime) {
+    if (!this.player || !this.mixer || this.hasInteracted) return;
 
     const playerPos = new THREE.Vector3();
     const wizardPos = new THREE.Vector3();
@@ -580,58 +583,88 @@ AFRAME.registerComponent('wizard-interact', {
 
     const dist = playerPos.distanceTo(wizardPos);
 
-    if (!this.hasTriggered && dist < this.data.range) {
+    if (dist < this.data.reactDistance) {
       this.startInteraction();
     }
 
     if (this.mixer) this.mixer.update(deltaTime / 1000);
   },
 
-  startInteraction: function() {
-    this.hasTriggered = true;
-
-    // Stop idle
-    if (this.actions['6']) this.actions['6'].stop();
-
-    // Play animation 2 loop
-    if (this.actions['2']) {
-      this.actions['2'].setLoop(THREE.LoopRepeat);
-      this.actions['2'].play();
-    }
-
-    // Show text + shadow
-    this.text.setAttribute('visible', true);
-    this.shadowText.setAttribute('visible', true);
+  startInteraction: function () {
+    this.hasInteracted = true;
 
     // Freeze player
-    this.player.setAttribute('movement-controls', 'enabled', false);
+    if (this.player.components['player-movement'])
+      this.player.components['player-movement'].pause = true;
 
-    // Show choices
-    this.choices.setAttribute('visible', true);
+    // Stop idle, play approach loop
+    if (this.actions[this.data.idleAnim]) this.actions[this.data.idleAnim].stop();
+    if (this.actions[this.data.approachAnim]) {
+      this.actions[this.data.approachAnim].setLoop(THREE.LoopRepeat);
+      this.actions[this.data.approachAnim].play();
+    }
+
+    // Show text
+    if (this.textEl) this.textEl.setAttribute('visible', true);
+
+    // Show choice buttons
+    if (this.choicesEl) this.choicesEl.setAttribute('visible', true);
   },
 
-  handleChoice: function(choice) {
-    this.choices.setAttribute('visible', false);
+  handleChoice: function (choice) {
+    // Hide text and choices
+    if (this.textEl) this.textEl.setAttribute('visible', false);
+    if (this.choicesEl) this.choicesEl.setAttribute('visible', false);
 
-    switch(choice) {
+    const mixer = this.mixer;
+
+    const stopAll = () => {
+      Object.values(this.actions).forEach(a => a.stop());
+    };
+
+    switch (choice) {
       case 'ignore':
-      case 'push':
-        if (this.actions['4']) this.actions['4'].setLoop(THREE.LoopOnce).play();
-        setTimeout(() => {
-          if (this.actions['5']) this.actions['5'].setLoop(THREE.LoopRepeat, 5).play();
-          alert("You died! Game over.");
-        }, 1000);
+        stopAll();
+        // Approach + annoyed
+        if (this.actions[this.data.attackAnim]) this.actions[this.data.attackAnim].play();
+        if (this.actions[this.data.dieAnim]) {
+          this.actions[this.data.dieAnim].setLoop(THREE.LoopRepeat);
+          this.actions[this.data.dieAnim].play();
+        }
+        setTimeout(() => alert('You died! Game over.'), 2000);
         break;
 
       case 'explain':
-        if (this.actions['1']) this.actions['1'].setLoop(THREE.LoopOnce).play();
-        setTimeout(() => {
-          this.player.setAttribute('movement-controls', 'enabled', true);
-          if (this.actions['2']) this.actions['2'].setLoop(THREE.LoopRepeat).play();
-          this.text.setAttribute('visible', false);
-          this.shadowText.setAttribute('visible', false);
-        }, 1000);
+        stopAll();
+        if (this.actions[this.data.explainAnim]) {
+          this.actions[this.data.explainAnim].setLoop(THREE.LoopOnce);
+          this.actions[this.data.explainAnim].clampWhenFinished = true;
+          this.actions[this.data.explainAnim].play();
+          this.actions[this.data.explainAnim].addEventListener('finished', () => {
+            // Return to idle
+            if (this.actions[this.data.idleAnim]) {
+              this.actions[this.data.idleAnim].setLoop(THREE.LoopRepeat);
+              this.actions[this.data.idleAnim].play();
+            }
+            if (this.player.components['player-movement'])
+              this.player.components['player-movement'].pause = false;
+          });
+        }
         break;
+
+      case 'getout':
+        stopAll();
+        if (this.actions[this.data.annoyedAnim]) this.actions[this.data.annoyedAnim].play();
+        if (this.actions[this.data.attackAnim]) this.actions[this.data.attackAnim].play();
+        if (this.actions[this.data.dieAnim]) {
+          this.actions[this.data.dieAnim].setLoop(THREE.LoopRepeat);
+          this.actions[this.data.dieAnim].play();
+        }
+        setTimeout(() => alert('You died! Game over.'), 2000);
+        break;
+
+      default:
+        console.warn('Unknown choice');
     }
   }
 });
