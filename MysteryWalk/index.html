@@ -130,23 +130,14 @@
   
 </a-entity>
 
-  <a-entity id="wizardChoices" visible="false">
-  <a-box class="wizard-choice clickable" data-choice="ignore" 
-         color="red" width="1" height="0.5" depth="0.2" 
-         position="-1 1 0" 
-         text="align: center; color: white; value: Ignore; width: 4">
+<a-entity id="wizardChoices" visible="false" position="0 0.35 -1.71145" scale="0.44 0.43 0.23">
+  <a-box class="wizard-choice clickable" data-choice="ignore" color="red" width="1" height="0.5" depth="0.2" position="-1 1 0" text="align: center; color: white; value: Ignore; width: 4">
   </a-box>
 
-  <a-box class="wizard-choice clickable" data-choice="explain" 
-         color="green" width="1" height="0.5" depth="0.2" 
-         position="0 1 0" 
-         text="align: center; color: white; value: Explain; width: 4">
+  <a-box class="wizard-choice clickable" data-choice="explain" color="green" width="1" height="0.5" depth="0.2" position="0 1 0" text="align: center; color: white; value: Explain; width: 4">
   </a-box>
 
-  <a-box class="wizard-choice clickable" data-choice="getOut" 
-         color="blue" width="1" height="0.5" depth="0.2" 
-         position="1 1 0" 
-         text="align: center; color: white; value: Get Out; width: 4">
+  <a-box class="wizard-choice clickable" data-choice="getOut" color="blue" width="1" height="0.5" depth="0.2" position="1 1 0" text="align: center; color: white; value: Get Out; width: 4">
   </a-box>
 </a-entity>
 
@@ -561,14 +552,13 @@ AFRAME.registerComponent('fox-behavior', {
 AFRAME.registerComponent('wizard-interact', {
   schema: {
     idleAnim:        { type: 'string', default: 'Wizard_Gnome_Armature|idle' },
-    approachAnim:    { type: 'string', default: 'Wizard_Gnome_Armature|Walking' },
+    approachAnim:    { type: 'string', default: 'Wizard_Gnome_Armature|Fall' },
     explainAnim:     { type: 'string', default: 'Wizard_Gnome_Armature|agree' },
     ignoreStartAnim: { type: 'string', default: 'Wizard_Gnome_Armature|disagree' },
     ignoreDeathAnim: { type: 'string', default: 'Wizard_Gnome_Armature|Hit' },
     getOutStartAnim: { type: 'string', default: 'Wizard_Gnome_Armature|Curse' },
-    getOutDeathAnim: { type: 'string', default: 'Wizard_Gnome_Armature|Fall' },
     reactDistance:   { type: 'number', default: 2 },
-    approachStep:    { type: 'number', default: 0.015 },
+    approachStep:    { type: 'number', default: 0.03 },
     choiceDelay:     { type: 'number', default: 700 } //
   },
 
@@ -606,24 +596,40 @@ AFRAME.registerComponent('wizard-interact', {
     });
   },
 
-  tick: function(time, delta) {
-    if (this.mixer) this.mixer.update(delta / 1000);
+tick: function(time, delta) {
+  if (this.mixer) this.mixer.update(delta / 1000);
 
-    if (!this.interacted) {
-      const playerPos = new THREE.Vector3();
-      const wizardPos = new THREE.Vector3();
-      this.player.object3D.getWorldPosition(playerPos);
-      this.el.object3D.getWorldPosition(wizardPos);
+  if (!this.interacted) {
+    const playerPos = new THREE.Vector3();
+    const wizardPos = new THREE.Vector3();
+    this.player.object3D.getWorldPosition(playerPos);
+    this.el.object3D.getWorldPosition(wizardPos);
 
-      if (playerPos.distanceTo(wizardPos) < this.data.reactDistance) {
-        this.interacted = true;
-        this.startReaction();
-      }
+    if (playerPos.distanceTo(wizardPos) < this.data.reactDistance) {
+      this.interacted = true;
+      this.startReaction();
     }
-  },
+  }
+
+  // Handle movement during current step
+  if (this.currentStep && this.currentStep.moveTowardPlayer) {
+    const playerPos = new THREE.Vector3();
+    const wizardPos = new THREE.Vector3();
+    this.player.object3D.getWorldPosition(playerPos);
+    this.el.object3D.getWorldPosition(wizardPos);
+
+    const dir = new THREE.Vector3().subVectors(playerPos, wizardPos);
+    const dist = dir.length();
+
+    if (dist > this.currentStep.moveDistance) {
+      dir.normalize();
+      this.el.object3D.position.add(dir.multiplyScalar(this.data.approachStep));
+    }
+  }
+},
 
   startReaction: function() {
-    this.playLoop(this.data.approachAnim);
+    this.playLoop(this.data.getOutStartAnim);
 
     // Show text
     this.textEl.setAttribute('visible', true);
@@ -637,35 +643,35 @@ AFRAME.registerComponent('wizard-interact', {
     }, this.data.choiceDelay);
   },
 
-  handleChoice: function(choice) {
-    this.choices.setAttribute('visible', false);
-    this.textEl.setAttribute('visible', false);
-    this.shadowEl.setAttribute('visible', false);
+handleChoice: function(choice) {
+  this.choices.setAttribute('visible', false);
+  this.textEl.setAttribute('visible', false);
+  this.shadowEl.setAttribute('visible', false);
 
-    switch(choice) {
-      case 'ignore':
-        this.playSequence([
-          { anim: this.data.ignoreStartAnim },
-          { anim: this.data.ignoreDeathAnim, repeat: 7 }
-        ], () => alert('You died! Game over.'));
-        break;
+  switch(choice) {
+    case 'ignore':
+      this.playSequence([
+        { anim: this.data.approachAnim, moveTowardPlayer: true, moveDistance: 1.5 },
+        { anim: this.data.ignoreDeathAnim, repeat: 7 }
+      ], () => alert('You died! Game over.'));
+      break;
 
-      case 'getOut':
-        this.playSequence([
-          { anim: this.data.getOutStartAnim },
-          { anim: this.data.getOutDeathAnim, repeat: 7 }
-        ], () => alert('You died! Game over.'));
-        break;
+    case 'getOut':
+      this.playSequence([
+        { anim: this.data.getOutStartAnim, moveTowardPlayer: true, moveDistance: 1.5 },
+        { anim: this.data.getOutDeathAnim, repeat: 7 }
+      ], () => alert('You died! Game over.'));
+      break;
 
-      case 'explain':
-        this.playSequence([{ anim: this.data.explainAnim }], () => {
-          if (this.player.components['player-movement'])
-            this.player.components['player-movement'].pause = false;
-          this.playLoop(this.data.idleAnim);
-        });
-        break;
-    }
-  },
+    case 'explain':
+      this.playSequence([{ anim: this.data.explainAnim }], () => {
+        if (this.player.components['player-movement'])
+          this.player.components['player-movement'].pause = false;
+        this.playLoop(this.data.idleAnim);
+      });
+      break;
+  }
+},
 
   playLoop: function(animName) {
     if (!this.actions[animName]) return;
@@ -676,32 +682,37 @@ AFRAME.registerComponent('wizard-interact', {
     action.play();
   },
 
-  playSequence: function(queue, callback) {
-    if (!queue || queue.length === 0) { if (callback) callback(); return; }
-    const step = queue.shift();
-    const action = this.actions[step.anim];
-    if (!action) { this.playSequence(queue, callback); return; }
+playSequence: function(queue, callback) {
+  if (!queue || queue.length === 0) { if (callback) callback(); return; }
 
-    Object.values(this.actions).forEach(a => a.stop());
-    action.reset();
-    action.setLoop(THREE.LoopOnce);
-    action.play();
+  const step = queue.shift();
+  const action = this.actions[step.anim];
+  if (!action) { this.playSequence(queue, callback); return; }
 
-    let repeats = step.repeat || 1;
-    let count = 1;
-    const mixer = this.mixer;
+  // Save current step so tick() can move the wizard
+  this.currentStep = step;
 
-    const onFinished = () => {
-      if (count < repeats) {
-        count++;
-        action.reset().play();
-        return;
-      }
-      mixer.removeEventListener('finished', onFinished);
-      this.playSequence(queue, callback);
-    };
-    mixer.addEventListener('finished', onFinished);
-  }
+  Object.values(this.actions).forEach(a => a.stop());
+  action.reset();
+  action.setLoop(THREE.LoopOnce);
+  action.play();
+
+  let repeats = step.repeat || 1;
+  let count = 1;
+  const mixer = this.mixer;
+
+  const onFinished = () => {
+    if (count < repeats) {
+      count++;
+      action.reset().play();
+      return;
+    }
+    mixer.removeEventListener('finished', onFinished);
+    this.currentStep = null; // clear movement
+    this.playSequence(queue, callback);
+  };
+  mixer.addEventListener('finished', onFinished);
+}
 });
 
 
