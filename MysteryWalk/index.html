@@ -558,8 +558,8 @@ AFRAME.registerComponent('wizard-interact', {
     ignoreDeathAnim: { type: 'string', default: 'Wizard_Gnome_Armature|Hit' },
     getOutStartAnim: { type: 'string', default: 'Wizard_Gnome_Armature|Curse' },
     reactDistance:   { type: 'number', default: 2 },
-    approachStep:    { type: 'number', default: 0.3 },
-    choiceDelay:     { type: 'number', default: 700 } //
+    approachStep:    { type: 'number', default: 0.05 },
+    choiceDelay:     { type: 'number', default: 700 }
   },
 
   init: function() {
@@ -568,14 +568,15 @@ AFRAME.registerComponent('wizard-interact', {
     this.shadowEl = document.querySelector('#wizardTextShadow');
     this.choices = document.querySelector('#wizardChoices');
     this.buttons = Array.from(this.choices.querySelectorAll('.wizard-choice'));
+
     this.mixer = null;
     this.actions = {};
     this.interacted = false;
     this.sequenceQueue = [];
     this.currentStep = null;
-    this.startPos = null;
     this.travelled = 0;
 
+    // Load wizard model animations
     this.el.addEventListener('model-loaded', e => {
       const model = e.detail.model;
       if (!model) return;
@@ -599,41 +600,40 @@ AFRAME.registerComponent('wizard-interact', {
     });
   },
 
-tick: function(time, delta) {
-  if (this.mixer) this.mixer.update(delta / 1000);
+  tick: function(time, delta) {
+    if (this.mixer) this.mixer.update(delta / 1000);
 
-  if (!this.interacted) {
-    const playerPos = new THREE.Vector3();
-    const wizardPos = new THREE.Vector3();
-    this.player.object3D.getWorldPosition(playerPos);
-    this.el.object3D.getWorldPosition(wizardPos);
+    // Trigger reaction
+    if (!this.interacted) {
+      const playerPos = new THREE.Vector3();
+      const wizardPos = new THREE.Vector3();
+      this.player.object3D.getWorldPosition(playerPos);
+      this.el.object3D.getWorldPosition(wizardPos);
 
-    if (playerPos.distanceTo(wizardPos) < this.data.reactDistance) {
-      this.interacted = true;
-      this.startReaction();
-    }
-  }
-
-  // Move wizard along Z toward player if current step requests it
-  if (this.currentStep && this.currentStep.moveTowardPlayer) {
-    const wizardPos = this.el.object3D.position;
-    const playerZ = this.player.object3D.position.z;
-
-    // Calculate direction along Z only
-    const dirZ = playerZ - wizardPos.z;
-    const stepSize = this.data.approachStep;
-
-    if (Math.abs(dirZ) > 0.01) {
-      wizardPos.z += Math.sign(dirZ) * stepSize;
-      this.travelled += stepSize;
-
-      if (this.travelled >= (this.currentStep.moveDistance || 1.5)) {
-        this.currentStep.moveTowardPlayer = false; // stop moving
+      if (playerPos.distanceTo(wizardPos) < this.data.reactDistance) {
+        this.interacted = true;
+        this.startReaction();
       }
     }
-  }
-},
 
+    // Handle Z-axis movement toward player
+    if (this.currentStep && this.currentStep.moveTowardPlayer) {
+      const wizardPos = this.el.object3D.position;
+      const playerZ = this.player.object3D.position.z;
+
+      const dirZ = playerZ - wizardPos.z; // direction toward player
+      const stepSize = this.data.approachStep;
+
+      if (Math.abs(dirZ) > 0.001) {
+        wizardPos.z += Math.sign(dirZ) * Math.min(stepSize, Math.abs(dirZ));
+        this.travelled += Math.min(stepSize, Math.abs(dirZ));
+
+        if (this.travelled >= (this.currentStep.moveDistance || 1.5)) {
+          this.currentStep.moveTowardPlayer = false;
+        }
+      }
+    }
+  },
 
   startReaction: function() {
     this.playLoop(this.data.getOutStartAnim);
@@ -658,14 +658,14 @@ tick: function(time, delta) {
     switch(choice) {
       case 'ignore':
         this.playSequence([
-          { anim: this.data.approachAnim, moveTowardPlayer: true, moveDistance: 1.2 },
+          { anim: this.data.approachAnim, moveTowardPlayer: true, moveDistance: 1.5 },
           { anim: this.data.ignoreDeathAnim, repeat: 5 }
         ], () => alert('You died! Game over.'));
         break;
 
       case 'getOut':
         this.playSequence([
-          { anim: this.data.getOutStartAnim, moveTowardPlayer: true, moveDistance: 1.2 },
+          { anim: this.data.getOutStartAnim, moveTowardPlayer: true, moveDistance: 1.5 },
           { anim: this.data.ignoreDeathAnim, repeat: 5 }
         ], () => alert('You died! Game over.'));
         break;
@@ -689,48 +689,40 @@ tick: function(time, delta) {
     action.play();
   },
 
-playSequence: function(queue, callback) {
-  if (!queue || queue.length === 0) { 
-    if(callback) callback(); 
-    return; 
-  }
+  playSequence: function(queue, callback) {
+    if (!queue || queue.length === 0) { if(callback) callback(); return; }
 
-  const step = queue.shift();
-  const action = this.actions[step.anim];
-  if (!action) { 
-    this.playSequence(queue, callback); 
-    return; 
-  }
+    const step = queue.shift();
+    const action = this.actions[step.anim];
+    if (!action) { this.playSequence(queue, callback); return; }
 
-  // Save current step for tick
-  this.currentStep = step;
-  if (step.moveTowardPlayer) {
-    this.startPos = this.el.object3D.position.clone();
-    this.travelled = 0;
-  }
-
-  Object.values(this.actions).forEach(a => a.stop());
-  action.reset();
-  action.setLoop(THREE.LoopOnce);
-  action.play();
-
-  let repeats = step.repeat || 1;
-  let count = 1;
-  const mixer = this.mixer;
-
-  const onFinished = () => {
-    if (count < repeats) {
-      count++;
-      action.reset().play();
-      return;
+    // Setup movement
+    this.currentStep = step;
+    if (step.moveTowardPlayer) {
+      this.travelled = 0;
     }
-    mixer.removeEventListener('finished', onFinished);
-    this.currentStep = null;
-    this.playSequence(queue, callback);
-  };
 
-  mixer.addEventListener('finished', onFinished);
-}
+    Object.values(this.actions).forEach(a => a.stop());
+    action.reset();
+    action.setLoop(THREE.LoopOnce);
+    action.play();
+
+    let repeats = step.repeat || 1;
+    let count = 1;
+    const mixer = this.mixer;
+
+    const onFinished = () => {
+      if (count < repeats) {
+        count++;
+        action.reset().play();
+        return;
+      }
+      mixer.removeEventListener('finished', onFinished);
+      this.currentStep = null;
+      this.playSequence(queue, callback);
+    };
+    mixer.addEventListener('finished', onFinished);
+  }
 });
 
 
