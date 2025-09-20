@@ -558,7 +558,7 @@ AFRAME.registerComponent('wizard-interact', {
     ignoreDeathAnim: { type: 'string', default: 'Wizard_Gnome_Armature|Hit' },
     getOutStartAnim: { type: 'string', default: 'Wizard_Gnome_Armature|Curse' },
     reactDistance:   { type: 'number', default: 2 },
-    approachStep:    { type: 'number', default: 0.5 },
+    approachStep:    { type: 'number', default: 0.3 },
     choiceDelay:     { type: 'number', default: 700 } //
   },
 
@@ -615,21 +615,30 @@ tick: function(time, delta) {
     }
   }
 
-  // Move wizard along Y axis only if current step requests it
+  // Move wizard on the ground (X/Z) if current step requests it
   if (this.currentStep && this.currentStep.moveTowardPlayer) {
     const wizardPos = this.el.object3D.position;
     const playerPos = new THREE.Vector3();
     this.player.object3D.getWorldPosition(playerPos);
 
-    // Direction on Y axis only
-    const dirY = playerPos.y - wizardPos.y;
-    const stepSize = Math.min(Math.abs(dirY), this.data.approachStep); // small steps
-    wizardPos.y += stepSize * Math.sign(dirY); // move toward player's Y
+    // Direction vector on X/Z only
+    const dir = new THREE.Vector3(
+      playerPos.x - wizardPos.x,
+      0, // Y stays the same
+      playerPos.z - wizardPos.z
+    );
 
-    // Track distance moved
-    this.travelled += stepSize;
-    if (this.travelled >= (this.currentStep.moveDistance || 1.5)) {
-      this.currentStep.moveTowardPlayer = false;
+    const distance = dir.length();
+    if (distance > 0.01) {
+      dir.normalize();
+      const stepSize = Math.min(this.data.approachStep, distance);
+      wizardPos.add(dir.multiplyScalar(stepSize));
+
+      // Track distance moved
+      this.travelled += stepSize;
+      if (this.travelled >= (this.currentStep.moveDistance || 1.2)) {
+        this.currentStep.moveTowardPlayer = false;
+      }
     }
   }
 },
