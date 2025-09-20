@@ -120,7 +120,7 @@
 
   <a-entity id="wizardWrapper" position="-0.02192 0.04843 -1.66883">
   <a-entity gltf-model="#wizard" scale="0.4 0.4 0.4"
-            wizard-interact="range: 3; textId: wizardText"></a-entity>
+            wizard-interact="range: 1.5; textId: wizardText"></a-entity>
     
   <!-- Shadow text -->
 <a-text value="WHERE DO YOU THINK YOU'RE GOING?!" position="0.00345 0.45824 0.00929" color="#000" align="center" side="double" scale="0.25 0.25 0.25" visible="false" id="wizardTextShadow"></a-text>
@@ -144,18 +144,11 @@
   <a-entity gltf-model="#butterflies" position="-0.16089 0 30.2737" scale="1 1 1" rotation="0 0 0"></a-entity>
   <a-entity gltf-model="#ghost" position="-2.8142 0.08774 -3.2995" scale="0.2 0.2 0.2" ghost-behavior></a-entity>
 
-<a-entity id="ghostChoices" visible="false" position="0 2 0">
-  <a-box class="ghost-choice" data-choice="kill"
-         color="red" width="1" height="0.5" depth="0.2"
-         position="-1 0 0"
-         text="value: Kill Him; align: center; color: white; width: 4"></a-box>
+<a-entity id="ghostChoices" visible="false" position="-2.824 1.09125 -3.2995" scale="0.29 0.23 0.36">
+  <a-box class="ghost-choice" data-choice="kill" color="red" width="1" height="0.5" depth="0.2" position="-1 0 0" text="align: center; color: white; value: Kill Him; width: 4"></a-box>
 
-  <a-box class="ghost-choice" data-choice="ignore"
-         color="blue" width="1" height="0.5" depth="0.2"
-         position="1 0 0"
-         text="value: Ignore Him; align: center; color: white; width: 4"></a-box>
+  <a-box class="ghost-choice" data-choice="ignore" color="blue" width="1" height="0.5" depth="0.2" position="1 0 0" text="align: center; color: white; value: Ignore Him; width: 4"></a-box>
 </a-entity>
-
   
 <script>
 /* -----------------------
