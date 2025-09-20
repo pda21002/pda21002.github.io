@@ -621,11 +621,11 @@ AFRAME.registerComponent('wizard-interact', {
       const wizardPos = this.el.object3D.position;
       const playerZ = this.player.object3D.position.z;
 
-      const dirZ = playerZ - wizardPos.z; // direction toward player
+      const dirZ = playerZ - wizardPos.z;
       const stepSize = this.data.approachStep;
 
       if (Math.abs(dirZ) > 0.001) {
-        wizardPos.z += Math.sign(dirZ) * Math.min(stepSize, Math.abs(dirZ));
+       wizardPos.z -= Math.sign(dirZ) * Math.min(stepSize, Math.abs(dirZ));
         this.travelled += Math.min(stepSize, Math.abs(dirZ));
 
         if (this.travelled >= (this.currentStep.moveDistance || 1.5)) {
