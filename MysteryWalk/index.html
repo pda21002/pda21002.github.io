@@ -596,41 +596,39 @@ AFRAME.registerComponent('wizard-interact', {
     });
   },
 
-tick: function(time, delta) {
-  if (this.mixer) this.mixer.update(delta / 1000);
+  tick: function(time, delta) {
+    if (this.mixer) this.mixer.update(delta / 1000);
 
-  if (!this.interacted) {
-    const playerPos = new THREE.Vector3();
-    const wizardPos = new THREE.Vector3();
-    this.player.object3D.getWorldPosition(playerPos);
-    this.el.object3D.getWorldPosition(wizardPos);
+    if (!this.interacted) {
+      const playerPos = new THREE.Vector3();
+      const wizardPos = new THREE.Vector3();
+      this.player.object3D.getWorldPosition(playerPos);
+      this.el.object3D.getWorldPosition(wizardPos);
 
-    if (playerPos.distanceTo(wizardPos) < this.data.reactDistance) {
-      this.interacted = true;
-      this.startReaction();
+      if (playerPos.distanceTo(wizardPos) < this.data.reactDistance) {
+        this.interacted = true;
+        this.startReaction();
+      }
     }
-  }
 
-  // Handle movement
-  if (this.currentStep && this.currentStep.moveTowardPlayer) {
-    const playerPos = new THREE.Vector3();
-    const wizardPos = this.el.object3D.position.clone();
-    this.player.object3D.getWorldPosition(playerPos);
+    // Handle movement ONLY along X axis
+    if (this.currentStep && this.currentStep.moveTowardPlayer) {
+      const wizardPos = this.el.object3D.position.clone();
+      const playerPos = this.player.object3D.position.clone();
 
-    const dir = new THREE.Vector3().subVectors(playerPos, wizardPos).normalize();
-    const stepSize = this.data.approachStep;
+      // Only X movement
+      const dirX = playerPos.x - wizardPos.x;
+      const stepSize = Math.sign(dirX) * (this.currentStep.step || this.data.approachStep);
 
-    // move wizard
-    this.el.object3D.position.add(dir.multiplyScalar(stepSize));
+      this.el.object3D.position.x += stepSize;
 
-    // track distance moved
-    this.travelled = this.el.object3D.position.distanceTo(this.startPos);
-
-    if (this.travelled >= (this.currentStep.moveDistance || 1.5)) {
-      this.currentStep.moveTowardPlayer = false; // stop moving further
+      // track distance moved
+      this.travelled += Math.abs(stepSize);
+      if (this.travelled >= (this.currentStep.moveDistance || 1.5)) {
+        this.currentStep.moveTowardPlayer = false;
+      }
     }
-  }
-},
+  },
 
   startReaction: function() {
     this.playLoop(this.data.getOutStartAnim);
@@ -647,35 +645,35 @@ tick: function(time, delta) {
     }, this.data.choiceDelay);
   },
 
-handleChoice: function(choice) {
-  this.choices.setAttribute('visible', false);
-  this.textEl.setAttribute('visible', false);
-  this.shadowEl.setAttribute('visible', false);
+  handleChoice: function(choice) {
+    this.choices.setAttribute('visible', false);
+    this.textEl.setAttribute('visible', false);
+    this.shadowEl.setAttribute('visible', false);
 
-  switch(choice) {
-    case 'ignore':
-      this.playSequence([
-        { anim: this.data.approachAnim, moveTowardPlayer: true, moveDistance: 1.2 },
-        { anim: this.data.ignoreDeathAnim, repeat: 5 }
-      ], () => alert('You died! Game over.'));
-      break;
+    switch(choice) {
+      case 'ignore':
+        this.playSequence([
+          { anim: this.data.approachAnim, moveTowardPlayer: true, moveDistance: 1.2 },
+          { anim: this.data.ignoreDeathAnim, repeat: 5 }
+        ], () => alert('You died! Game over.'));
+        break;
 
-    case 'getOut':
-      this.playSequence([
-        { anim: this.data.getOutStartAnim, moveTowardPlayer: true, moveDistance: 1.2 },
-        { anim: this.data.ignoreDeathAnim, repeat: 5 }
-      ], () => alert('You died! Game over.'));
-      break;
+      case 'getOut':
+        this.playSequence([
+          { anim: this.data.getOutStartAnim, moveTowardPlayer: true, moveDistance: 1.2 },
+          { anim: this.data.ignoreDeathAnim, repeat: 5 }
+        ], () => alert('You died! Game over.'));
+        break;
 
-    case 'explain':
-      this.playSequence([{ anim: this.data.explainAnim }], () => {
-        if (this.player.components['player-movement'])
-          this.player.components['player-movement'].pause = false;
-        this.playLoop(this.data.idleAnim);
-      });
-      break;
-  }
-},
+      case 'explain':
+        this.playSequence([{ anim: this.data.explainAnim }], () => {
+          if (this.player.components['player-movement'])
+            this.player.components['player-movement'].pause = false;
+          this.playLoop(this.data.idleAnim);
+        });
+        break;
+    }
+  },
 
   playLoop: function(animName) {
     if (!this.actions[animName]) return;
@@ -686,41 +684,40 @@ handleChoice: function(choice) {
     action.play();
   },
 
-playSequence: function(queue, callback) {
-  if (!queue || queue.length === 0) { if (callback) callback(); return; }
+  playSequence: function(queue, callback) {
+    if (!queue || queue.length === 0) { if (callback) callback(); return; }
 
-  const step = queue.shift();
-  const action = this.actions[step.anim];
-  if (!action) { this.playSequence(queue, callback); return; }
+    const step = queue.shift();
+    const action = this.actions[step.anim];
+    if (!action) { this.playSequence(queue, callback); return; }
 
-  // Save current step for tick
-  this.currentStep = step;
-  if (step.moveTowardPlayer) {
-    this.startPos = this.el.object3D.position.clone();
-    this.travelled = 0; // reset travelled distance
-  }
-
-  Object.values(this.actions).forEach(a => a.stop());
-  action.reset();
-  action.setLoop(THREE.LoopOnce);
-  action.play();
-
-  let repeats = step.repeat || 1;
-  let count = 1;
-  const mixer = this.mixer;
-
-  const onFinished = () => {
-    if (count < repeats) {
-      count++;
-      action.reset().play();
-      return;
+    // Save current step for tick
+    this.currentStep = step;
+    if (step.moveTowardPlayer) {
+      this.travelled = 0; // reset travelled distance
     }
-    mixer.removeEventListener('finished', onFinished);
-    this.currentStep = null; // stop movement
-    this.playSequence(queue, callback);
-  };
-  mixer.addEventListener('finished', onFinished);
-}
+
+    Object.values(this.actions).forEach(a => a.stop());
+    action.reset();
+    action.setLoop(THREE.LoopOnce);
+    action.play();
+
+    let repeats = step.repeat || 1;
+    let count = 1;
+    const mixer = this.mixer;
+
+    const onFinished = () => {
+      if (count < repeats) {
+        count++;
+        action.reset().play();
+        return;
+      }
+      mixer.removeEventListener('finished', onFinished);
+      this.currentStep = null;
+      this.playSequence(queue, callback);
+    };
+    mixer.addEventListener('finished', onFinished);
+  }
 });
 
 
