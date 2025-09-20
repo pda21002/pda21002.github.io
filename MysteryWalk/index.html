@@ -754,7 +754,7 @@ AFRAME.registerComponent('wizard-interact', {
       attack1Anim: { type: 'string', default: 'thc3_arma|attack1' },
       attack2Anim:  { type: 'string', default: 'thc3_arma|attack2' },
       battleIdleAnim: { type: 'string', default: 'thc3_arma|battle_idle' },
-      reactDistance: { type: 'number', default: 0.8 }
+      reactDistance: { type: 'number', default: 0.9 }
     },
 
     init: function () {
@@ -811,6 +811,19 @@ AFRAME.registerComponent('wizard-interact', {
         }
       }
     },
+
+    playLoop: function(animName) {
+  if (!this.actions[animName]) return;
+
+  // Stop all current animations
+  Object.values(this.actions).forEach(a => a.stop());
+
+  // Play the new one in loop
+  const action = this.actions[animName];
+  action.reset();
+  action.setLoop(THREE.LoopRepeat);
+  action.play();
+},
 
     startInteraction: function () {
       // Switch from idle → battle_idle
