@@ -5,7 +5,7 @@
 </head>
 <body>
 <a-scene cursor="rayOrigin: mouse"
-         raycaster="objects: .clickable, .fork-menu-button">
+         raycaster="objects: .clickable, .fork-menu-button, .ghost-choice">
 
 
 
@@ -144,11 +144,19 @@
   <a-entity gltf-model="#butterflies" position="-0.16089 0 30.2737" scale="1 1 1" rotation="0 0 0"></a-entity>
   <a-entity gltf-model="#ghost" position="-2.8142 0.08774 -3.2995" scale="0.2 0.2 0.2" ghost-behavior></a-entity>
 
-<a-entity id="ghostChoices" visible="false" position="-2.824 1.09125 -3.2995" scale="0.29 0.23 0.36">
-  <a-box class="ghost-choice" data-choice="kill" color="red" width="1" height="0.5" depth="0.2" position="-1 0 0" text="align: center; color: white; value: Kill Him; width: 4"></a-box>
-
-  <a-box class="ghost-choice" data-choice="ignore" color="blue" width="1" height="0.5" depth="0.2" position="1 0 0" text="align: center; color: white; value: Ignore Him; width: 4"></a-box>
-</a-entity>
+  <a-entity id="ghostChoices" visible="false"
+            position="-2.8142 1.5 -3.2995" scale="0.3 0.3 0.3">
+    <a-box class="ghost-choice" data-choice="kill"
+           color="red" width="1" height="0.5" depth="0.2"
+           position="-1 0 0"
+           text="align: center; color: white; value: Kill Him; width: 4">
+    </a-box>
+    <a-box class="ghost-choice" data-choice="ignore"
+           color="blue" width="1" height="0.5" depth="0.2"
+           position="1 0 0"
+           text="align: center; color: white; value: Ignore Him; width: 4">
+    </a-box>
+  </a-entity>
   
 <script>
 /* -----------------------
@@ -745,151 +753,141 @@ AFRAME.registerComponent('wizard-interact', {
 });
 
   AFRAME.registerComponent('ghost-behavior', {
-  schema: {
-    idleAnim: { type: 'string', default: 'thc3_arma|idle' },
-    howlAnim: { type: 'string', default: 'thc3_arma|howl' },
-    dieAnim: { type: 'string', default: 'thc3_arma|die2' },
-    numberedAnims: { type: 'array', default: [3, 2, 1, 3] },
-    reactDistance: { type: 'number', default: 3 },
-    choiceDelay: { type: 'number', default: 500 }
-  },
+    schema: {
+      idleAnim: { type: 'string', default: 'thc3_arma|idle' },
+      howlAnim: { type: 'string', default: 'thc3_arma|howl' },
+      dieAnim:  { type: 'string', default: 'thc3_arma|die2' },
+      reactDistance: { type: 'number', default: 3 }
+    },
 
-  init: function () {
-    this.player = document.querySelector('#rig'); // assumes player rig has this id
-    this.mixer = null;
-    this.actions = {};
-    this.interacted = false;
-    this.sequenceQueue = [];
-    this.choiceContainer = document.querySelector('#ghostChoices'); // UI container
+    init: function () {
+      this.player = document.querySelector('#rig');
+      this.choices = document.querySelector('#ghostChoices');
+      this.buttons = Array.from(this.choices.querySelectorAll('.ghost-choice'));
 
-    this.el.addEventListener('model-loaded', e => {
-      const model = e.detail.model;
-      if (!model) return;
+      this.mixer = null;
+      this.actions = {};
+      this.interacted = false;
+      this.sequenceQueue = [];
 
-      this.mixer = new THREE.AnimationMixer(model);
-      const clips = model.animations || [];
+      this.el.addEventListener('model-loaded', e => {
+        const model = e.detail.model;
+        if (!model) return;
 
-      clips.forEach((clip, idx) => {
-        this.actions[clip.name] = this.mixer.clipAction(clip);
-        this.actions[idx + 1] = this.mixer.clipAction(clip); // numeric access too
+        this.mixer = new THREE.AnimationMixer(model);
+        const clips = model.animations || [];
+
+        clips.forEach(c => {
+          const action = this.mixer.clipAction(c);
+          action.clampWhenFinished = true;
+          this.actions[c.name] = action;
+        });
+
+        // Start idle
+        if (this.actions[this.data.idleAnim]) {
+          this.actions[this.data.idleAnim].setLoop(THREE.LoopRepeat);
+          this.actions[this.data.idleAnim].play();
+        }
       });
 
-      // Start idle loop
-      if (this.actions[this.data.idleAnim]) {
-        this.actions[this.data.idleAnim].setLoop(THREE.LoopRepeat);
-        this.actions[this.data.idleAnim].play();
-      }
-    });
-
-    // Set up choice buttons
-    if (this.choiceContainer) {
-      this.buttons = Array.from(this.choiceContainer.querySelectorAll('.ghost-choice'));
+      // Hook choices
       this.buttons.forEach(btn => {
-        btn.setAttribute('visible', false);
-        btn.addEventListener('click', () => this.handleChoice(btn.getAttribute('data-choice')));
+        btn.addEventListener('click', () =>
+          this.handleChoice(btn.getAttribute('data-choice'))
+        );
       });
-    }
-  },
+    },
 
-  tick: function (time, deltaTime) {
-    if (this.mixer) this.mixer.update(deltaTime / 1000);
+    tick: function (time, dt) {
+      if (this.mixer) this.mixer.update(dt/1000);
 
-    if (!this.interacted) {
-      const playerPos = new THREE.Vector3();
-      const ghostPos = new THREE.Vector3();
-      this.player.object3D.getWorldPosition(playerPos);
-      this.el.object3D.getWorldPosition(ghostPos);
+      if (!this.interacted && this.mixer) {
+        const playerPos = new THREE.Vector3();
+        const ghostPos = new THREE.Vector3();
+        this.player.object3D.getWorldPosition(playerPos);
+        this.el.object3D.getWorldPosition(ghostPos);
 
-      if (playerPos.distanceTo(ghostPos) < this.data.reactDistance) {
-        this.interacted = true;
-        this.startInteraction();
+        const dist = playerPos.distanceTo(ghostPos);
+        if (dist < this.data.reactDistance) {
+          this.interacted = true;
+          this.startInteraction();
+        }
       }
-    }
-  },
+    },
 
-  startInteraction: function () {
-    // Stop idle
-    if (this.actions[this.data.idleAnim]) this.actions[this.data.idleAnim].stop();
-
-    // Freeze player after small delay
-    setTimeout(() => {
-      if (this.player.components['player-movement']) {
+    startInteraction: function () {
+      // Freeze player
+      if (this.player.components['player-movement'])
         this.player.components['player-movement'].pause = true;
+
+      // Show choices
+      this.choices.setAttribute('visible', true);
+    },
+
+    handleChoice: function (choice) {
+      this.choices.setAttribute('visible', false);
+
+      switch(choice) {
+        case 'kill':
+          this.playSequence([
+            { anim: this.data.howlAnim, loop: false },
+            { anim: this.data.dieAnim, loop: false }
+          ], () => {
+            // Stay dead, unfreeze player
+            if (this.player.components['player-movement'])
+              this.player.components['player-movement'].pause = false;
+          });
+          break;
+
+        case 'ignore':
+          this.playSequence([
+            { animIndex: 3 }, { animIndex: 2 },
+            { animIndex: 1 }, { animIndex: 3 }
+          ], () => {
+            alert("The ghost cursed you. You died!");
+          });
+          break;
       }
-      this.showChoices();
-    }, this.data.choiceDelay);
-  },
+    },
 
-  showChoices: function () {
-    if (!this.choiceContainer) return;
-    this.choiceContainer.object3D.position.copy(this.el.object3D.position);
-    this.buttons.forEach(btn => btn.setAttribute('visible', true));
-  },
-
-  hideChoices: function () {
-    if (!this.choiceContainer) return;
-    this.buttons.forEach(btn => btn.setAttribute('visible', false));
-  },
-
-  handleChoice: function (choice) {
-    this.hideChoices();
-
-    switch (choice) {
-      case 'kill':
-        this.playSequence([
-          { anim: this.data.howlAnim },
-          { anim: this.data.dieAnim, stay: true }
-        ], () => {
-          if (this.player.components['player-movement'])
-            this.player.components['player-movement'].pause = false;
-        });
-        break;
-
-      case 'ignore':
-        const seq = this.data.numberedAnims.map(n => ({ anim: n }));
-        this.playSequence(seq, () => {
-          alert('You died! Game over.');
-        });
-        break;
-    }
-  },
-
-  playSequence: function (queue, callback) {
-    if (!queue || queue.length === 0) {
-      if (callback) callback();
-      return;
-    }
-
-    const next = queue.shift();
-    const animIndex = next.anim;
-    const action = this.actions[animIndex];
-    if (!action) {
-      this.playSequence(queue, callback);
-      return;
-    }
-
-    // Stop everything else
-    Object.values(this.actions).forEach(a => a.stop());
-
-    action.reset().play();
-
-    if (next.stay) {
-      action.clampWhenFinished = true;
-      action.setLoop(THREE.LoopOnce);
-      action.getMixer().addEventListener('finished', () => {
+    playSequence: function(queue, callback) {
+      if (!queue || queue.length === 0) {
         if (callback) callback();
-      });
-      return;
+        return;
+      }
+
+      const step = queue.shift();
+      let action;
+
+      if (step.anim) {
+        action = this.actions[step.anim];
+      } else if (step.animIndex !== undefined) {
+        // Use numerical index (1,2,3...)
+        const clips = this.el.getObject3D('mesh').animations || [];
+        const clip = clips[step.animIndex-1];
+        if (clip) {
+          action = this.mixer.clipAction(clip);
+        }
+      }
+
+      if (!action) {
+        this.playSequence(queue, callback);
+        return;
+      }
+
+      Object.values(this.actions).forEach(a => a.stop());
+      action.reset();
+      action.setLoop(step.loop === false ? THREE.LoopOnce : THREE.LoopRepeat);
+      action.play();
+
+      const mixer = this.mixer;
+      const onFinished = () => {
+        mixer.removeEventListener('finished', onFinished);
+        this.playSequence(queue, callback);
+      };
+      mixer.addEventListener('finished', onFinished);
     }
-
-    const finishedHandler = () => {
-      action.getMixer().removeEventListener('finished', finishedHandler);
-      this.playSequence(queue, callback);
-    };
-    action.getMixer().addEventListener('finished', finishedHandler);
-  }
-});
-
+  });
 
 
 /* -----------------------
