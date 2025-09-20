@@ -144,17 +144,10 @@
   <a-entity gltf-model="#butterflies" position="-0.16089 0 30.2737" scale="1 1 1" rotation="0 0 0"></a-entity>
   <a-entity gltf-model="#ghost" position="-2.8142 0.08774 -3.2995" scale="0.2 0.2 0.2" ghost-behavior></a-entity>
 
-  <a-entity id="ghostChoices" visible="false"
-            position="-2.8142 1.5 -3.2995" scale="0.3 0.3 0.3">
-    <a-box class="ghost-choice" data-choice="kill"
-           color="red" width="1" height="0.5" depth="0.2"
-           position="-1 0 0"
-           text="align: center; color: white; value: Kill Him; width: 4">
+ <a-entity id="ghostChoices" visible="false" position="-2.8142 1.04864 -3.21153" scale="0.24 0.19 0.3">
+    <a-box class="ghost-choice" data-choice="kill" color="red" width="1" height="0.5" depth="0.2" position="-1 0 0" text="align: center; color: white; value: Kill Him; width: 4">
     </a-box>
-    <a-box class="ghost-choice" data-choice="ignore"
-           color="blue" width="1" height="0.5" depth="0.2"
-           position="1 0 0"
-           text="align: center; color: white; value: Ignore Him; width: 4">
+    <a-box class="ghost-choice" data-choice="ignore" color="blue" width="1" height="0.5" depth="0.2" position="1 0 0" text="align: center; color: white; value: Ignore Him; width: 4">
     </a-box>
   </a-entity>
   
@@ -757,7 +750,11 @@ AFRAME.registerComponent('wizard-interact', {
       idleAnim: { type: 'string', default: 'thc3_arma|idle' },
       howlAnim: { type: 'string', default: 'thc3_arma|howl' },
       dieAnim:  { type: 'string', default: 'thc3_arma|die2' },
-      reactDistance: { type: 'number', default: 1.2 }
+      attack3Anim: { type: 'string', default: 'thc3_arma|attack3' },
+      attack1Anim: { type: 'string', default: 'thc3_arma|attack1' },
+      attack2Anim:  { type: 'string', default: 'thc3_arma|attack2' },
+      battleIdleAnim: { type: 'string', default: 'thc3_arma|battle_idle' },
+      reactDistance: { type: 'number', default: 0.8 }
     },
 
     init: function () {
@@ -816,6 +813,9 @@ AFRAME.registerComponent('wizard-interact', {
     },
 
     startInteraction: function () {
+      // Switch from idle → battle_idle
+      this.playLoop(this.data.battleIdleAnim);
+
       // Freeze player
       if (this.player.components['player-movement'])
         this.player.components['player-movement'].pause = true;
@@ -841,8 +841,10 @@ AFRAME.registerComponent('wizard-interact', {
 
         case 'ignore':
           this.playSequence([
-            { animIndex: 3 }, { animIndex: 2 },
-            { animIndex: 1 }, { animIndex: 3 }
+            { anim: this.data.attack3Anim, loop: false },
+            { anim: this.data.attack2Anim, loop: false }
+            { anim: this.data.attack1Anim, loop: false },
+            { anim: this.data.attack3Anim, loop: false }
           ], () => {
             alert("The ghost cursed you. You died!");
           });
