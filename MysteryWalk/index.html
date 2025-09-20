@@ -572,6 +572,9 @@ AFRAME.registerComponent('wizard-interact', {
     this.actions = {};
     this.interacted = false;
     this.sequenceQueue = [];
+    this.currentStep = null;
+    this.startPos = null;
+    this.travelled = 0;
 
     this.el.addEventListener('model-loaded', e => {
       const model = e.detail.model;
@@ -613,19 +616,30 @@ AFRAME.registerComponent('wizard-interact', {
 
     // Handle movement ONLY along X axis
     if (this.currentStep && this.currentStep.moveTowardPlayer) {
-      const wizardPos = this.el.object3D.position.clone();
-      const playerPos = this.player.object3D.position.clone();
+      if (!this.startPos) this.startPos = this.el.object3D.position.clone();
 
-      // Only X movement
-      const dirX = playerPos.x - wizardPos.x;
-      const stepSize = Math.sign(dirX) * (this.currentStep.step || this.data.approachStep);
+      const wizardPos = this.el.object3D.position;
+      const playerPos = this.player.object3D.position;
 
-      this.el.object3D.position.x += stepSize;
+      let dirX = playerPos.x - wizardPos.x;
+      if (Math.abs(dirX) > 0.01) {
+        let stepSize = Math.sign(dirX) * (this.currentStep.step || this.data.approachStep);
 
-      // track distance moved
-      this.travelled += Math.abs(stepSize);
-      if (this.travelled >= (this.currentStep.moveDistance || 1.5)) {
+        // Clamp so we don’t overshoot
+        if (Math.abs(stepSize) > Math.abs(dirX)) stepSize = dirX;
+
+        wizardPos.x += stepSize;
+        this.travelled += Math.abs(stepSize);
+
+        if (this.travelled >= (this.currentStep.moveDistance || 1.5)) {
+          this.currentStep.moveTowardPlayer = false;
+          this.startPos = null;
+          this.travelled = 0;
+        }
+      } else {
         this.currentStep.moveTowardPlayer = false;
+        this.startPos = null;
+        this.travelled = 0;
       }
     }
   },
@@ -694,7 +708,8 @@ AFRAME.registerComponent('wizard-interact', {
     // Save current step for tick
     this.currentStep = step;
     if (step.moveTowardPlayer) {
-      this.travelled = 0; // reset travelled distance
+      this.startPos = this.el.object3D.position.clone();
+      this.travelled = 0;
     }
 
     Object.values(this.actions).forEach(a => a.stop());
@@ -714,6 +729,8 @@ AFRAME.registerComponent('wizard-interact', {
       }
       mixer.removeEventListener('finished', onFinished);
       this.currentStep = null;
+      this.startPos = null;
+      this.travelled = 0;
       this.playSequence(queue, callback);
     };
     mixer.addEventListener('finished', onFinished);
