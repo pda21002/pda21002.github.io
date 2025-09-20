@@ -628,7 +628,7 @@ AFRAME.registerComponent('wizard-interact', {
        wizardPos.z -= Math.sign(dirZ) * Math.min(stepSize, Math.abs(dirZ));
         this.travelled += Math.min(stepSize, Math.abs(dirZ));
 
-        if (this.travelled >= (this.currentStep.moveDistance || 1.5)) {
+        if (this.travelled >= (this.currentStep.moveDistance || 0.65)) {
           this.currentStep.moveTowardPlayer = false;
         }
       }
@@ -658,14 +658,14 @@ AFRAME.registerComponent('wizard-interact', {
     switch(choice) {
       case 'ignore':
         this.playSequence([
-          { anim: this.data.approachAnim, moveTowardPlayer: true, moveDistance: 1.5 },
+          { anim: this.data.approachAnim, moveTowardPlayer: true, moveDistance: 0.65 },
           { anim: this.data.ignoreDeathAnim, repeat: 5 }
         ], () => alert('You died! Game over.'));
         break;
 
       case 'getOut':
         this.playSequence([
-          { anim: this.data.getOutStartAnim, moveTowardPlayer: true, moveDistance: 1.5 },
+          { anim: this.data.getOutStartAnim, moveTowardPlayer: true, moveDistance: 0.65 },
           { anim: this.data.ignoreDeathAnim, repeat: 5 }
         ], () => alert('You died! Game over.'));
         break;
