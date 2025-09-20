@@ -599,9 +599,10 @@ AFRAME.registerComponent('wizard-interact', {
     });
   },
 
- tick: function(time, delta) {
+tick: function(time, delta) {
   if (this.mixer) this.mixer.update(delta / 1000);
 
+  // Trigger reaction when player is close
   if (!this.interacted) {
     const playerPos = new THREE.Vector3();
     const wizardPos = new THREE.Vector3();
@@ -614,32 +615,21 @@ AFRAME.registerComponent('wizard-interact', {
     }
   }
 
+  // Move wizard along Y axis only if current step requests it
   if (this.currentStep && this.currentStep.moveTowardPlayer) {
-    // Get wizard's world position
-    const worldWizardPos = new THREE.Vector3();
-    this.el.object3D.getWorldPosition(worldWizardPos);
-
-    // Get player's world position
+    const wizardPos = this.el.object3D.position;
     const playerPos = new THREE.Vector3();
     this.player.object3D.getWorldPosition(playerPos);
 
-    // Only move along X
-    let dirX = playerPos.x - worldWizardPos.x;
-    if (Math.abs(dirX) > 0.001) {
-      const stepSize = Math.sign(dirX) * (this.currentStep.step || this.data.approachStep);
+    // Direction on Y axis only
+    const dirY = playerPos.y - wizardPos.y;
+    const stepSize = Math.min(Math.abs(dirY), this.data.approachStep); // small steps
+    wizardPos.y += stepSize * Math.sign(dirY); // move toward player's Y
 
-      // Convert stepSize in world space to local space
-      this.el.object3D.position.x += stepSize;
-
-      // Track distance moved
-      this.travelled += Math.abs(stepSize);
-      if (this.travelled >= (this.currentStep.moveDistance || 1.5)) {
-        this.currentStep.moveTowardPlayer = false;
-        this.travelled = 0;
-      }
-    } else {
+    // Track distance moved
+    this.travelled += stepSize;
+    if (this.travelled >= (this.currentStep.moveDistance || 1.5)) {
       this.currentStep.moveTowardPlayer = false;
-      this.travelled = 0;
     }
   }
 },
@@ -711,22 +701,19 @@ playSequence: function(queue, callback) {
     return; 
   }
 
-  // Save current step for tick-based movement
+  // Save current step for tick
   this.currentStep = step;
   if (step.moveTowardPlayer) {
     this.startPos = this.el.object3D.position.clone();
-    this.travelled = 0; // reset travelled distance
+    this.travelled = 0;
   }
 
-  // Stop all other actions
   Object.values(this.actions).forEach(a => a.stop());
-
-  // Play the action
   action.reset();
   action.setLoop(THREE.LoopOnce);
   action.play();
 
-  const repeats = step.repeat || 1;
+  let repeats = step.repeat || 1;
   let count = 1;
   const mixer = this.mixer;
 
@@ -737,12 +724,7 @@ playSequence: function(queue, callback) {
       return;
     }
     mixer.removeEventListener('finished', onFinished);
-
-    // Stop movement if this step had moveTowardPlayer
     this.currentStep = null;
-    this.travelled = 0;
-
-    // Continue with the next animation in the queue
     this.playSequence(queue, callback);
   };
 
