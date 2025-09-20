@@ -599,50 +599,50 @@ AFRAME.registerComponent('wizard-interact', {
     });
   },
 
-  tick: function(time, delta) {
-    if (this.mixer) this.mixer.update(delta / 1000);
+ tick: function(time, delta) {
+  if (this.mixer) this.mixer.update(delta / 1000);
 
-    if (!this.interacted) {
-      const playerPos = new THREE.Vector3();
-      const wizardPos = new THREE.Vector3();
-      this.player.object3D.getWorldPosition(playerPos);
-      this.el.object3D.getWorldPosition(wizardPos);
+  if (!this.interacted) {
+    const playerPos = new THREE.Vector3();
+    const wizardPos = new THREE.Vector3();
+    this.player.object3D.getWorldPosition(playerPos);
+    this.el.object3D.getWorldPosition(wizardPos);
 
-      if (playerPos.distanceTo(wizardPos) < this.data.reactDistance) {
-        this.interacted = true;
-        this.startReaction();
-      }
+    if (playerPos.distanceTo(wizardPos) < this.data.reactDistance) {
+      this.interacted = true;
+      this.startReaction();
     }
+  }
 
-    // Handle movement ONLY along X axis
-    if (this.currentStep && this.currentStep.moveTowardPlayer) {
-      if (!this.startPos) this.startPos = this.el.object3D.position.clone();
+  if (this.currentStep && this.currentStep.moveTowardPlayer) {
+    // Get wizard's world position
+    const worldWizardPos = new THREE.Vector3();
+    this.el.object3D.getWorldPosition(worldWizardPos);
 
-      const wizardPos = this.el.object3D.position;
-      const playerPos = this.player.object3D.position;
+    // Get player's world position
+    const playerPos = new THREE.Vector3();
+    this.player.object3D.getWorldPosition(playerPos);
 
-      let dirX = playerPos.x - wizardPos.x;
-      if (Math.abs(dirX) > 0.01) {
-        let stepSize = Math.sign(dirX) * (this.currentStep.step || this.data.approachStep);
+    // Only move along X
+    let dirX = playerPos.x - worldWizardPos.x;
+    if (Math.abs(dirX) > 0.001) {
+      const stepSize = Math.sign(dirX) * (this.currentStep.step || this.data.approachStep);
 
-        // Clamp so we don’t overshoot
-        if (Math.abs(stepSize) > Math.abs(dirX)) stepSize = dirX;
+      // Convert stepSize in world space to local space
+      this.el.object3D.position.x += stepSize;
 
-        wizardPos.x += stepSize;
-        this.travelled += Math.abs(stepSize);
-
-        if (this.travelled >= (this.currentStep.moveDistance || 1.5)) {
-          this.currentStep.moveTowardPlayer = false;
-          this.startPos = null;
-          this.travelled = 0;
-        }
-      } else {
+      // Track distance moved
+      this.travelled += Math.abs(stepSize);
+      if (this.travelled >= (this.currentStep.moveDistance || 1.5)) {
         this.currentStep.moveTowardPlayer = false;
-        this.startPos = null;
         this.travelled = 0;
       }
+    } else {
+      this.currentStep.moveTowardPlayer = false;
+      this.travelled = 0;
     }
-  },
+  }
+},
 
   startReaction: function() {
     this.playLoop(this.data.getOutStartAnim);
@@ -698,43 +698,56 @@ AFRAME.registerComponent('wizard-interact', {
     action.play();
   },
 
-  playSequence: function(queue, callback) {
-    if (!queue || queue.length === 0) { if (callback) callback(); return; }
-
-    const step = queue.shift();
-    const action = this.actions[step.anim];
-    if (!action) { this.playSequence(queue, callback); return; }
-
-    // Save current step for tick
-    this.currentStep = step;
-    if (step.moveTowardPlayer) {
-      this.startPos = this.el.object3D.position.clone();
-      this.travelled = 0;
-    }
-
-    Object.values(this.actions).forEach(a => a.stop());
-    action.reset();
-    action.setLoop(THREE.LoopOnce);
-    action.play();
-
-    let repeats = step.repeat || 1;
-    let count = 1;
-    const mixer = this.mixer;
-
-    const onFinished = () => {
-      if (count < repeats) {
-        count++;
-        action.reset().play();
-        return;
-      }
-      mixer.removeEventListener('finished', onFinished);
-      this.currentStep = null;
-      this.startPos = null;
-      this.travelled = 0;
-      this.playSequence(queue, callback);
-    };
-    mixer.addEventListener('finished', onFinished);
+playSequence: function(queue, callback) {
+  if (!queue || queue.length === 0) { 
+    if(callback) callback(); 
+    return; 
   }
+
+  const step = queue.shift();
+  const action = this.actions[step.anim];
+  if (!action) { 
+    this.playSequence(queue, callback); 
+    return; 
+  }
+
+  // Save current step for tick-based movement
+  this.currentStep = step;
+  if (step.moveTowardPlayer) {
+    this.startPos = this.el.object3D.position.clone();
+    this.travelled = 0; // reset travelled distance
+  }
+
+  // Stop all other actions
+  Object.values(this.actions).forEach(a => a.stop());
+
+  // Play the action
+  action.reset();
+  action.setLoop(THREE.LoopOnce);
+  action.play();
+
+  const repeats = step.repeat || 1;
+  let count = 1;
+  const mixer = this.mixer;
+
+  const onFinished = () => {
+    if (count < repeats) {
+      count++;
+      action.reset().play();
+      return;
+    }
+    mixer.removeEventListener('finished', onFinished);
+
+    // Stop movement if this step had moveTowardPlayer
+    this.currentStep = null;
+    this.travelled = 0;
+
+    // Continue with the next animation in the queue
+    this.playSequence(queue, callback);
+  };
+
+  mixer.addEventListener('finished', onFinished);
+}
 });
 
 
