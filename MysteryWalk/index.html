@@ -842,7 +842,7 @@ AFRAME.registerComponent('wizard-interact', {
         case 'ignore':
           this.playSequence([
             { anim: this.data.attack3Anim, loop: false },
-            { anim: this.data.attack2Anim, loop: false }
+            { anim: this.data.attack2Anim, loop: false },
             { anim: this.data.attack1Anim, loop: false },
             { anim: this.data.attack3Anim, loop: false }
           ], () => {
