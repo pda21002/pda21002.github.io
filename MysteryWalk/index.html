@@ -602,7 +602,6 @@ AFRAME.registerComponent('wizard-interact', {
 tick: function(time, delta) {
   if (this.mixer) this.mixer.update(delta / 1000);
 
-  // Trigger reaction when player is close
   if (!this.interacted) {
     const playerPos = new THREE.Vector3();
     const wizardPos = new THREE.Vector3();
@@ -615,33 +614,26 @@ tick: function(time, delta) {
     }
   }
 
-  // Move wizard on the ground (X/Z) if current step requests it
+  // Move wizard along Z toward player if current step requests it
   if (this.currentStep && this.currentStep.moveTowardPlayer) {
     const wizardPos = this.el.object3D.position;
-    const playerPos = new THREE.Vector3();
-    this.player.object3D.getWorldPosition(playerPos);
+    const playerZ = this.player.object3D.position.z;
 
-    // Direction vector on X/Z only
-    const dir = new THREE.Vector3(
-      playerPos.x - wizardPos.x,
-      0, // Y stays the same
-      playerPos.z - wizardPos.z
-    );
+    // Calculate direction along Z only
+    const dirZ = playerZ - wizardPos.z;
+    const stepSize = this.data.approachStep;
 
-    const distance = dir.length();
-    if (distance > 0.01) {
-      dir.normalize();
-      const stepSize = Math.min(this.data.approachStep, distance);
-      wizardPos.add(dir.multiplyScalar(stepSize));
-
-      // Track distance moved
+    if (Math.abs(dirZ) > 0.01) {
+      wizardPos.z += Math.sign(dirZ) * stepSize;
       this.travelled += stepSize;
-      if (this.travelled >= (this.currentStep.moveDistance || 1.2)) {
-        this.currentStep.moveTowardPlayer = false;
+
+      if (this.travelled >= (this.currentStep.moveDistance || 1.5)) {
+        this.currentStep.moveTowardPlayer = false; // stop moving
       }
     }
   }
 },
+
 
   startReaction: function() {
     this.playLoop(this.data.getOutStartAnim);
