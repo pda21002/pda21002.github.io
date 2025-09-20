@@ -553,7 +553,7 @@ AFRAME.registerComponent('wizard-interact', {
     ignoreDeathAnim: { type: 'number', default: 5 },
     getOutStartAnim: { type: 'number', default: 3 },
     getOutDeathAnim: { type: 'number', default: 5 },
-    reactDistance: { type: 'number', default: 3 },
+    reactDistance: { type: 'number', default: 1.5 },
     approachStep: { type: 'number', default: 0.02 },
     choiceDelay: { type: 'number', default: 700 } // ms
   },
@@ -757,7 +757,7 @@ AFRAME.registerComponent('wizard-interact', {
       idleAnim: { type: 'string', default: 'thc3_arma|idle' },
       howlAnim: { type: 'string', default: 'thc3_arma|howl' },
       dieAnim:  { type: 'string', default: 'thc3_arma|die2' },
-      reactDistance: { type: 'number', default: 3 }
+      reactDistance: { type: 'number', default: 0.5 }
     },
 
     init: function () {
