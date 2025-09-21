@@ -247,7 +247,7 @@
        position="-2.9 1 1.2" 
        width="0.5" height="0.2" depth="0.15" 
        color="green">
-         <a-text value="Greet them" align="center" color="white" width="1.5" height="0.2" side="double" wrap-count="4" baseline="center" position="0 0 0.11" scale="0.3 0.3 0.3"></a-text>
+         <a-text value="Greet them" align="center" color="white" width="1" height="1" side="double" wrap-count="4" baseline="center" position="0 0 0.11" scale="0.2 0.2 0.2"></a-text>
 </a-box>
 
 <!-- Ignore button -->
@@ -365,7 +365,7 @@ if (!this.choiceMade && pos.z <= forkZ) {
         bounds = {xMin:-25,xMax:25,zMin:-25,zMax:25};
     } else {
       // Free roaming after fork
-      bounds = {xMin:-25,xMax:25,zMin:-25,zMax:25};
+      bounds = {xMin:-40,xMax:40,zMin:-40,zMax:40};
     }
   }
 
@@ -377,7 +377,7 @@ if (!this.choiceMade && pos.z <= forkZ) {
   // --- Losing condition ---
   const origin = new THREE.Vector3(0,0,16);
   const playerPos = new THREE.Vector3(pos.x,pos.y,pos.z);
-  if(playerPos.distanceTo(origin) > 28){
+  if(playerPos.distanceTo(origin) > 33){
     alert('You wandered too far and got lost! Game over.');
     window.location.reload();
   }
@@ -1247,10 +1247,14 @@ if (x > -8 && x < 7.5 && z > -30 && z < -12) return true;
 // Ghost + options
   if (x > -3.3 && x < -2.3 && z > -3.8 && z < -2.7) return true;
 
-  // Sisters + buttons + texts
-  if (x > -3 && x < -2 && z > 1 && z < 1.5) return true;  // sisters
-  if (x > -2.9 && x < -2.3 && z > 1.15 && z < 1.25) return true; // buttons
-  if (x > -2.7 && x < -2.4 && z > 0.7 && z < 1.4) return true; // texts
+// Sisters + buttons + texts
+if (x > -3.2 && x < -1.8 && z > 0.8 && z < 1.8) return true;   // sisters (wider)
+if (x > -3.1 && x < -2.1 && z > 1.0 && z < 1.4) return true;   // buttons (wider)
+if (x > -2.9 && x < -2.2 && z > 0.6 && z < 1.6) return true;   // texts (wider)
+
+// Wizard wrapper + choices + texts
+if (x > -1.5 && x < 1.5 && z > -2.5 && z < -1.0) return true;  // wizard + his UI
+
 
   // Dwarf + text
   if (x > -0.5 && x < 0.5 && z > 4.1 && z < 5.2) return true; // dwarf entity
