@@ -3,14 +3,7 @@
   <meta charset="utf-8" />
     <script src="https://aframe.io/releases/1.7.0/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/gh/c-frame/aframe-extras@7.5.4/dist/aframe-extras.min.js"></script>
-</head>
-<body>
-<a-scene cursor="rayOrigin: mouse"
-         raycaster="objects: .clickable, .fork-menu-button, .ghost-choice">
-
-
-
-  <!-- Assets -->
+<script>
   <a-assets>
     <img id="groundTexture" src="assets/grass.jpg">
     <img id="pathTexture" src="assets/stone.png">
@@ -36,252 +29,7 @@
           <a-asset-item id="ghost" src="assets/nightmare_creature_3.glb"></a-asset-item>
   </a-assets>
 
-    <a-sky color="#87CEEB"></a-sky>
 
-  <!-- Ground -->
-  <a-plane rotation="-90 0 0" width="80" height="80"
-           material="repeat: 30 30; shader: flat; src: #groundTexture"></a-plane>
-
-  <!-- Paths -->
-  <a-box width="1.5" height="0.05" depth="20" position="0 0.025 19.46702" 
-         material="repeat: 1 7; shader: flat; src: #pathTexture"></a-box>
-  <a-box width="7" height="0.05" depth="1.5" position="0 0.03943 8.75"
-         material="repeat: 7 1; shader: flat; src: #pathTexture"></a-box>
-  <a-box class="left-branch" width="1.5" height="0.05" depth="14" position="-2.76655 0.025 1.00951"
-         material="repeat: 1 7; shader: flat; src: #pathTexture"></a-box>
-  <a-box class="middle-branch" width="1.5" height="0.05" depth="14" position="0 0.025 1.03888"
-         material="repeat: 1 7; shader: flat; src: #pathTexture"></a-box>
-  <a-box class="right-branch" width="1.5" height="0.05" depth="14" position="2.737 0.025 1.01381"
-         material="repeat: 1 7; shader: flat; src: #pathTexture"></a-box>
-  <a-box width="7" height="0.05" depth="1.5" position="0 0.03169 -6.25"
-         material="repeat: 7 1; shader: flat; src: #pathTexture"></a-box>
-  <a-box width="1.5" height="0.05" depth="8" position="0 0.025 -10.75"
-         material="repeat: 1 4; shader: flat; src: #pathTexture"></a-box>
-
-
-
-  <!-- Fork menu -->
- <a-entity id="forkMenu" visible="false" position="0 1.5 6">
-    <a-box class="fork-menu-button" data-choice="left" position="-2 0 0" width="1" height="0.5" depth="0.2" color="red">
-    </a-box>
-    <a-box class="fork-menu-button" data-choice="middle" width="1" height="0.5" depth="0.2" color="yellow">
-   </a-box>
-    <a-box class="fork-menu-button" data-choice="right" position="2 0 0" width="1" height="0.5" depth="0.2" color="blue">
-    </a-box>
-  </a-entity>
-
-  <!-- Castle -->
-  <a-entity gltf-model="#castle" position="6.99881 -0.8 -76.225" width="2" castle-behavior></a-entity>
-
-  <a-entity id="castleChoices" visible="false" position="0 1 -15">
-  <a-box class="castle-choice clickable"
-         data-choice="leaveMessage"
-         color="green" width="1.5" height="0.6" depth="0.2"
-         position="-1 0 0">
-    <a-text value="Leave message here"
-            align="center"
-            color="white"
-            width="1.5"
-            wrap-count="12"
-            baseline="center"
-            position="0 0 0.11">
-    </a-text>
-  </a-box>
-
-  <a-box class="castle-choice clickable"
-         data-choice="Ignore this place"
-         color="red" width="1.5" height="0.6" depth="0.2"
-         position="1 0 0">
-    <a-text value="Ignore"
-            align="center"
-            color="white"
-            width="1.5"
-            wrap-count="8"
-            baseline="center"
-            position="0 0 0.11">
-    </a-text>
-  </a-box>
-</a-entity>
-
-  <!-- Player rig -->
-  <a-entity id="rig" position="0 0.5 16" player-movement>
-    <a-entity camera look-controls></a-entity>
-  </a-entity>
-
-  <!-- House -->
-<a-entity gltf-model="#house" position="-0.16089 0 30.2737" scale="0.15 0.18 0.15" rotation="0 180 0" house-behavior></a-entity> 
-<a-entity id="houseChoices" visible="false" position="-0.02045 0.75 29.066" scale="0.33 0.3 1"> 
-<a-box class="house-choice clickable" data-choice="leaveMessage" color="red" width="1" height="0.5" depth="0.2" position="-0.8 0 0">
- <a-text value="Leave message here" align="center" color="white" width="1" side="double" wrap-count="12" baseline="center" position="0 0 -0.11" rotation="0 180 0"></a-text>
-</a-box> 
-<a-box class="house-choice clickable" data-choice="ignore" color="green" width="1" height="0.5" depth="0.2" position="0.8 0 0">
- <a-text value="Ignore this place" align="center" color="white" width="1" side="double" wrap-count="12" baseline="center" position="0 0 -0.11" rotation="0 180 0"></a-text>
-</a-box> 
-</a-entity>
-
-
-  <!-- Tree holder -->
-  <a-entity id="trees"></a-entity>
-
-  <!-- Fairies -->
-  <a-entity id="fairies">
-    <a-entity gltf-model="#fairy1" position="3.74164 0.77241 7.10959" scale="0.08 0.08 0.08" rotation="0 155 0" fairy-behavior="idleAnim:idle; reactAnim:interact1; reactDistance:2"></a-entity>
-    <a-entity gltf-model="#fairy2" position="3.7658 0.95 7.2" scale="0.08 0.08 0.08" rotation="-10.94 140.27 0" fairy-behavior="idleAnim:idle; reactAnim:interact2; reactDistance:2"></a-entity>
-    <a-entity gltf-model="#fairy3" position="3.6441 0.85 7.09739" scale="0.08 0.08 0.08" rotation="0 150 0" fairy-behavior="idleAnim:idle; reactAnim:cantar; reactDistance:2"></a-entity>
-    <a-entity gltf-model="#fairy4" position="3.82107 0.81339 7.2185" scale="0.08 0.08 0.08" rotation="0 132 0" fairy-behavior="idleAnim:idle; reactAnim:interact1; reactDistance:2"></a-entity>
-    <a-entity gltf-model="#fairy5" position="3.65 1 7.15" scale="0.08 0.08 0.08" rotation="-14.46 150 0" fairy-behavior="idleAnim:idle; reactAnim:interact1; reactDistance:2"></a-entity>
-  </a-entity>
-
-  
-  <!-- Witch -->
-  
-<a-entity id="witchWrapper" position="2.35 0.04454 4.80785" rotation="0 -14.72 0">
-  <a-entity gltf-model="#witch"
-            scale="0.25 0.25 0.25"
-            rotation="0 -135 0"
-            witch-behavior="reactAnim: bye; reactDistance: 2">
-  </a-entity>
-
-  <!-- Shadow + main text grouped -->
-  <a-entity id="witchTextWrapper" visible="false">
-    <a-text value="Hello! If you're looking for the palace, you're on the right path. Just don't get distracted!"
-            position="0.15816 0.44674 0.11927"
-            align="center"
-            color="#000"
-            side="double"
-            scale="0.15 0.15 0.15"
-            rotation="0 40 0">
-    </a-text>
-
-    <a-text value="Hello! If you're looking for the palace, you're on the right path. Just don't get distracted!"
-            position="0.15725 0.44674 0.12232"
-            align="center"
-            color="#fff"
-            side="double"
-            scale="0.15 0.15 0.15"
-            rotation="0 40 0">
-    </a-text>
-  </a-entity>
-</a-entity>
-
-  <a-entity id="wizardWrapper" position="-0.02192 0.04843 -1.66883">
-  <a-entity gltf-model="#wizard" scale="0.4 0.4 0.4"
-            wizard-interact="range: 1.5; textId: wizardText"></a-entity>
-    
-  <!-- Shadow text -->
-<a-text value="WHERE DO YOU THINK YOU'RE GOING?!" position="0.00345 0.45824 0.00929" color="#000" align="center" side="double" scale="0.25 0.25 0.25" visible="false" id="wizardTextShadow"></a-text>
-
-  <!-- Foreground text -->
-<a-text value="WHERE DO YOU THINK YOU'RE GOING?!" position="0 0.46284 0.01" color="#fff" align="center" side="double" scale="0.25 0.25 0.25" visible="false" id="wizardText"></a-text>
-  
-</a-entity>
-
-<a-entity id="wizardChoices" visible="false" position="0 0.35 -1.71145" scale="0.44 0.43 0.23">
-  <a-box class="wizard-choice clickable" data-choice="ignore" color="red" width="1" height="0.5" depth="0.2" position="-1 1 0">
-         <a-text value="Ignore him" align="center" color="white" width="1" height="0.5" side="double" wrap-count="8" baseline="center" position="0 0 0.11" scale="0.5 0.5 0.5"></a-text>
-  </a-box>
-
-  <a-box class="wizard-choice clickable" data-choice="explain" color="green" width="1" height="0.5" depth="0.2" position="0 1 0">
-         <a-text value="Explain your purpose" align="center" color="white" width="1" height="0.5" side="double" wrap-count="8" baseline="center" position="0 0 0.11" scale="0.5 0.5 0.5"></a-text>
-  </a-box>
-
-  <a-box class="wizard-choice clickable" data-choice="getOut" color="blue" width="1" height="0.5" depth="0.2" position="1 1 0">
-         <a-text value="Tell him to get out of your way!" align="center" color="white" width="1" height="0.5" side="double" wrap-count="8" baseline="center" position="0 0 0.11" scale="0.5 0.5 0.5"></a-text>
-  </a-box>
-</a-entity>
-
-  
-
-  <!-- Mushroom -->
-  <a-entity gltf-model="#mushroom" position="3.335 0.05 0" rotation="0 150 0" scale="0.15 0.15 0.15" mushroom-behavior="idleAnim:idle"></a-entity>
-
-  <!-- Goblin -->
-  <a-entity gltf-model="#goblin" position="2.5 0 -4" scale="0.3 0.3 0.3" goblin-behavior="walkIndex:0; lookDistance:4; startWalkDistance:1.6; speed:1.2"></a-entity>
-
-  <a-entity gltf-model="#fox" position="0.33427 0.05 7.18987" scale="0.045 0.045 0.045" rotation="0 70 0" animation-mixer="loop: repeat"></a-entity>
-
-  <a-entity gltf-model="#ghost" position="-2.8142 0.08774 -3.2995" scale="0.2 0.2 0.2" ghost-behavior></a-entity>
-
- <a-entity id="ghostChoices" visible="false" position="-2.8142 1.04864 -3.21153" scale="0.24 0.19 0.3">
-    <a-box class="ghost-choice" data-choice="kill" color="red" width="1" height="0.5" depth="0.2" position="-1 0 0">
-           <a-text value="Kill him" align="center" color="white" width="1" side="double" wrap-count="8" baseline="center" position="0 0 0.11"></a-text>
-    </a-box>
-    <a-box class="ghost-choice" data-choice="ignore" color="blue" width="1" height="0.5" depth="0.2" position="1 0 0">
-           <a-text value="Ignore him" align="center" color="white" width="1" side="double" wrap-count="8" baseline="center" position="0 0 0.11"></a-text>
-    </a-box>
-  </a-entity>
-
-
-<a-entity gltf-model="#dwarf" position="-0.29412 0.05046 4.64215" scale="0.008 0.008 0.008" rotation="0 20 0" animation-mixer="loop: repeat" dwarf-behavior>
-
-  <!-- Shadow text (child of dwarf) -->
-  <a-text id="dwarfTextShadow" value="Hey there. Beware of the little man ahead..." position="0.14818 57.53025 0.16439" color="#000" align="center" side="double" scale="20 20 20" visible="false">
-  </a-text>
-
-  <!-- Foreground text -->
-  <a-text id="dwarfText" value="Hey there. Beware of the little man ahead..." position="0.5158 57.34025 0.24706" color="#fff" align="center" side="double" scale="20 20 20" visible="false">
-  </a-text>
-
-</a-entity>
-
-
-  <a-entity gltf-model="#creepygirl" position="-3.20252 0.04765 5.73719" scale="0.0007 0.0007 0.0007" rotation="0 25 0" animation-mixer="loop: repeat" creepygirl-behavior></a-entity>
-<!-- Shadow text -->
-<a-text id="creepygirlTextShadow" value="Oh, heyyy!! You are in for SO much fun!!" position="-3.20624 0.84448 5.7611" color="#000" align="center" side="double" scale="0.2 0.2 0.2" visible="false" rotation="0 25 0"> </a-text>
-
-  <!-- Foreground text -->
-<a-text id="creepygirlText" value="Oh, heyyy!! You are in for SO much fun!!" position="-3.20146 0.84521 5.76091" color="#fff" align="center" side="double" scale="0.2 0.2 0.2" visible="false" rotation="0 25 0"> </a-text>
-</a-entity>
-
-<a-entity id="sisters" 
-          gltf-model="#sisters" 
-          position="-2.60894 0.58665 1.29681" 
-          scale="0.08 0.08 0.08" 
-          rotation="0 -110 0"
-          animation-mixer="clip: Idle; loop: repeat"
-          sisters-behavior>
-</a-entity>
-
-  <a-box id="sistersHiBtn" 
-       class="clickable" 
-       position="-2.9 1 1.2" 
-       width="0.5" height="0.2" depth="0.15" 
-       color="green">
-         <a-text value="Greet them" align="center" color="white" width="1" height="1" side="double" wrap-count="4" baseline="center" position="0 0 0.11" scale="0.2 0.2 0.2"></a-text>
-</a-box>
-
-<!-- Ignore button -->
-<a-box id="sistersIgnoreBtn" 
-       class="clickable" 
-       position="-2.3 1 1.2" 
-       width="0.5" height="0.2" depth="0.15" 
-       color="red">
-       <a-text value="Ignore them" align="center" color="white" width="0.5" height="0.2" side="double" wrap-count="8" baseline="center" position="0 0 0.11" scale="0.5 0.5 0.5"></a-text>
-</a-box>
-
-<!-- Say hi texts -->
-<a-text id="sistersHiTextLeft" value="You can trust us. Fight if you must." position="-2.688 0.941 1.25648" color="#fff" side="double" align="center" scale="0.15 0.15 0.15" visible="false" rotation="0 -22 0">
-</a-text>
-<a-text id="sistersHiTextShadowLeft" value="You can trust us. Fight if you must." position="-2.69203 0.941 1.25462" color="#000" side="double" align="center" scale="0.15 0.15 0.15" visible="false" rotation="0 -22 0">
-</a-text>
-<a-text id="sistersHiTextRight" value="Hi..." position="-2.42018 0.76278 1.39268" color="#fff" side="double" align="center" scale="0.2 0.2 0.2" visible="false" rotation="0 -22 0">
-</a-text>
-<a-text id="sistersHiTextShadowRight" value="Hi..." position="-2.42396 0.76335 1.39036" color="#000" side="double" align="center" scale="0.2 0.2 0.2" visible="false" rotation="0 -22 0">
-</a-text>
-<!-- Ignore text -->
-<a-text id="sistersIgnoreText" value="Whatever..." position="-2.65302 0.94458 1.29681" color="#fff" side="double" align="center" scale="0.2 0.2 0.2" visible="false" rotation="0 -22 0">
-</a-text>
-<a-text id="sistersIgnoreTextShadow" value="Whatever..." position="-2.65535 0.94395 1.29506" color="#000" side="double" align="center" scale="0.2 0.2 0.2" visible="false" rotation="0 -22 0">
-</a-text>
-
-
-
-  
-
-<script>
-/* -----------------------
-   Player movement
------------------------ */
 AFRAME.registerComponent('player-movement', {
   init: function () {
     this.pause = false; 
@@ -1198,11 +946,266 @@ AFRAME.registerComponent('house-behavior', {
   }
 });
 
+    </script>
+    <style>
+        h1 { text-align: center; }
+        h3 { text-align: center; }
+        a-scene { width: 50%; height: 50%; border: dotted silver 1px; }
+    </style>
+</head>
+<body>
+    <h1>ΤΙΤΛΟΣ ΕΡΓΑΣΙΑΣ</h1>
+    <h3>Ονοματεπώνυμο</h3>
+    <hr />
+    <P><strong>Σενάριο:</strong>...</P>
+    <hr />
+    <div align="center">
+      <a-scene cursor="rayOrigin: mouse"
+         raycaster="objects: .clickable, .fork-menu-button, .ghost-choice"
+        ondblclick="this.requestFullscreen();" embedded>>
+        
+    <a-sky color="#87CEEB"></a-sky>
+
+  <!-- Ground -->
+  <a-plane rotation="-90 0 0" width="80" height="80"
+           material="repeat: 30 30; shader: flat; src: #groundTexture"></a-plane>
+
+  <!-- Paths -->
+  <a-box width="1.5" height="0.05" depth="20" position="0 0.025 19.46702" 
+         material="repeat: 1 7; shader: flat; src: #pathTexture"></a-box>
+  <a-box width="7" height="0.05" depth="1.5" position="0 0.03943 8.75"
+         material="repeat: 7 1; shader: flat; src: #pathTexture"></a-box>
+  <a-box class="left-branch" width="1.5" height="0.05" depth="14" position="-2.76655 0.025 1.00951"
+         material="repeat: 1 7; shader: flat; src: #pathTexture"></a-box>
+  <a-box class="middle-branch" width="1.5" height="0.05" depth="14" position="0 0.025 1.03888"
+         material="repeat: 1 7; shader: flat; src: #pathTexture"></a-box>
+  <a-box class="right-branch" width="1.5" height="0.05" depth="14" position="2.737 0.025 1.01381"
+         material="repeat: 1 7; shader: flat; src: #pathTexture"></a-box>
+  <a-box width="7" height="0.05" depth="1.5" position="0 0.03169 -6.25"
+         material="repeat: 7 1; shader: flat; src: #pathTexture"></a-box>
+  <a-box width="1.5" height="0.05" depth="8" position="0 0.025 -10.75"
+         material="repeat: 1 4; shader: flat; src: #pathTexture"></a-box>
 
 
-/* -----------------------
-   Scatter trees
------------------------ */
+
+  <!-- Fork menu -->
+ <a-entity id="forkMenu" visible="false" position="0 1.5 6">
+    <a-box class="fork-menu-button" data-choice="left" position="-2 0 0" width="1" height="0.5" depth="0.2" color="red">
+    </a-box>
+    <a-box class="fork-menu-button" data-choice="middle" width="1" height="0.5" depth="0.2" color="yellow">
+   </a-box>
+    <a-box class="fork-menu-button" data-choice="right" position="2 0 0" width="1" height="0.5" depth="0.2" color="blue">
+    </a-box>
+  </a-entity>
+
+  <!-- Castle -->
+  <a-entity gltf-model="#castle" position="6.99881 -0.8 -76.225" width="2" castle-behavior></a-entity>
+
+  <a-entity id="castleChoices" visible="false" position="0 1 -15">
+  <a-box class="castle-choice clickable"
+         data-choice="leaveMessage"
+         color="green" width="1.5" height="0.6" depth="0.2"
+         position="-1 0 0">
+    <a-text value="Leave message here"
+            align="center"
+            color="white"
+            width="1.5"
+            wrap-count="12"
+            baseline="center"
+            position="0 0 0.11">
+    </a-text>
+  </a-box>
+
+  <a-box class="castle-choice clickable"
+         data-choice="Ignore this place"
+         color="red" width="1.5" height="0.6" depth="0.2"
+         position="1 0 0">
+    <a-text value="Ignore"
+            align="center"
+            color="white"
+            width="1.5"
+            wrap-count="8"
+            baseline="center"
+            position="0 0 0.11">
+    </a-text>
+  </a-box>
+</a-entity>
+
+  <!-- Player rig -->
+  <a-entity id="rig" position="0 0.5 16" player-movement>
+    <a-entity camera look-controls></a-entity>
+  </a-entity>
+
+  <!-- House -->
+<a-entity gltf-model="#house" position="-0.16089 0 30.2737" scale="0.15 0.18 0.15" rotation="0 180 0" house-behavior></a-entity> 
+<a-entity id="houseChoices" visible="false" position="-0.02045 0.75 29.066" scale="0.33 0.3 1"> 
+<a-box class="house-choice clickable" data-choice="leaveMessage" color="red" width="1" height="0.5" depth="0.2" position="-0.8 0 0">
+ <a-text value="Leave message here" align="center" color="white" width="1" side="double" wrap-count="12" baseline="center" position="0 0 -0.11" rotation="0 180 0"></a-text>
+</a-box> 
+<a-box class="house-choice clickable" data-choice="ignore" color="green" width="1" height="0.5" depth="0.2" position="0.8 0 0">
+ <a-text value="Ignore this place" align="center" color="white" width="1" side="double" wrap-count="12" baseline="center" position="0 0 -0.11" rotation="0 180 0"></a-text>
+</a-box> 
+</a-entity>
+
+
+  <!-- Tree holder -->
+  <a-entity id="trees"></a-entity>
+
+  <!-- Fairies -->
+  <a-entity id="fairies">
+    <a-entity gltf-model="#fairy1" position="3.74164 0.77241 7.10959" scale="0.08 0.08 0.08" rotation="0 155 0" fairy-behavior="idleAnim:idle; reactAnim:interact1; reactDistance:2"></a-entity>
+    <a-entity gltf-model="#fairy2" position="3.7658 0.95 7.2" scale="0.08 0.08 0.08" rotation="-10.94 140.27 0" fairy-behavior="idleAnim:idle; reactAnim:interact2; reactDistance:2"></a-entity>
+    <a-entity gltf-model="#fairy3" position="3.6441 0.85 7.09739" scale="0.08 0.08 0.08" rotation="0 150 0" fairy-behavior="idleAnim:idle; reactAnim:cantar; reactDistance:2"></a-entity>
+    <a-entity gltf-model="#fairy4" position="3.82107 0.81339 7.2185" scale="0.08 0.08 0.08" rotation="0 132 0" fairy-behavior="idleAnim:idle; reactAnim:interact1; reactDistance:2"></a-entity>
+    <a-entity gltf-model="#fairy5" position="3.65 1 7.15" scale="0.08 0.08 0.08" rotation="-14.46 150 0" fairy-behavior="idleAnim:idle; reactAnim:interact1; reactDistance:2"></a-entity>
+  </a-entity>
+
+  
+  <!-- Witch -->
+  
+<a-entity id="witchWrapper" position="2.35 0.04454 4.80785" rotation="0 -14.72 0">
+  <a-entity gltf-model="#witch"
+            scale="0.25 0.25 0.25"
+            rotation="0 -135 0"
+            witch-behavior="reactAnim: bye; reactDistance: 2">
+  </a-entity>
+
+  <!-- Shadow + main text grouped -->
+  <a-entity id="witchTextWrapper" visible="false">
+    <a-text value="Hello! If you're looking for the palace, you're on the right path. Just don't get distracted!"
+            position="0.15816 0.44674 0.11927"
+            align="center"
+            color="#000"
+            side="double"
+            scale="0.15 0.15 0.15"
+            rotation="0 40 0">
+    </a-text>
+
+    <a-text value="Hello! If you're looking for the palace, you're on the right path. Just don't get distracted!"
+            position="0.15725 0.44674 0.12232"
+            align="center"
+            color="#fff"
+            side="double"
+            scale="0.15 0.15 0.15"
+            rotation="0 40 0">
+    </a-text>
+  </a-entity>
+</a-entity>
+
+  <a-entity id="wizardWrapper" position="-0.02192 0.04843 -1.66883">
+  <a-entity gltf-model="#wizard" scale="0.4 0.4 0.4"
+            wizard-interact="range: 1.5; textId: wizardText"></a-entity>
+    
+  <!-- Shadow text -->
+<a-text value="WHERE DO YOU THINK YOU'RE GOING?!" position="0.00345 0.45824 0.00929" color="#000" align="center" side="double" scale="0.25 0.25 0.25" visible="false" id="wizardTextShadow"></a-text>
+
+  <!-- Foreground text -->
+<a-text value="WHERE DO YOU THINK YOU'RE GOING?!" position="0 0.46284 0.01" color="#fff" align="center" side="double" scale="0.25 0.25 0.25" visible="false" id="wizardText"></a-text>
+  
+</a-entity>
+
+<a-entity id="wizardChoices" visible="false" position="0 0.35 -1.71145" scale="0.44 0.43 0.23">
+  <a-box class="wizard-choice clickable" data-choice="ignore" color="red" width="1" height="0.5" depth="0.2" position="-1 1 0">
+         <a-text value="Ignore him" align="center" color="white" width="1" height="0.5" side="double" wrap-count="8" baseline="center" position="0 0 0.11" scale="0.5 0.5 0.5"></a-text>
+  </a-box>
+
+  <a-box class="wizard-choice clickable" data-choice="explain" color="green" width="1" height="0.5" depth="0.2" position="0 1 0">
+         <a-text value="Explain your purpose" align="center" color="white" width="1" height="0.5" side="double" wrap-count="8" baseline="center" position="0 0 0.11" scale="0.5 0.5 0.5"></a-text>
+  </a-box>
+
+  <a-box class="wizard-choice clickable" data-choice="getOut" color="blue" width="1" height="0.5" depth="0.2" position="1 1 0">
+         <a-text value="Tell him to get out of your way!" align="center" color="white" width="1" height="0.5" side="double" wrap-count="8" baseline="center" position="0 0 0.11" scale="0.5 0.5 0.5"></a-text>
+  </a-box>
+</a-entity>
+
+  
+
+  <!-- Mushroom -->
+  <a-entity gltf-model="#mushroom" position="3.335 0.05 0" rotation="0 150 0" scale="0.15 0.15 0.15" mushroom-behavior="idleAnim:idle"></a-entity>
+
+  <!-- Goblin -->
+  <a-entity gltf-model="#goblin" position="2.5 0 -4" scale="0.3 0.3 0.3" goblin-behavior="walkIndex:0; lookDistance:4; startWalkDistance:1.6; speed:1.2"></a-entity>
+
+  <a-entity gltf-model="#fox" position="0.33427 0.05 7.18987" scale="0.045 0.045 0.045" rotation="0 70 0" animation-mixer="loop: repeat"></a-entity>
+
+  <a-entity gltf-model="#ghost" position="-2.8142 0.08774 -3.2995" scale="0.2 0.2 0.2" ghost-behavior></a-entity>
+
+ <a-entity id="ghostChoices" visible="false" position="-2.8142 1.04864 -3.21153" scale="0.24 0.19 0.3">
+    <a-box class="ghost-choice" data-choice="kill" color="red" width="1" height="0.5" depth="0.2" position="-1 0 0">
+           <a-text value="Kill him" align="center" color="white" width="1" side="double" wrap-count="8" baseline="center" position="0 0 0.11"></a-text>
+    </a-box>
+    <a-box class="ghost-choice" data-choice="ignore" color="blue" width="1" height="0.5" depth="0.2" position="1 0 0">
+           <a-text value="Ignore him" align="center" color="white" width="1" side="double" wrap-count="8" baseline="center" position="0 0 0.11"></a-text>
+    </a-box>
+  </a-entity>
+
+
+<a-entity gltf-model="#dwarf" position="-0.29412 0.05046 4.64215" scale="0.008 0.008 0.008" rotation="0 20 0" animation-mixer="loop: repeat" dwarf-behavior>
+
+  <!-- Shadow text (child of dwarf) -->
+  <a-text id="dwarfTextShadow" value="Hey there. Beware of the little man ahead..." position="0.14818 57.53025 0.16439" color="#000" align="center" side="double" scale="20 20 20" visible="false">
+  </a-text>
+
+  <!-- Foreground text -->
+  <a-text id="dwarfText" value="Hey there. Beware of the little man ahead..." position="0.5158 57.34025 0.24706" color="#fff" align="center" side="double" scale="20 20 20" visible="false">
+  </a-text>
+
+</a-entity>
+
+
+  <a-entity gltf-model="#creepygirl" position="-3.20252 0.04765 5.73719" scale="0.0007 0.0007 0.0007" rotation="0 25 0" animation-mixer="loop: repeat" creepygirl-behavior></a-entity>
+<!-- Shadow text -->
+<a-text id="creepygirlTextShadow" value="Oh, heyyy!! You are in for SO much fun!!" position="-3.20624 0.84448 5.7611" color="#000" align="center" side="double" scale="0.2 0.2 0.2" visible="false" rotation="0 25 0"> </a-text>
+
+  <!-- Foreground text -->
+<a-text id="creepygirlText" value="Oh, heyyy!! You are in for SO much fun!!" position="-3.20146 0.84521 5.76091" color="#fff" align="center" side="double" scale="0.2 0.2 0.2" visible="false" rotation="0 25 0"> </a-text>
+</a-entity>
+
+<a-entity id="sisters" 
+          gltf-model="#sisters" 
+          position="-2.60894 0.58665 1.29681" 
+          scale="0.08 0.08 0.08" 
+          rotation="0 -110 0"
+          animation-mixer="clip: Idle; loop: repeat"
+          sisters-behavior>
+</a-entity>
+
+  <a-box id="sistersHiBtn" 
+       class="clickable" 
+       position="-2.9 1 1.2" 
+       width="0.5" height="0.2" depth="0.15" 
+       color="green">
+         <a-text value="Greet them" align="center" color="white" width="1" height="1" side="double" wrap-count="4" baseline="center" position="0 0 0.11" scale="0.2 0.2 0.2"></a-text>
+</a-box>
+
+<!-- Ignore button -->
+<a-box id="sistersIgnoreBtn" 
+       class="clickable" 
+       position="-2.3 1 1.2" 
+       width="0.5" height="0.2" depth="0.15" 
+       color="red">
+       <a-text value="Ignore them" align="center" color="white" width="0.5" height="0.2" side="double" wrap-count="8" baseline="center" position="0 0 0.11" scale="0.5 0.5 0.5"></a-text>
+</a-box>
+
+<!-- Say hi texts -->
+<a-text id="sistersHiTextLeft" value="You can trust us. Fight if you must." position="-2.688 0.941 1.25648" color="#fff" side="double" align="center" scale="0.15 0.15 0.15" visible="false" rotation="0 -22 0">
+</a-text>
+<a-text id="sistersHiTextShadowLeft" value="You can trust us. Fight if you must." position="-2.69203 0.941 1.25462" color="#000" side="double" align="center" scale="0.15 0.15 0.15" visible="false" rotation="0 -22 0">
+</a-text>
+<a-text id="sistersHiTextRight" value="Hi..." position="-2.42018 0.76278 1.39268" color="#fff" side="double" align="center" scale="0.2 0.2 0.2" visible="false" rotation="0 -22 0">
+</a-text>
+<a-text id="sistersHiTextShadowRight" value="Hi..." position="-2.42396 0.76335 1.39036" color="#000" side="double" align="center" scale="0.2 0.2 0.2" visible="false" rotation="0 -22 0">
+</a-text>
+<!-- Ignore text -->
+<a-text id="sistersIgnoreText" value="Whatever..." position="-2.65302 0.94458 1.29681" color="#fff" side="double" align="center" scale="0.2 0.2 0.2" visible="false" rotation="0 -22 0">
+</a-text>
+<a-text id="sistersIgnoreTextShadow" value="Whatever..." position="-2.65535 0.94395 1.29506" color="#000" side="double" align="center" scale="0.2 0.2 0.2" visible="false" rotation="0 -22 0">
+</a-text>
+
+</a-scene>
+    </div>
+    <script>
+
 (function scatterTrees(){
   const trees=document.getElementById('trees');
   if(!trees) return;
@@ -1296,6 +1299,10 @@ if (x > -1.5 && x < 1.5 && z > -2.5 && z < -1.0) return true;  // wizard + his U
 })();
 
 </script>
-</a-scene>
+    <hr />
+    <p><strong>Οδηγίες:<strong>...</p>
+    <hr />
+    <p><strong>Credits:</strong></p>
 </body>
+
 </html>
