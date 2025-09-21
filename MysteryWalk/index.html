@@ -174,15 +174,15 @@
 
 <a-entity id="wizardChoices" visible="false" position="0 0.35 -1.71145" scale="0.44 0.43 0.23">
   <a-box class="wizard-choice clickable" data-choice="ignore" color="red" width="1" height="0.5" depth="0.2" position="-1 1 0">
-         <a-text value="Ignore him" align="center" color="white" width="1" side="double" wrap-count="8" baseline="center" position="0 0 0.11"></a-text>
+         <a-text value="Ignore him" align="center" color="white" width="1" height="0.5" side="double" wrap-count="8" baseline="center" position="0 0 0.11"></a-text>
   </a-box>
 
   <a-box class="wizard-choice clickable" data-choice="explain" color="green" width="1" height="0.5" depth="0.2" position="0 1 0">
-         <a-text value="Explain your purpose" align="center" color="white" width="1" side="double" wrap-count="8" baseline="center" position="0 0 0.11"></a-text>
+         <a-text value="Explain your purpose" align="center" color="white" width="1" height="0.5" side="double" wrap-count="8" baseline="center" position="0 0 0.11"></a-text>
   </a-box>
 
   <a-box class="wizard-choice clickable" data-choice="getOut" color="blue" width="1" height="0.5" depth="0.2" position="1 1 0">
-         <a-text value="Tell him to get out of your way!" align="center" color="white" width="1" side="double" wrap-count="8" baseline="center" position="0 0 0.11"></a-text>
+         <a-text value="Tell him to get out of your way!" align="center" color="white" width="1" height="0.5" side="double" wrap-count="8" baseline="center" position="0 0 0.11"></a-text>
   </a-box>
 </a-entity>
 
@@ -242,9 +242,8 @@
        class="clickable" 
        position="-2.9 1 1.2" 
        width="0.5" height="0.2" depth="0.15" 
-       rotation="-22"
        color="green">
-         <a-text value="Greet them" align="center" color="white" width="0.5" side="double" wrap-count="4" baseline="center" position="0 0 0.11"></a-text>
+         <a-text value="Greet them" align="center" color="white" width="0.5" height="0.2" side="double" wrap-count="4" baseline="center" position="0 0 0.11"></a-text>
 </a-box>
 
 <!-- Ignore button -->
@@ -252,9 +251,8 @@
        class="clickable" 
        position="-2.3 1 1.2" 
        width="0.5" height="0.2" depth="0.15" 
-       rotation="-22"
        color="red">
-       <a-text value="Ignore them" align="center" color="white" width="0.5" side="double" wrap-count="8" baseline="center" position="0 0 0.11"></a-text>
+       <a-text value="Ignore them" align="center" color="white" width="0.5" height="0.2" side="double" wrap-count="8" baseline="center" position="0 0 0.11"></a-text>
 </a-box>
 
 <!-- Say hi texts -->
@@ -375,7 +373,7 @@ if (!this.choiceMade && pos.z <= forkZ) {
   // --- Losing condition ---
   const origin = new THREE.Vector3(0,0,16);
   const playerPos = new THREE.Vector3(pos.x,pos.y,pos.z);
-  if(playerPos.distanceTo(origin) > 35){
+  if(playerPos.distanceTo(origin) > 28){
     alert('You wandered too far and got lost! Game over.');
     window.location.reload();
   }
