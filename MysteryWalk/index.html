@@ -58,14 +58,11 @@
          material="repeat: 1 4; shader: flat; src: #pathTexture"></a-box>
 
   <!-- Fork menu -->
-<a-entity id="forkMenu" visible="false" position="0 1.5 6">
-  <a-box class="fork-menu-button clickable" data-choice="left" position="-2 0 0" width="1" height="0.5" depth="0.2" color="blue"
-         text="value: Left; align: center; color: white; width: 4"></a-box>
-  <a-box class="fork-menu-button clickable" data-choice="middle" width="1" height="0.5" depth="0.2" color="yellow"
-         text="value: Middle; align: center; color: black; width: 4"></a-box>
-  <a-box class="fork-menu-button clickable" data-choice="right" position="2 0 0" width="1" height="0.5" depth="0.2" color="red"
-         text="value: Right; align: center; color: white; width: 4"></a-box>
-</a-entity>
+ <a-entity id="forkMenu" visible="false" position="0 1.5 6">
+    <a-box class="fork-menu-button" data-choice="left" position="-2 0 0" width="1" height="0.5" depth="0.2" color="blue"></a-box>
+    <a-box class="fork-menu-button" data-choice="middle" width="1" height="0.5" depth="0.2" color="yellow"></a-box>
+    <a-box class="fork-menu-button" data-choice="right" position="2 0 0" width="1" height="0.5" depth="0.2" color="red"></a-box>
+  </a-entity>
 
   <!-- Castle -->
   <a-entity gltf-model="#castle" position="6.99881 -0.8 -76.225" width="2"></a-entity>
@@ -76,13 +73,22 @@
   </a-entity>
 
   <!-- House -->
-  <a-entity gltf-model="#house" position="-0.16089 0 30.2737" scale="0.15 0.18 0.15" rotation="0 180 0" house-behavior>
- <a-entity id="houseChoices" visible="false" position="-0.02045 0.75 29.066" scale="0.33 0.3 1">
-<a-box class="house-choice clickable" data-choice="leaveMessage"
-       color="red" width="1" height="0.5" depth="0.2" position="-0.8 0 0"
-       text="value: Leave Message; align: center; color: white; width: 4; wrap-count: 12; baseline: center">
-</a-box>
-   </a-entity>
+<a-entity id="houseChoices" visible="false" position="0 1 30.5">
+  <a-box class="house-choice clickable" 
+         data-choice="leaveMessage" 
+         color="red" width="1" height="0.5" depth="0.2"
+         position="-0.6 0 0"
+         text="value: Leave Message; align: center; color: white; width: 4">
+  </a-box>
+
+  <a-box class="house-choice clickable" 
+         data-choice="ignore" 
+         color="green" width="1" height="0.5" depth="0.2"
+         position="0.6 0 0"
+         text="value: Ignore; align: center; color: white; width: 4">
+  </a-box>
+</a-entity>
+
 
   <!-- Tree holder -->
   <a-entity id="trees"></a-entity>
@@ -141,14 +147,15 @@
 </a-entity>
 
 <a-entity id="wizardChoices" visible="false" position="0 0.35 -1.71145" scale="0.44 0.43 0.23">
-  <a-box class="wizard-choice clickable" data-choice="ignore" color="red" width="1" height="0.5" depth="0.2" position="-1 1 0"
-         text="value: Ignore; align: center; color: white; width: 4"></a-box>
-  <a-box class="wizard-choice clickable" data-choice="explain" color="green" width="1" height="0.5" depth="0.2" position="0 1 0"
-         text="value: Explain; align: center; color: white; width: 4"></a-box>
-  <a-box class="wizard-choice clickable" data-choice="getOut" color="blue" width="1" height="0.5" depth="0.2" position="1 1 0"
-         text="value: Get Out; align: center; color: white; width: 4"></a-box>
-</a-entity>
+  <a-box class="wizard-choice clickable" data-choice="ignore" color="red" width="1" height="0.5" depth="0.2" position="-1 1 0" text="align: center; color: white; value: Ignore; width: 4">
+  </a-box>
 
+  <a-box class="wizard-choice clickable" data-choice="explain" color="green" width="1" height="0.5" depth="0.2" position="0 1 0" text="align: center; color: white; value: Explain; width: 4">
+  </a-box>
+
+  <a-box class="wizard-choice clickable" data-choice="getOut" color="blue" width="1" height="0.5" depth="0.2" position="1 1 0" text="align: center; color: white; value: Get Out; width: 4">
+  </a-box>
+</a-entity>
 
   
 
@@ -162,13 +169,12 @@
   <a-entity gltf-model="#butterflies" position="-0.16089 0 30.2737" scale="1 1 1" rotation="0 0 0"></a-entity>
   <a-entity gltf-model="#ghost" position="-2.8142 0.08774 -3.2995" scale="0.2 0.2 0.2" ghost-behavior></a-entity>
 
-<a-entity id="ghostChoices" visible="false" position="-2.8142 1.04864 -3.21153" scale="0.24 0.19 0.3">
-  <a-box class="ghost-choice clickable" data-choice="kill" color="red" width="1" height="0.5" depth="0.2" position="-1 0 0"
-         text="value: Kill Him; align: center; color: white; width: 4"></a-box>
-  <a-box class="ghost-choice clickable" data-choice="ignore" color="blue" width="1" height="0.5" depth="0.2" position="1 0 0"
-         text="value: Ignore Him; align: center; color: white; width: 4"></a-box>
-</a-entity>
-
+ <a-entity id="ghostChoices" visible="false" position="-2.8142 1.04864 -3.21153" scale="0.24 0.19 0.3">
+    <a-box class="ghost-choice" data-choice="kill" color="red" width="1" height="0.5" depth="0.2" position="-1 0 0" text="align: center; color: white; value: Kill Him; width: 4">
+    </a-box>
+    <a-box class="ghost-choice" data-choice="ignore" color="blue" width="1" height="0.5" depth="0.2" position="1 0 0" text="align: center; color: white; value: Ignore Him; width: 4">
+    </a-box>
+  </a-entity>
 
 
 <a-entity gltf-model="#dwarf" position="-0.29412 0.05046 4.64215" scale="0.008 0.008 0.008" rotation="0 20 0" animation-mixer="loop: repeat" dwarf-behavior>
@@ -196,16 +202,27 @@
           gltf-model="#sisters" 
           position="-2.60894 0.58665 1.29681" 
           scale="0.08 0.08 0.08" 
+          rotation="0 -110 0"
           animation-mixer="clip: Idle; loop: repeat"
           sisters-behavior>
 </a-entity>
 
-<a-box id="sistersHiBtn" class="clickable" position="-2.9 1 1.2" width="0.5" height="0.2" depth="0.15" color="green"
-       text="value: Hi; align: center; color: white; width: 2"></a-box>
+  <a-box id="sistersHiBtn" 
+       class="clickable" 
+       position="-2.9 1 1.2" 
+       width="0.5" height="0.2" depth="0.15" 
+       rotation="-22"
+       color="green">
+</a-box>
 
-<a-box id="sistersIgnoreBtn" class="clickable" position="-2.3 1 1.2" width="0.5" height="0.2" depth="0.15" rotation="-22" color="red"
-       text="value: Ignore; align: center; color: white; width: 2"></a-box>
-
+<!-- Ignore button -->
+<a-box id="sistersIgnoreBtn" 
+       class="clickable" 
+       position="-2.3 1 1.2" 
+       width="0.5" height="0.2" depth="0.15" 
+       rotation="-22"
+       color="red">
+</a-box>
 
 <!-- Say hi texts -->
 <a-text id="sistersHiTextLeft" value="You can trust us. Fight if you must." position="-2.688 0.941 1.25648" color="#fff" side="double" align="center" scale="0.15 0.15 0.15" visible="false" rotation="0 -22 0">
@@ -1079,7 +1096,7 @@ AFRAME.registerComponent('sisters-behavior', {
     }, this.data.displayTime);
   }
 });
-  
+
 AFRAME.registerComponent('house-behavior', {
   init: function () {
     this.player = document.querySelector('#rig');
@@ -1091,7 +1108,7 @@ AFRAME.registerComponent('house-behavior', {
       box.addEventListener('click', (evt) => {
         const choice = box.getAttribute('data-choice');
         if (choice === 'leaveMessage') {
-          alert("You left the message at a commoner's house! You lose!");
+          console.log("You left the message at a commoner's house! You lose!");
         }
         // hide choices after click
         this.choices.setAttribute('visible', false);
@@ -1113,83 +1130,76 @@ AFRAME.registerComponent('house-behavior', {
 });
 
 
+
+/* -----------------------
+   Scatter trees
+----------------------- */
 (function scatterTrees(){
   const trees = document.getElementById('trees');
-  if(!trees) return;
+  if (!trees) return;
+
   const treeTypes = ['tree1','tree2','tree3','tree4'];
   const branchTreeTypes = ['tree1','tree2','tree3'];
 
-  // Define small avoidance areas for interactive entities
+  // Entities to avoid
   const avoidEntities = [
-    {x: -0.294, z: 4.64, radius: 1.2},   // dwarf
-    {x: -0.294, z: 4.64, radius: 2.0},   // dwarf text (slightly larger)
-    {x: -2.608, z: 1.296, radius: 1.2},  // sisters
-    {x: -2.608, z: 1.296, radius: 1.5},  // sisters text / buttons
-    {x: -2.814, z: -3.211, radius: 1.2}, // ghost
-    {x: -2.814, z: -3.211, radius: 1.5}  // ghost choices
+    {el: document.querySelector('#witchWrapper'), radius: 2},
+    {el: document.querySelector('#dwarf'), radius: 1.5},
+    {el: document.querySelector('#ghostChoices'), radius: 1.2},
+    {el: document.querySelector('#sistersHiBtn'), radius: 0.7},
+    {el: document.querySelector('#sistersIgnoreBtn'), radius: 0.7},
+    {el: document.querySelector('#houseChoices'), radius: 0.8}
   ];
 
   function inPath(x, z) {
     // extended main straight path
     if (x > -1.2 && x < 1.2 && z > 10 && z < 30.5) return true;
-
     // cross-section near fork
     if (x > -5.5 && x < 5.5 && z > 11 && z < 12.5) return true;
-
     // branches
-    if (x > -5 && x < -1 && z > -7 && z < 10) return true; // left
-    if (x > -1.2 && x < 1 && z > -7 && z < 10) return true; // middle
-    if (x > 1.25 && x < 5 && z > -7 && z < 10) return true; // right
-
+    if (x > -5 && x < -1 && z > -7 && z < 10) return true;
+    if (x > -1.2 && x < 1 && z > -7 && z < 10) return true;
+    if (x > 1.25 && x < 5 && z > -7 && z < 10) return true;
     // other paths
     if (x > -4.5 && x < 4.5 && z > -8.5 && z < -7) return true;
     if (x > -1.3 && x < 1.3 && z > -16 && z < -7.25) return true;
-
-    // other special areas (house, castle, etc.)
+    // special areas
     if (x > -3.3 && x < 3.8 && z > 27.5 && z < 33.7) return true;
-
-    // Castle exclusion
+    // castle, witch, goblin, fairies, mushroom
     if (x > -8 && x < 7.5 && z > -30 && z < -12) return true;
-
-    // Witch exclusion
     if (x > 1 && x < 4 && z > 3 && z < 6) return true;
-
-    // Goblin exclusion
     if (x > 2 && x < 4 && z > -6 && z < -2) return true;
-
-    // Fairies exclusion
     if (x > 2 && x < 5 && z > 6 && z < 8) return true;
-
-    // Mushroom exclusion
     if (x > 2 && x < 4 && z > -1 && z < 1) return true;
-
     return false;
   }
 
-  function isNearAvoidEntity(x, z) {
+  function isNearEntity(x, z) {
     return avoidEntities.some(obj => {
-      const dx = obj.x - x;
-      const dz = obj.z - z;
+      if (!obj.el) return false;
+      const pos = new THREE.Vector3();
+      obj.el.object3D.getWorldPosition(pos);
+      const dx = pos.x - x;
+      const dz = pos.z - z;
       const distance = Math.sqrt(dx*dx + dz*dz);
       return distance < obj.radius;
     });
   }
 
-  // Scatter main trees
-  for(let i = 0; i < 600; i++){
+  // Main scatter loop
+  for (let i=0;i<600;i++){
     let x = (Math.random()-0.5)*70;
     let z = (Math.random()-0.5)*70;
-    if(inPath(x,z) || isNearAvoidEntity(x,z)) continue;
+    if (inPath(x,z) || isNearEntity(x,z)) continue;
 
     const type = treeTypes[Math.floor(Math.random()*treeTypes.length)];
     if (type === 'tree4' && z > -7 && z < 9) continue;
-
     let scale = 0.01 + Math.random()*0.01;
-    if(type === 'tree4') scale *= 35; 
-    if(type === 'tree3') scale *= 3.5;
-
+    if (type==='tree4') scale*=35;
+    if (type==='tree3') scale*=3.5;
     const rotY = Math.random()*360;
-    let tree = document.createElement('a-entity');
+
+    const tree = document.createElement('a-entity');
     tree.setAttribute('gltf-model', `#${type}`);
     tree.setAttribute('position', `${x} 0 ${z}`);
     tree.setAttribute('scale', `${scale} ${scale} ${scale}`);
@@ -1197,30 +1207,26 @@ AFRAME.registerComponent('house-behavior', {
     trees.appendChild(tree);
   }
 
-  // Scatter branch trees
-  for(let i = 0; i < 80; i++){
+  // Branch scatter
+  for (let i=0;i<80;i++){
     const z = -6 + Math.random()*14;
-    let x = Math.random()<0.5 ? -2.0+(Math.random()*1.0) : 1.0+(Math.random()*1.0);
-
-    if(isNearAvoidEntity(x, z)) continue; // also avoid interactive entities in branches
-
+    let x = Math.random()<0.5 ? -2.0 + (Math.random()*1.0) : 1.0 + (Math.random()*1.0);
+    if (isNearEntity(x, z)) continue;
     const type = branchTreeTypes[Math.floor(Math.random()*branchTreeTypes.length)];
-    let scale = 0.01 + Math.random()*0.01; 
-    if(type==='tree3') scale *= 3.5;
-
+    let scale = 0.01 + Math.random()*0.01;
+    if(type==='tree3') scale*=3.5;
     const rotY = Math.random()*360;
-    let tree = document.createElement('a-entity');
+
+    const tree = document.createElement('a-entity');
     tree.setAttribute('gltf-model', `#${type}`);
     tree.setAttribute('position', `${x} 0 ${z}`);
     tree.setAttribute('scale', `${scale} ${scale} ${scale}`);
     tree.setAttribute('rotation', `0 ${rotY} 0`);
     trees.appendChild(tree);
   }
+
 })();
 
-
-
-  
 </script>
 </a-scene>
 </body>
