@@ -3,7 +3,6 @@
   <meta charset="utf-8" />
     <script src="https://aframe.io/releases/1.7.0/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/gh/c-frame/aframe-extras@7.5.4/dist/aframe-extras.min.js"></script>
-<script>
   <a-assets>
     <img id="groundTexture" src="assets/grass.jpg">
     <img id="pathTexture" src="assets/stone.png">
@@ -29,7 +28,7 @@
           <a-asset-item id="ghost" src="assets/nightmare_creature_3.glb"></a-asset-item>
   </a-assets>
 
-
+<script>
 AFRAME.registerComponent('player-movement', {
   init: function () {
     this.pause = false; 
