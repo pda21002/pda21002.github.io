@@ -37,6 +37,8 @@
           <a-asset-item id="ghost" src="assets/nightmare_creature_3.glb"></a-asset-item>
   </a-assets>
 
+    <a-sky src="#skyTexture"></a-sky>
+
   <!-- Ground -->
   <a-plane rotation="-90 0 0" width="80" height="80"
            material="repeat: 30 30; shader: flat; src: #groundTexture"></a-plane>
@@ -57,7 +59,7 @@
   <a-box width="1.5" height="0.05" depth="8" position="0 0.025 -10.75"
          material="repeat: 1 4; shader: flat; src: #pathTexture"></a-box>
 
-  <a-sky src="#skyTexture"></a-sky>
+
 
   <!-- Fork menu -->
  <a-entity id="forkMenu" visible="false" position="0 1.5 6">
