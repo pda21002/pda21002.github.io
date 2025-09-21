@@ -163,7 +163,7 @@
   </a-entity>
 
 
-<a-entity id="dwarf" gltf-model="assets/swaying_dwarf.glb" position="-0.29412 0.05046 4.64215" scale="0.008 0.008 0.008" rotation="0 20 0" animation-mixer="clip: '0'; loop: repeat" dwarf-behavior="">
+<a-entity id="dwarf" gltf-model="assets/swaying_dwarf.glb" position="-0.29412 0.05046 4.64215" scale="0.008 0.008 0.008" rotation="0 20 0" animation-mixer="clip: 1; loop: repeat" dwarf-behavior="">
 
   <!-- Shadow text (child of dwarf) -->
   <a-text id="dwarfTextShadow" value="Hey there. Beware of the little man ahead..." position="0.14818 57.53025 0.16439" color="#000" align="center" side="double" scale="20 20 20" visible="false">
@@ -567,7 +567,7 @@ AFRAME.registerComponent('fox-behavior', {
       textId: {type: 'string', default: 'dwarfText'},
       shadowId: {type: 'string', default: 'dwarfTextShadow'},
       triggerDistance: {type: 'number', default: 2},
-      displayTime: {type: 'number', default: 12000}
+      displayTime: {type: 'number', default: 8000}
     },
 
     init: function () {
