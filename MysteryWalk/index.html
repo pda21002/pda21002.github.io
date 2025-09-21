@@ -150,7 +150,6 @@
   <!-- Goblin -->
   <a-entity gltf-model="#goblin" position="2.5 0 -4" scale="0.3 0.3 0.3" goblin-behavior="walkIndex:0; lookDistance:4; startWalkDistance:1.6; speed:1.2"></a-entity>
 
-  <a-entity gltf-model="#sisters" position="-2.60894 0.58665 1.29681" scale="0.08 0.08 0.08" rotation="0 -110 0"></a-entity>
   <a-entity gltf-model="#fox" position="0.33427 0.05 7.18987" scale="0.045 0.045 0.045" rotation="0 70 0" animation-mixer="loop: repeat"></a-entity>
   <a-entity gltf-model="#butterflies" position="-0.16089 0 30.2737" scale="1 1 1" rotation="0 0 0"></a-entity>
   <a-entity gltf-model="#ghost" position="-2.8142 0.08774 -3.2995" scale="0.2 0.2 0.2" ghost-behavior></a-entity>
@@ -183,6 +182,72 @@
   <!-- Foreground text -->
 <a-text id="creepygirlText" value="Oh, heyyy!! You are in for SO much fun!!" position="-3.20146 0.84521 5.76091" color="#fff" align="center" side="double" scale="0.2 0.2 0.2" visible="false" rotation="0 25 0"> </a-text>
 </a-entity>
+
+<a-entity id="sisters" 
+          gltf-model="#sisters" 
+          position="-2.60894 0.58665 1.29681" 
+          scale="0.08 0.08 0.08" 
+          rotation="0 -110 0"
+          animation-mixer="clip: Idle; loop: repeat"
+          sisters-behavior>
+</a-entity>
+
+<!-- Say hi texts -->
+<a-text id="sistersHiTextLeft" value="You can trust us. Fight if you must." 
+        position="-3 1.5 1.2" 
+        color="#fff" 
+        side="double" 
+        align="center"
+        scale="0.25 0.25 0.25" 
+        visible="false">
+</a-text>
+<a-text id="sistersHiTextShadowLeft" value="You can trust us. Fight if you must." 
+        position="-3.01 1.5 1.19" 
+        color="#000" 
+        side="double" 
+        align="center"
+        scale="0.25 0.25 0.25" 
+        visible="false">
+</a-text>
+
+<a-text id="sistersHiTextRight" value="Hi..." 
+        position="-2.2 1.5 1.2" 
+        color="#fff" 
+        side="double" 
+        align="center"
+        scale="0.25 0.25 0.25" 
+        visible="false">
+</a-text>
+<a-text id="sistersHiTextShadowRight" value="Hi..." 
+        position="-2.19 1.5 1.19" 
+        color="#000" 
+        side="double" 
+        align="center"
+        scale="0.25 0.25 0.25" 
+        visible="false">
+</a-text>
+
+<!-- Ignore text -->
+<a-text id="sistersIgnoreText" value="Whatever..." 
+        position="-2.60894 2 1.29681" 
+        color="#fff" 
+        side="double" 
+        align="center"
+        scale="0.25 0.25 0.25" 
+        visible="false">
+</a-text>
+<a-text id="sistersIgnoreTextShadow" value="Whatever..." 
+        position="-2.61894 2 1.28681" 
+        color="#000" 
+        side="double" 
+        align="center"
+        scale="0.25 0.25 0.25" 
+        visible="false">
+</a-text>
+
+
+
+  
 
 <script>
 /* -----------------------
@@ -959,6 +1024,106 @@ AFRAME.registerComponent('creepygirl-behavior', {
       mixer.addEventListener('finished', onFinished);
     }
   });
+
+  AFRAME.registerComponent('sisters-behavior', {
+  schema: {
+    triggerDistance: {type: 'number', default: 1.5},
+    displayTime: {type: 'number', default: 12000} // 12 sec default
+  },
+
+  init: function () {
+    this.camera = document.querySelector('[camera]');
+    this.hasInteracted = false; // track if player chose "ignore"
+    
+    // Say hi texts
+    this.hiTexts = [
+      document.getElementById('sistersHiTextLeft'),
+      document.getElementById('sistersHiTextShadowLeft'),
+      document.getElementById('sistersHiTextRight'),
+      document.getElementById('sistersHiTextShadowRight')
+    ];
+
+    // Ignore text
+    this.ignoreTexts = [
+      document.getElementById('sistersIgnoreText'),
+      document.getElementById('sistersIgnoreTextShadow')
+    ];
+
+    this.textTimeout = null;
+
+    // Add event listeners for click options
+    // Create invisible buttons in front of the sisters (or use your existing UI system)
+    this.createChoiceButtons();
+  },
+
+  createChoiceButtons: function() {
+    // Example using clickable boxes (you can adjust positions/sizes)
+    const scene = document.querySelector('a-scene');
+    
+    // Say hi button
+    const hiBtn = document.createElement('a-box');
+    hiBtn.setAttribute('position', '-2.9 0.7 1.2');
+    hiBtn.setAttribute('width', '0.5'); hiBtn.setAttribute('height', '0.5'); hiBtn.setAttribute('depth', '0.5');
+    hiBtn.setAttribute('color', 'green'); hiBtn.classList.add('clickable');
+    scene.appendChild(hiBtn);
+
+    hiBtn.addEventListener('click', () => this.sayHi());
+
+    // Ignore button
+    const ignoreBtn = document.createElement('a-box');
+    ignoreBtn.setAttribute('position', '-2.3 0.7 1.2');
+    ignoreBtn.setAttribute('width', '0.5'); ignoreBtn.setAttribute('height', '0.5'); ignoreBtn.setAttribute('depth', '0.5');
+    ignoreBtn.setAttribute('color', 'red'); ignoreBtn.classList.add('clickable');
+    scene.appendChild(ignoreBtn);
+
+    ignoreBtn.addEventListener('click', () => this.ignore());
+    
+    // Keep buttons hidden initially
+    hiBtn.setAttribute('visible', false);
+    ignoreBtn.setAttribute('visible', false);
+    this.choiceButtons = [hiBtn, ignoreBtn];
+  },
+
+  tick: function() {
+    if (this.hasInteracted) return;
+    if (!this.camera) return;
+
+    const sisterPos = new THREE.Vector3();
+    const camPos = new THREE.Vector3();
+    this.el.object3D.getWorldPosition(sisterPos);
+    this.camera.object3D.getWorldPosition(camPos);
+    const distance = sisterPos.distanceTo(camPos);
+
+    if (distance < 2) { // trigger distance
+      this.choiceButtons.forEach(btn => btn.setAttribute('visible', true));
+    } else {
+      this.choiceButtons.forEach(btn => btn.setAttribute('visible', false));
+    }
+  },
+
+  sayHi: function() {
+    this.showTexts(this.hiTexts);
+    this.hasInteracted = true; // prevent further interaction
+    // Keep idle animation
+  },
+
+  ignore: function() {
+    this.showTexts(this.ignoreTexts);
+    this.hasInteracted = true;
+
+    // Switch animation to 'Shh' loop
+    this.el.setAttribute('animation-mixer', 'clip: Shh; loop: repeat');
+  },
+
+  showTexts: function(textArray) {
+    textArray.forEach(t => t.setAttribute('visible', true));
+    clearTimeout(this.textTimeout);
+    this.textTimeout = setTimeout(() => {
+      textArray.forEach(t => t.setAttribute('visible', false));
+    }, this.data.displayTime);
+  }
+});
+
 
 
 /* -----------------------
