@@ -150,7 +150,6 @@
   <!-- Goblin -->
   <a-entity gltf-model="#goblin" position="2.5 0 -4" scale="0.3 0.3 0.3" goblin-behavior="walkIndex:0; lookDistance:4; startWalkDistance:1.6; speed:1.2"></a-entity>
 
-<a-entity gltf-model="#creepygirl" position="-3.20252 0.04765 5.73719" scale="0.0007 0.0007 0.0007" rotation="0 25 0"></a-entity>
   <a-entity gltf-model="#sisters" position="-2.60894 0.58665 1.29681" scale="0.08 0.08 0.08" rotation="0 -110 0"></a-entity>
   <a-entity gltf-model="#fox" position="0.33427 0.05 7.18987" scale="0.045 0.045 0.045" rotation="0 70 0" animation-mixer="loop: repeat"></a-entity>
   <a-entity gltf-model="#butterflies" position="-0.16089 0 30.2737" scale="1 1 1" rotation="0 0 0"></a-entity>
@@ -164,7 +163,7 @@
   </a-entity>
 
 
-<a-entity id="dwarf" gltf-model="assets/swaying_dwarf.glb" position="-0.29412 0.05046 4.64215" scale="0.008 0.008 0.008" rotation="0 20 0" animation-mixer="loop: repeat" dwarf-behavior>
+<a-entity gltf-model="#dwarf" position="-0.29412 0.05046 4.64215" scale="0.008 0.008 0.008" rotation="0 20 0" animation-mixer="loop: repeat" dwarf-behavior>
 
   <!-- Shadow text (child of dwarf) -->
   <a-text id="dwarfTextShadow" value="Hey there. Beware of the little man ahead..." position="0.14818 57.53025 0.16439" color="#000" align="center" side="double" scale="20 20 20" visible="false">
@@ -174,6 +173,15 @@
   <a-text id="dwarfText" value="Hey there. Beware of the little man ahead..." position="0.5158 57.34025 0.24706" color="#fff" align="center" side="double" scale="20 20 20" visible="false">
   </a-text>
 
+</a-entity>
+
+
+  <a-entity gltf-model="#creepygirl" position="-3.20252 0.04765 5.73719" scale="0.0007 0.0007 0.0007" rotation="0 25 0" animation-mixer="loop: repeat" creepygirl-behavior></a-entity>
+<!-- Shadow text -->
+  <a-text id="creepygirlTextShadow" value="Oh, heyyy!! You are in for SO much fun!!" position="0 2 0.01" color="#000" align="center" side="double" scale="20 20 20" visible="false"> </a-text>
+
+  <!-- Foreground text -->
+  <a-text id="creepygirlText" value="Oh, heyyy!! You are in for SO much fun!!" position="0 2 0.02" color="#fff" align="center" side="double" scale="20 20 20" visible="false"> </a-text>
 </a-entity>
 
 <script>
@@ -750,6 +758,44 @@ AFRAME.registerComponent('wizard-interact', {
       this.playSequence(queue, callback);
     };
     mixer.addEventListener('finished', onFinished);
+  }
+});
+  
+
+  AFRAME.registerComponent('creepygirl-behavior', {
+  schema: {
+    textId: {type: 'string', default: 'creepygirlText'},
+    shadowId: {type: 'string', default: 'creepygirlTextShadow'},
+    triggerDistance: {type: 'number', default: 2}, // distance to trigger text
+    displayTime: {type: 'number', default: 8000}   // 8 seconds
+  },
+
+  init: function () {
+    this.camera = document.querySelector('[camera]');
+    this.textEl = this.el.querySelector('#' + this.data.textId);
+    this.shadowEl = this.el.querySelector('#' + this.data.shadowId);
+    this.textTimeout = null;
+  },
+
+  tick: function () {
+    if (!this.camera) return;
+
+    const dwarfPos = new THREE.Vector3();
+    const camPos = new THREE.Vector3();
+    this.el.object3D.getWorldPosition(dwarfPos);
+    this.camera.object3D.getWorldPosition(camPos);
+    const distance = dwarfPos.distanceTo(camPos);
+
+    if (distance < this.data.triggerDistance && !this.textEl.getAttribute('visible')) {
+      this.textEl.setAttribute('visible', true);
+      this.shadowEl.setAttribute('visible', true);
+
+      clearTimeout(this.textTimeout);
+      this.textTimeout = setTimeout(() => {
+        this.textEl.setAttribute('visible', false);
+        this.shadowEl.setAttribute('visible', false);
+      }, this.data.displayTime);
+    }
   }
 });
 
