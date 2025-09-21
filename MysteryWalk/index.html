@@ -58,9 +58,15 @@
 
   <!-- Fork menu -->
  <a-entity id="forkMenu" visible="false" position="0 1.5 6">
-    <a-box class="fork-menu-button" data-choice="left" position="-2 0 0" width="1" height="0.5" depth="0.2" color="blue"></a-box>
-    <a-box class="fork-menu-button" data-choice="middle" width="1" height="0.5" depth="0.2" color="yellow"></a-box>
-    <a-box class="fork-menu-button" data-choice="right" position="2 0 0" width="1" height="0.5" depth="0.2" color="red"></a-box>
+    <a-box class="fork-menu-button" data-choice="left" position="-2 0 0" width="1" height="0.5" depth="0.2" color="red">
+      <a-text value="LEFT" align="center" color="white" width="4" side="double" wrap-count="12" baseline="center" position="0 0 0.11"></a-text>
+    </a-box>
+    <a-box class="fork-menu-button" data-choice="middle" width="1" height="0.5" depth="0.2" color="yellow">
+         <a-text value="MIDDLE" align="center" color="white" width="4" side="double" wrap-count="12" baseline="center" position="0 0 0.11"></a-text>
+   </a-box>
+    <a-box class="fork-menu-button" data-choice="right" position="2 0 0" width="1" height="0.5" depth="0.2" color="blue">
+     <a-text value="RIGHT" align="center" color="white" width="4" side="double" wrap-count="12" baseline="center" position="0 0 0.11"></a-text>
+    </a-box>
   </a-entity>
 
   <!-- Castle -->
@@ -75,10 +81,10 @@
 <a-entity gltf-model="#house" position="-0.16089 0 30.2737" scale="0.15 0.18 0.15" rotation="0 180 0" house-behavior></a-entity> 
 <a-entity id="houseChoices" visible="false" position="-0.02045 0.75 29.066" scale="0.33 0.3 1"> 
 <a-box class="house-choice clickable" data-choice="leaveMessage" color="red" width="1" height="0.5" depth="0.2" position="-0.8 0 0">
- <a-text value="Leave Message" align="center" color="white" width="4" side="double" wrap-count="12" baseline="center" position="0 0 0.11"></a-text>
+ <a-text value="Leave Message" align="center" color="white" width="4" side="double" wrap-count="12" baseline="center" position="0 0 -0.11" rotation="0 180 0" scale="0.3 0.3 0.3"></a-text>
 </a-box> 
 <a-box class="house-choice clickable" data-choice="ignore" color="green" width="1" height="0.5" depth="0.2" position="0.8 0 0">
- <a-text value="Ignore" align="center" color="white" width="4" side="double" wrap-count="12" baseline="center" position="0 0 0.11"></a-text>
+ <a-text value="Ignore" align="center" color="white" width="4" side="double" wrap-count="12" baseline="center" position="0 0 -0.11" rotation="0 180 0" scale="0.3 0.3 0.3"></a-text>
 </a-box> 
 </a-entity>
 
