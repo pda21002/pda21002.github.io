@@ -151,7 +151,7 @@
 
 <a-entity gltf-model="#creepygirl" position="-3.20252 0.04765 5.73719" scale="0.0007 0.0007 0.0007" rotation="0 25 0"></a-entity>
   <a-entity gltf-model="#sisters" position="-2.60894 0.58665 1.29681" scale="0.08 0.08 0.08" rotation="0 -110 0"></a-entity>
-  <a-entity gltf-model="#fox" position="0.33427 0.05 7.18987" scale="0.045 0.045 0.045" rotation="0 70 0" fox-behavior="idleAnim:Sleeping"></a-entity>
+  <a-entity gltf-model="#fox" position="0.33427 0.05 7.18987" scale="0.045 0.045 0.045" rotation="0 70 0" animation-mixer="clip: 'Sleeping'; loop: repeat"></a-entity>
   <a-entity gltf-model="#butterflies" position="-0.16089 0 30.2737" scale="1 1 1" rotation="0 0 0"></a-entity>
   <a-entity gltf-model="#ghost" position="-2.8142 0.08774 -3.2995" scale="0.2 0.2 0.2" ghost-behavior></a-entity>
 
@@ -537,30 +537,6 @@ AFRAME.registerComponent('mushroom-behavior', {
 
 
 
-AFRAME.registerComponent('fox-behavior', {
-  schema: {
-    idleAnim: {type: 'string', default: 'Sleeping'}
-  },
-  init: function () {
-    this.mixer = null;
-    this.idleAction = null;
-    this.el.addEventListener('model-loaded', e => {
-      const model = e.detail.model;
-      if (!model) return;
-      this.mixer = new THREE.AnimationMixer(model);
-      const clips = model.animations || [];
-      const idle = clips.find(c => c.name === this.data.idleAnim);
-      if (idle) {
-        this.idleAction = this.mixer.clipAction(idle);
-        this.idleAction.setLoop(THREE.LoopRepeat);
-        this.idleAction.play();
-      }
-    });
-  },
-  tick: function (time, dt) {
-    if (this.mixer) this.mixer.update(dt/1000);
-  }
-});
 
   AFRAME.registerComponent('dwarf-behavior', {
     schema: {
