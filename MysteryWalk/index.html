@@ -14,6 +14,7 @@
   <a-assets>
     <img id="groundTexture" src="assets/grass.jpg">
     <img id="pathTexture" src="assets/stone.png">
+    <img id="skyTexture" src="istockphoto-1286642458-616x616.jpg">
     <a-asset-item id="tree1" src="assets/giant_oak_tree_voxel.glb"></a-asset-item>
     <a-asset-item id="tree2" src="assets/kapok_tree_voxel.glb"></a-asset-item>
     <a-asset-item id="tree3" src="assets/sequoia_redwood_tree_voxel.glb"></a-asset-item>
@@ -55,6 +56,8 @@
          material="repeat: 7 1; shader: flat; src: #pathTexture"></a-box>
   <a-box width="1.5" height="0.05" depth="8" position="0 0.025 -10.75"
          material="repeat: 1 4; shader: flat; src: #pathTexture"></a-box>
+
+  <a-sky src="#skyTexture"></a-sky>
 
   <!-- Fork menu -->
  <a-entity id="forkMenu" visible="false" position="0 1.5 6">
@@ -174,15 +177,15 @@
 
 <a-entity id="wizardChoices" visible="false" position="0 0.35 -1.71145" scale="0.44 0.43 0.23">
   <a-box class="wizard-choice clickable" data-choice="ignore" color="red" width="1" height="0.5" depth="0.2" position="-1 1 0">
-         <a-text value="Ignore him" align="center" color="white" width="1" height="0.5" side="double" wrap-count="8" baseline="center" position="0 0 0.11"></a-text>
+         <a-text value="Ignore him" align="center" color="white" width="1" height="0.5" side="double" wrap-count="8" baseline="center" position="0 0 0.11" scale="0.5 0.5 0.5"></a-text>
   </a-box>
 
   <a-box class="wizard-choice clickable" data-choice="explain" color="green" width="1" height="0.5" depth="0.2" position="0 1 0">
-         <a-text value="Explain your purpose" align="center" color="white" width="1" height="0.5" side="double" wrap-count="8" baseline="center" position="0 0 0.11"></a-text>
+         <a-text value="Explain your purpose" align="center" color="white" width="1" height="0.5" side="double" wrap-count="8" baseline="center" position="0 0 0.11" scale="0.5 0.5 0.5"></a-text>
   </a-box>
 
   <a-box class="wizard-choice clickable" data-choice="getOut" color="blue" width="1" height="0.5" depth="0.2" position="1 1 0">
-         <a-text value="Tell him to get out of your way!" align="center" color="white" width="1" height="0.5" side="double" wrap-count="8" baseline="center" position="0 0 0.11"></a-text>
+         <a-text value="Tell him to get out of your way!" align="center" color="white" width="1" height="0.5" side="double" wrap-count="8" baseline="center" position="0 0 0.11" scale="0.5 0.5 0.5"></a-text>
   </a-box>
 </a-entity>
 
@@ -243,7 +246,7 @@
        position="-2.9 1 1.2" 
        width="0.5" height="0.2" depth="0.15" 
        color="green">
-         <a-text value="Greet them" align="center" color="white" width="0.5" height="0.2" side="double" wrap-count="4" baseline="center" position="0 0 0.11"></a-text>
+         <a-text value="Greet them" align="center" color="white" width="0.5" height="0.2" side="double" wrap-count="4" baseline="center" position="0 0 0.11" scale="0.5 0.5 0.5"></a-text>
 </a-box>
 
 <!-- Ignore button -->
@@ -252,7 +255,7 @@
        position="-2.3 1 1.2" 
        width="0.5" height="0.2" depth="0.15" 
        color="red">
-       <a-text value="Ignore them" align="center" color="white" width="0.5" height="0.2" side="double" wrap-count="8" baseline="center" position="0 0 0.11"></a-text>
+       <a-text value="Ignore them" align="center" color="white" width="0.5" height="0.2" side="double" wrap-count="8" baseline="center" position="0 0 0.11" scale="0.5 0.5 0.5"></a-text>
 </a-box>
 
 <!-- Say hi texts -->
