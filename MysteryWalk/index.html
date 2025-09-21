@@ -59,6 +59,7 @@ AFRAME.registerComponent('player-movement', {
   },
 
 tick: function () {
+ if (this.pause) return;
   // Παρακολουθεί θέση και ταχύτητα
   const rig = this.el;
   let pos = rig.getAttribute('position');
