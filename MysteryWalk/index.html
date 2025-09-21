@@ -124,56 +124,56 @@ if (!this.choiceMade && pos.z <= forkZ) {
 }); 
 
 
-/* -----------------------
-   Goblin behavior
------------------------ */
+// Component συμπεριφοράς goblin
 AFRAME.registerComponent('goblin-behavior', {
   schema: {
-    walkIndex: { type: 'int', default: 0 },
-    lookDistance: { type: 'number', default: 6 },
-    startWalkDistance: { type: 'number', default: 1.6 },
-    speed: { type: 'number', default: 1.2 }
+    walkIndex: { type: 'int', default: 0 }, // Animation clip περπατήματος
+    lookDistance: { type: 'number', default: 6 }, // Σε τι απόσταση από τον παίκτη κοιτάει το golbin προς το μέρος του
+    startWalkDistance: { type: 'number', default: 1.6 }, // Σε τι απόσταση από τον παίκτη ξεκινάει να περπατάει
+    speed: { type: 'number', default: 1.2 } // Ταχύτητα περπατήματος
   },
-
+// Κατάσταση goblin όταν φορτώνεται
   init: function() {
     this.state = 'idle';
+      // Για αναπαραγωγή animation
     this.mixer = null;
     this.walkAction = null;
-    this.animations = [];
-    this.modelRoot = null;
-    this.hasLooked = false;
-    this.walkingStarted = false;
+    this.animations = []; // Λίστα animations μοντέλου
+    this.modelRoot = null; // Root object μοντέλου
+    this.hasLooked = false; // Αν έχει ήδη κοιτάξει τον παίκτη
+    this.walkingStarted = false; // Αν έχει ξεκινήσει να περπατάει
     this.rig = document.getElementById('rig');
 
-    // Start goblin at y=2.5 (on path)
+    // Τοποθέτηση goblin
     const pos = this.el.getAttribute('position');
     this.el.setAttribute('position', { x: pos.x, y: 0.05, z: pos.z });
-
+// Περιμένει να φορτωθεί το μοντέλο
     this.el.addEventListener('model-loaded', (e) => {
       const gltfScene = e.detail.model;
       this.modelRoot = this.el.getObject3D('mesh') || gltfScene;
-      this.animations = (gltfScene?.animations?.slice()) || [];
+      this.animations = (gltfScene?.animations?.slice()) || []; // Αποθήκευση root object και animations
 
       if (this.modelRoot) {
-        // Rotate model so front faces +X
+        // Περιστροφή μοντέλου
         this.modelRoot.rotation.y = THREE.MathUtils.degToRad(-90);
       }
-      this.el.object3D.rotation.set(0, 0, 0); // parent aligned with world axes
+      this.el.object3D.rotation.set(0, 0, 0); // Ευθυγράμμιση με world axes
     });
   },
 
   tick: function(time, timeDelta) {
-    if (!this.rig || !this.el.object3D) return;
+    if (!this.rig || !this.el.object3D) return; // Δεν κάνει τίποτα αν δεν υπάρχει παίκτης ή 3D object για το goblin
+      // Υπολογισμός θέσης και απόστασης παίκτη από goblin στους x-z άξονες
     const gob3 = this.el.object3D;
     const rig3 = this.rig.object3D;
     const dx = rig3.position.x - gob3.position.x;
     const dz = rig3.position.z - gob3.position.z;
     const dist = Math.hypot(dx, dz);
-    const dt = (timeDelta || 0) / 1000;
-
+    const dt = (timeDelta || 0) / 1000; 
+// Ενημέρωση κατάστασης animation σε κάθε frame
     if (this.mixer) try { this.mixer.update(dt); } catch (err) {}
 
-    // 1) Look at player once when approaching
+    // Goblin περιστρέφεται προς παίκτη όταν πλησιάζει
     if (this.state === 'idle' && dist <= this.data.lookDistance && !this.hasLooked) {
       const angleToPlayer = Math.atan2(
         rig3.position.x - gob3.position.x,
@@ -183,10 +183,10 @@ AFRAME.registerComponent('goblin-behavior', {
       this.hasLooked = true;
     }
 
-    // 2) Start walking when player very close
+    // Ξεκινάει να περπατάει όταν ο παίκτης πλησιάζει περισσότερο
     if (this.state === 'idle' && dist <= this.data.startWalkDistance && !this.walkingStarted) {
-      gob3.rotation.y = 0; // face +X again
-
+      gob3.rotation.y = 0; // περιστροφή
+// Φόρτωση και εκκίνηση animation
       if (this.modelRoot && this.animations.length > this.data.walkIndex) {
         try {
           this.mixer = new THREE.AnimationMixer(this.modelRoot);
@@ -199,25 +199,25 @@ AFRAME.registerComponent('goblin-behavior', {
           this.walkAction = null;
         }
       }
-
+// Ενημέρωση κατάστασης goblin
       this.walkingStarted = true;
       this.state = 'walking';
-
+// Σύνδεση παίκτη με goblin
       const playerComp = this.rig.components['player-movement'];
-      if (playerComp) playerComp.followingGoblin = true;
+      if (playerComp) playerComp.followingGoblin = true; // Εντοπίζει ότι ο παίκτης ακολουθεί το goblin
     }
 
-    // 3) Walking motion
+    // Κίνηση
     if (this.state === 'walking') {
       const minSeparation = 0.6;
       if (dist > minSeparation) {
-        gob3.position.x += this.data.speed * dt; // move right
+        gob3.position.x += this.data.speed * dt; 
 
-        // Abrupt "step off" when past end of path
+        // "Κατεβαίνει" όταν φτάσει στην άκρη του μονοπατιού
         if (gob3.position.x > 3.525 && gob3.position.y > 0) {
           gob3.position.y = 0;
         }
-
+// Ενημέρωση A-Frame entity
         this.el.setAttribute('position', {
           x: gob3.position.x,
           y: gob3.position.y,
@@ -228,20 +228,20 @@ AFRAME.registerComponent('goblin-behavior', {
   }
 });
 
-  
+// Συμπεριφορά μάγισσας  
 AFRAME.registerComponent('witch-behavior', {
   schema: {
-    reactAnim: { type: 'string', default: 'bye' },
-    reactDistance: { type: 'number', default: 2 }
+    reactAnim: { type: 'string', default: 'bye' }, // animation clip μάγισσας
+    reactDistance: { type: 'number', default: 2 } // Πόση απόσταση από παίκτη για να αντιδράσει
   },
 
   init: function() {
-    this.player = document.querySelector('#rig');
+    this.player = document.querySelector('#rig'); // Εντοπισμός rig παίκτη
     this.mixer = null;
     this.actions = {};
-this.textEl = this.el.parentNode.querySelector('#witchTextWrapper');
-    this.hasPlayed = false;
-
+this.textEl = this.el.parentNode.querySelector('#witchTextWrapper'); // Εντοπισμός element κειμένου μάγισσας
+    this.hasPlayed = false; // Ελέγχει αν έχει παίξει το animation
+// Περιμένει να φορτώσει το μοντέλο
     this.el.addEventListener('model-loaded', (e) => {
       const model = e.detail.model;
       if (!model) return;
@@ -251,6 +251,7 @@ this.textEl = this.el.parentNode.querySelector('#witchTextWrapper');
       const animations = model.animations || [];
       animations.forEach(clip => {
         const action = this.mixer.clipAction(clip);
+          // Αν παίζει το προκαθορισμένο animation, να παίξει μία φορά και να μείνει στο τελευταίο frame
         if (clip.name === this.data.reactAnim) {
           action.setLoop(THREE.LoopOnce);
           action.clampWhenFinished = true;
@@ -261,48 +262,43 @@ this.textEl = this.el.parentNode.querySelector('#witchTextWrapper');
   },
 
   tick: function(time, deltaTime) {
-    if (!this.player || !this.mixer || !this.actions[this.data.reactAnim]) return;
-
+    if (!this.player || !this.mixer || !this.actions[this.data.reactAnim]) return; // Σταματά αν λείπει ο παίκτης, o mixer ή το animation
+// Υπολογισμός θέσεων και απόστασης παίκτη και μάγισσας
     const playerPos = new THREE.Vector3();
     const witchPos = new THREE.Vector3();
     this.player.object3D.getWorldPosition(playerPos);
     this.el.object3D.getWorldPosition(witchPos);
 
     const distance = playerPos.distanceTo(witchPos);
-
+// Αντίδραση μάγισσας αν ο παίκτης είναι κοντά της
     if (distance < this.data.reactDistance) {
       if (!this.hasPlayed) {
-        // Play animation once
+        // Παίζει το animation μία φορά
         this.actions[this.data.reactAnim].reset().play();
         this.hasPlayed = true;
 
-        // Show text
+        // Εμφάνιση κειμένου
         if (this.textEl) this.textEl.setAttribute('visible', true);
 
-        // Hide text after 3 seconds
+        // Κρύψιμο κειμένου μετά από 10 δευτερόλεπτα
         setTimeout(() => {
           if (this.textEl) this.textEl.setAttribute('visible', false);
         }, 10000);
       }
     } else {
-      // Reset so it can play next time player re-approaches
+      // Επανεκκίνηση, ώστε η συμπεριφορά να επαναληφθεί αν ο παίκτης ξαναπλησιάσει
       this.hasPlayed = false;
     }
-
+// Ενημέρωση mixer, υπολογισμός χρόνου από προηγούμενο frame μέχρι τρέχον frame
     this.mixer.update(deltaTime / 1000);
   }
 });
-
-
-
-
-  
+  // Συμπεριφορά νεράιδων
   AFRAME.registerComponent('fairy-behavior', {
   schema: {
-    idleAnim: {type:'string', default:'Idle'},
-    reactAnim: {type:'string', default:'React'},
-    reactDistance: {type:'number', default:2},
-    speed: {type:'number', default:0} // optional if you want flying motion
+    idleAnim: {type:'string', default:'Idle'}, // Animation που θα παίζει σε idle κατάσταση
+    reactAnim: {type:'string', default:'React'}, // Animation που θα παίζει όταν ο παίκτης πλησιάζει
+    reactDistance: {type:'number', default:2}, // Σε πόση απόσταση από τον παίκτη θα αλλάζει το animation
   },
   init:function(){
     this.rig=document.getElementById('rig');
@@ -323,91 +319,64 @@ this.textEl = this.el.parentNode.querySelector('#witchTextWrapper');
         this.mixer=new THREE.AnimationMixer(this.modelRoot);
         const act=this.mixer.clipAction(this.idleAction);
         act.play();
-        this.currentAction='idle';
+        this.currentAction='idle'; // Παίζει αμέσως idle animation
       }
     });
   },
+      // Υπολογισμός θέσεων και απόστασης παίκτη και νεράιδων
   tick:function(time,timeDelta){
     if(!this.rig||!this.modelRoot||!this.mixer) return;
     const pos=this.el.object3D.position;
     const rigPos=this.rig.object3D.position;
     const dist=Math.hypot(pos.x-rigPos.x,pos.z-rigPos.z);
     const dt=(timeDelta||0)/1000;
-
-    // decide which animation
+// Αν ο παίκτης είναι κοντά στις νεράιδες και το τρέχον animation δεν είναι το react, σταματάει όλα τα animations
     if(dist<=this.data.reactDistance && this.reactAction && this.currentAction!=='react'){
       this.mixer.stopAllAction();
       const act=this.mixer.clipAction(this.reactAction);
-      act.setLoop(THREE.LoopOnce); act.clampWhenFinished=true; act.play();
+      act.setLoop(THREE.LoopOnce); act.clampWhenFinished=true; act.play(); // Παίζει το react animation μία φορά
       this.currentAction='react';
+        // Αν ο παίκτης απομακρυνθεί από τις νεράιδες και το τρέχον animation δεν είναι το idle, σταματάει όλα τα animations
     } else if(dist>this.data.reactDistance && this.idleAction && this.currentAction!=='idle'){
       this.mixer.stopAllAction();
       const act=this.mixer.clipAction(this.idleAction);
-      act.setLoop(THREE.LoopRepeat); act.play();
+      act.setLoop(THREE.LoopRepeat); act.play(); // Παίζει το idle animation σε loop repeat
       this.currentAction='idle';
     }
 
     this.mixer.update(dt);
   }
 });
-  
-
-AFRAME.registerComponent('mushroom-behavior', {
-  schema: {
-    idleAnim: {type: 'string', default: 'idle'}
-  },
-  init: function () {
-    this.mixer = null;
-    this.idleAction = null;
-    this.el.addEventListener('model-loaded', e => {
-      const model = e.detail.model;
-      if (!model) return;
-      this.mixer = new THREE.AnimationMixer(model);
-      const clips = model.animations || [];
-      const idle = clips.find(c => c.name === this.data.idleAnim);
-      if (idle) {
-        this.idleAction = this.mixer.clipAction(idle);
-        this.idleAction.setLoop(THREE.LoopRepeat);
-        this.idleAction.play();
-      }
-    });
-  },
-  tick: function (time, dt) {
-    if (this.mixer) this.mixer.update(dt/1000);
-  }
-});
-
-
-
-
+  // Συμπεριφορά dwarf
   AFRAME.registerComponent('dwarf-behavior', {
     schema: {
-      textId: {type: 'string', default: 'dwarfText'},
-      shadowId: {type: 'string', default: 'dwarfTextShadow'},
-      triggerDistance: {type: 'number', default: 1.4},
-      displayTime: {type: 'number', default: 8000}
+      textId: {type: 'string', default: 'dwarfText'}, // κείμενο
+      shadowId: {type: 'string', default: 'dwarfTextShadow'}, // σκιά κειμένου
+      triggerDistance: {type: 'number', default: 1.4}, // Απόσταση από παίκτη στην οποία ενεργοποιείται το κείμενο
+      displayTime: {type: 'number', default: 8000} // Χρόνος ορατότητας κειμένου
     },
 
     init: function () {
-      this.camera = document.querySelector('[camera]');
+      this.camera = document.querySelector('[camera]'); // Εντοπισμός κάμερας
+        // Αποθήκευση στοιχείων κειμένου και σκιάς κειμένου
       this.textEl = this.el.querySelector('#' + this.data.textId);
       this.shadowEl = this.el.querySelector('#' + this.data.shadowId);
-      this.textTimeout = null;
+      this.textTimeout = null; // Μεταβλητή για τον χειρισμό εξαφάνισης του κειμένου
     },
 
     tick: function () {
-      if (!this.camera) return;
-
+      if (!this.camera) return; // Αν δεν βρεθεί κάμερα, δεν κάνει τίποτα
+// Υπολογισμός θέσεων και απόστασης παίκτη και νάνου
       const dwarfPos = new THREE.Vector3();
       const camPos = new THREE.Vector3();
       this.el.object3D.getWorldPosition(dwarfPos);
       this.camera.object3D.getWorldPosition(camPos);
       const distance = dwarfPos.distanceTo(camPos);
-
+// Ενεργοποίηση / Απενεργοποίηση κειμένου
       if (distance < this.data.triggerDistance && !this.textEl.getAttribute('visible')) {
         this.textEl.setAttribute('visible', true);
         this.shadowEl.setAttribute('visible', true);
-
+// Χρονόμετρο
         clearTimeout(this.textTimeout);
         this.textTimeout = setTimeout(() => {
           this.textEl.setAttribute('visible', false);
@@ -416,8 +385,7 @@ AFRAME.registerComponent('mushroom-behavior', {
       }
     }
   });
-  
-  
+//Συμπεριφορά μάγου  
 AFRAME.registerComponent('wizard-interact', {
   schema: {
     idleAnim:        { type: 'string', default: 'Wizard_Gnome_Armature|idle' },
@@ -427,10 +395,10 @@ AFRAME.registerComponent('wizard-interact', {
     ignoreDeathAnim: { type: 'string', default: 'Wizard_Gnome_Armature|Hit' },
     getOutStartAnim: { type: 'string', default: 'Wizard_Gnome_Armature|Curse' },
     reactDistance:   { type: 'number', default: 2 },
-    approachStep:    { type: 'number', default: 0.05 },
-    choiceDelay:     { type: 'number', default: 700 }
+    approachStep:    { type: 'number', default: 0.05 }, // κίνηση μάγου προς παίκτη
+    choiceDelay:     { type: 'number', default: 700 } // καθυστέρηση εμφάνισης επιλογών στον παίκτη
   },
-
+// Αποθήκευση στοιχείων παίκτη, κειμένου και επιλογών
   init: function() {
     this.player = document.querySelector('#rig');
     this.textEl = document.querySelector('#wizardText');
@@ -445,7 +413,6 @@ AFRAME.registerComponent('wizard-interact', {
     this.currentStep = null;
     this.travelled = 0;
 
-    // Load wizard model animations
     this.el.addEventListener('model-loaded', e => {
       const model = e.detail.model;
       if (!model) return;
@@ -457,11 +424,9 @@ AFRAME.registerComponent('wizard-interact', {
         this.actions[clip.name] = action;
       });
 
-      // Start idle loop
       this.playLoop(this.data.idleAnim);
     });
-
-    // Hook up choice clicks
+    // Σύνδεση κουμπιού με επιλογή παίκτη
     this.buttons.forEach(btn => {
       btn.addEventListener('click', () => 
         this.handleChoice(btn.getAttribute('data-choice'))
@@ -472,7 +437,6 @@ AFRAME.registerComponent('wizard-interact', {
   tick: function(time, delta) {
     if (this.mixer) this.mixer.update(delta / 1000);
 
-    // Trigger reaction
     if (!this.interacted) {
       const playerPos = new THREE.Vector3();
       const wizardPos = new THREE.Vector3();
@@ -484,13 +448,12 @@ AFRAME.registerComponent('wizard-interact', {
         this.startReaction();
       }
     }
-
-    // Handle Z-axis movement toward player
+   // Κάλυψη απόστασης moveDistance
     if (this.currentStep && this.currentStep.moveTowardPlayer) {
       const wizardPos = this.el.object3D.position;
       const playerZ = this.player.object3D.position.z;
 
-      const dirZ = playerZ - wizardPos.z;
+      const dirZ = playerZ - wizardPos.z; // Υπολογισμός κατεύθυνσης
       const stepSize = this.data.approachStep;
 
       if (Math.abs(dirZ) > 0.001) {
@@ -507,23 +470,21 @@ AFRAME.registerComponent('wizard-interact', {
   startReaction: function() {
     this.playLoop(this.data.getOutStartAnim);
 
-    // Show text
     this.textEl.setAttribute('visible', true);
     this.shadowEl.setAttribute('visible', true);
-
-    // Freeze player after short delay
+    // Σταματάει κίνηση του παίκτη με μικρή καθυστέρηση και εμφανίζει επιλογές
     setTimeout(() => {
       if (this.player.components['player-movement'])
         this.player.components['player-movement'].pause = true;
       this.choices.setAttribute('visible', true);
     }, this.data.choiceDelay);
   },
-
+// Κρύβει επιλογές και κείμενο όταν ο παίκτης έχει επιλέξει
   handleChoice: function(choice) {
     this.choices.setAttribute('visible', false);
     this.textEl.setAttribute('visible', false);
     this.shadowEl.setAttribute('visible', false);
-
+// Ακολουθίες animation που παίζουν ανάλογα με την επιλογή
     switch(choice) {
       case 'ignore':
         this.playSequence([
@@ -548,29 +509,30 @@ AFRAME.registerComponent('wizard-interact', {
         break;
     }
   },
-
+// Σταματάει όλα τα animations και ενεργοποιεί ένα συγκεκριμένο animation σε loop repeat
   playLoop: function(animName) {
     if (!this.actions[animName]) return;
-    Object.values(this.actions).forEach(a => a.stop());
+    Object.values(this.actions).forEach(a => a.stop()); // Σταματάει τα υπόλοιπα
     const action = this.actions[animName];
     action.reset();
     action.setLoop(THREE.LoopRepeat);
     action.play();
   },
-
+ // Παίζει μια σειρά από animations που δίνονται στη λίστα queue
   playSequence: function(queue, callback) {
+// Αν η λίστα είναι κενή, εκτελείται το callback και τελειώνει
     if (!queue || queue.length === 0) { if(callback) callback(); return; }
 
     const step = queue.shift();
     const action = this.actions[step.anim];
     if (!action) { this.playSequence(queue, callback); return; }
-
-    // Setup movement
+      
+ // Ρυθμίσεις κίνησης προς παίκτη
     this.currentStep = step;
     if (step.moveTowardPlayer) {
-      this.travelled = 0;
+      this.travelled = 0;   // Αν πρέπει να κινηθεί προς τον παίκτη, μηδενίζει την απόσταση που έχει διανύσει
     }
-
+    // Σταμάτημα όλων των υπολοίπων animations και έναρξη τρέχοντος
     Object.values(this.actions).forEach(a => a.stop());
     action.reset();
     action.setLoop(THREE.LoopOnce);
@@ -579,7 +541,7 @@ AFRAME.registerComponent('wizard-interact', {
     let repeats = step.repeat || 1;
     let count = 1;
     const mixer = this.mixer;
-
+// Αν υπάρχει repeat, επαναλαμβάνει το animation τις φορές που ορίζεται
     const onFinished = () => {
       if (count < repeats) {
         count++;
@@ -588,19 +550,19 @@ AFRAME.registerComponent('wizard-interact', {
       }
       mixer.removeEventListener('finished', onFinished);
       this.currentStep = null;
-      this.playSequence(queue, callback);
+      this.playSequence(queue, callback); // Προχωρά στο επόμενο animation της λίστας
     };
     mixer.addEventListener('finished', onFinished);
   }
 });
-  
-
+    
+// Συμπεριφορά creepy girl
 AFRAME.registerComponent('creepygirl-behavior', {
   schema: {
     textId: {type: 'string', default: 'creepygirlText'},
     shadowId: {type: 'string', default: 'creepygirlTextShadow'},
     triggerDistance: {type: 'number', default: 2},
-    displayTime: {type: 'number', default: 8000}   // 8 seconds
+    displayTime: {type: 'number', default: 8000}  
   },
 
   init: function () {
@@ -632,8 +594,7 @@ AFRAME.registerComponent('creepygirl-behavior', {
   }
 });
 
-
-
+// Συμπεριφορά ghost
   AFRAME.registerComponent('ghost-behavior', {
     schema: {
       idleAnim: { type: 'string', default: 'thc3_arma|idle' },
@@ -653,7 +614,7 @@ AFRAME.registerComponent('creepygirl-behavior', {
 
       this.mixer = null;
       this.actions = {};
-      this.interacted = false;
+      this.interacted = false; // Flag για να μην ξανατρέξει η αρχική αντίδραση
       this.sequenceQueue = [];
 
       this.el.addEventListener('model-loaded', e => {
@@ -669,14 +630,13 @@ AFRAME.registerComponent('creepygirl-behavior', {
           this.actions[c.name] = action;
         });
 
-        // Start idle
         if (this.actions[this.data.idleAnim]) {
           this.actions[this.data.idleAnim].setLoop(THREE.LoopRepeat);
           this.actions[this.data.idleAnim].play();
         }
       });
 
-      // Hook choices
+    // Σύνδεση κουμπιών επιλογών με την συνάρτηση handleChoice
       this.buttons.forEach(btn => {
         btn.addEventListener('click', () =>
           this.handleChoice(btn.getAttribute('data-choice'))
@@ -686,7 +646,8 @@ AFRAME.registerComponent('creepygirl-behavior', {
 
     tick: function (time, dt) {
       if (this.mixer) this.mixer.update(dt/1000);
-
+        
+    // Έναρξη αντίδρασης όταν ο παίκτης πλησιάσει
       if (!this.interacted && this.mixer) {
         const playerPos = new THREE.Vector3();
         const ghostPos = new THREE.Vector3();
@@ -715,18 +676,19 @@ AFRAME.registerComponent('creepygirl-behavior', {
 },
 
     startInteraction: function () {
-      // Switch from idle → battle_idle
+
       this.playLoop(this.data.battleIdleAnim);
 
-      // Freeze player
+      // Παγώνει την κίνηση του παίκτη
       if (this.player.components['player-movement'])
         this.player.components['player-movement'].pause = true;
 
-      // Show choices
+      // Εμφάνιση επιλογών
       this.choices.setAttribute('visible', true);
     },
 
     handleChoice: function (choice) {
+        // Κρύψιμο επιλογών
       this.choices.setAttribute('visible', false);
 
       switch(choice) {
@@ -759,25 +721,15 @@ AFRAME.registerComponent('creepygirl-behavior', {
         if (callback) callback();
         return;
       }
+        
+ const step = queue.shift();
 
-      const step = queue.shift();
-      let action;
-
-      if (step.anim) {
-        action = this.actions[step.anim];
-      } else if (step.animIndex !== undefined) {
-        // Use numerical index (1,2,3...)
-        const clips = this.el.getObject3D('mesh').animations || [];
-        const clip = clips[step.animIndex-1];
-        if (clip) {
-          action = this.mixer.clipAction(clip);
-        }
-      }
-
-      if (!action) {
-        this.playSequence(queue, callback);
-        return;
-      }
+  // Επιλογή action με όνομα animation
+  const action = this.actions[step.anim];
+  if (!action) {
+    this.playSequence(queue, callback);
+    return;
+  }
 
       Object.values(this.actions).forEach(a => a.stop());
       action.reset();
@@ -1111,7 +1063,7 @@ AFRAME.registerComponent('house-behavior', {
   
 
   <!-- Mushroom -->
-  <a-entity gltf-model="#mushroom" position="3.335 0.05 0" rotation="0 150 0" scale="0.15 0.15 0.15" mushroom-behavior="idleAnim:idle"></a-entity>
+  <a-entity gltf-model="#mushroom" position="3.335 0.05 0" rotation="0 150 0" scale="0.15 0.15 0.15" animation-mixer="clip: idle; loop: repeat;"></a-entity>
 
   <!-- Goblin -->
   <a-entity gltf-model="#goblin" position="2.5 0 -4" scale="0.3 0.3 0.3" goblin-behavior="walkIndex:0; lookDistance:4; startWalkDistance:1.6; speed:1.2"></a-entity>
