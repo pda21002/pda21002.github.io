@@ -30,6 +30,7 @@
 // Κίνηση παίκτη
 AFRAME.registerComponent('player-movement', {
   init: function () {
+    this.pause = false; 
     this.choiceMade = false; // Εντοπίζει αν ο παίκτης έχει επιλέξει μονοπάτι
     this.chosenPath = null; // Ποιο μονοπάτι επιλέχθηκε (left/middle/right)
     this.followingGoblin = false; // Αν ο παίκτης ακολουθεί το goblin
@@ -864,7 +865,6 @@ AFRAME.registerComponent('house-behavior', {
     this.choices = document.querySelector('#castleChoices');
     this.choicesShown = false;
 
-    // Setup click listeners
     this.choices.querySelectorAll('.clickable').forEach(box => {
       box.addEventListener('click', () => {
         const choice = box.getAttribute('data-choice');
@@ -884,7 +884,6 @@ AFRAME.registerComponent('house-behavior', {
     const pos = new THREE.Vector3();
     this.player.object3D.getWorldPosition(pos);
 
-    // Trigger when entering castle entrance zone
     if (pos.z < -14 && pos.x > -0.80 && pos.x < 0.75) {
       this.choices.setAttribute('visible', true);
       this.choicesShown = true;
