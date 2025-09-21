@@ -1101,19 +1101,23 @@ AFRAME.registerComponent('creepygirl-behavior', {
     }
   },
 
-  sayHi: function() {
-    this.showTexts(this.hiTexts);
-    this.hasInteracted = true; // prevent further interaction
-    // Keep idle animation
-  },
+sayHi: function() {
+  this.showTexts(this.hiTexts);
+  this.hasInteracted = true; // prevent further interaction
+  // hide the choice buttons
+  this.choiceButtons.forEach(btn => btn.setAttribute('visible', false));
+},
 
-  ignore: function() {
-    this.showTexts(this.ignoreTexts);
-    this.hasInteracted = true;
+ignore: function() {
+  this.showTexts(this.ignoreTexts);
+  this.hasInteracted = true;
 
-    // Switch animation to 'Shh' loop
-    this.el.setAttribute('animation-mixer', 'clip: Shh; loop: repeat');
-  },
+  // Switch animation to 'Shh' loop
+  this.el.setAttribute('animation-mixer', 'clip: Shh; loop: repeat');
+
+  // hide the choice buttons
+  this.choiceButtons.forEach(btn => btn.setAttribute('visible', false));
+},
 
   showTexts: function(textArray) {
     textArray.forEach(t => t.setAttribute('visible', true));
