@@ -1083,6 +1083,36 @@ AFRAME.registerComponent('sisters-behavior', {
     }, this.data.displayTime);
   }
 });
+  
+  AFRAME.registerComponent('house-behavior', {
+  init: function () {
+    this.player = document.querySelector('#rig');
+    this.choices = document.querySelector('#houseChoices');
+    this.choicesShown = false;
+
+    // click handling
+    this.choices.addEventListener('click', (evt) => {
+      const choice = evt.target.getAttribute('data-choice');
+      if (choice === 'leaveMessage') {
+        console.log("You left the message at a commoner's house! You lose!");
+      }
+      this.choices.setAttribute('visible', false); // hide choices after click
+    });
+  },
+
+  tick: function () {
+    if (this.choicesShown) return;
+
+    const pos = new THREE.Vector3();
+    this.player.object3D.getWorldPosition(pos);
+
+    if (pos.z > 27 && pos.x > -0.75 && pos.x < 0.75) {
+      this.choices.setAttribute('visible', true);
+      this.choicesShown = true;
+    }
+  }
+});
+
 
 document.querySelector('a-scene').addEventListener('loaded', () => {
   (function scatterTrees() {
@@ -1094,14 +1124,15 @@ document.querySelector('a-scene').addEventListener('loaded', () => {
 
     // Entities to avoid (add radius in meters)
     const avoidEntities = [
-      { el: document.getElementById('dwarf'), radius: 2 },
-      { el: document.getElementById('dwarfText'), radius: 2 },
-      { el: document.getElementById('dwarfTextShadow'), radius: 2 },
-      { el: document.getElementById('ghostChoices'), radius: 2 },
-      { el: document.getElementById('sisters'), radius: 2 },
-      { el: document.getElementById('sistersHiBtn'), radius: 1.5 },
-      { el: document.getElementById('sistersIgnoreBtn'), radius: 1.5 }
-    ];
+ { el: document.getElementById('dwarf'), radius: 2 },
+  { el: document.getElementById('dwarfText'), radius: 1.5 },
+  { el: document.getElementById('dwarfTextShadow'), radius: 1.5 },
+  { el: document.getElementById('ghostChoices'), radius: 1.5 },
+  { el: document.getElementById('sisters'), radius: 1.5 },
+  { el: document.getElementById('sistersHiBtn'), radius: 0.8 }, // smaller radius
+  { el: document.getElementById('sistersIgnoreBtn'), radius: 0.8 } // smaller radius
+];
+
 
     function inPath(x, z) {
       // extended main straight path
