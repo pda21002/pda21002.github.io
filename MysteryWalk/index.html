@@ -1107,7 +1107,7 @@ AFRAME.registerComponent('house-behavior', {
       box.addEventListener('click', (evt) => {
         const choice = box.getAttribute('data-choice');
         if (choice === 'leaveMessage') {
-          console.log("You left the message at a commoner's house! You lose!");
+          alert("You left the message at a commoner's house! You lose!");
         }
         // hide choices after click
         this.choices.setAttribute('visible', false);
