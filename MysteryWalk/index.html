@@ -74,6 +74,13 @@
 
   <!-- House -->
   <a-entity gltf-model="#house" position="-0.16089 0 30.2737" scale="0.15 0.18 0.15" rotation="0 180 0"></a-entity>
+  <a-entity id="houseChoices" visible="false" position="0 1 30.2737">
+  <a-box class="house-choice clickable" data-choice="leaveMessage" color="red" width="1" height="0.5" depth="0.2" position="-0.8 0 0" 
+         text="align: center; color: white; value: Leave Message; width: 4"></a-box>
+  <a-box class="house-choice clickable" data-choice="ignore" color="green" width="1" height="0.5" depth="0.2" position="0.8 0 0" 
+         text="align: center; color: white; value: Ignore; width: 4"></a-box>
+</a-entity>
+
 
   <!-- Tree holder -->
   <a-entity id="trees"></a-entity>
@@ -187,7 +194,6 @@
           gltf-model="#sisters" 
           position="-2.60894 0.58665 1.29681" 
           scale="0.08 0.08 0.08" 
-          rotation="0 -110 0"
           animation-mixer="clip: Idle; loop: repeat"
           sisters-behavior>
 </a-entity>
@@ -196,7 +202,6 @@
        class="clickable" 
        position="-2.9 1 1.2" 
        width="0.5" height="0.2" depth="0.15" 
-       rotation="-22"
        color="green">
 </a-box>
 
@@ -1094,52 +1099,63 @@ AFRAME.registerComponent('sisters-behavior', {
   const treeTypes=['tree1','tree2','tree3','tree4'];
   const branchTreeTypes=['tree1','tree2','tree3'];
 
-function inPath(x, z) {
-  // extended main straight path
-  if (x > -1.2 && x < 1.2 && z > 10 && z < 30.5) return true;
+  // Entities and clickable objects to avoid
+  const avoidEntities = [
+    {el: document.getElementById('witchWrapper'), radius: 2},
+    {el: document.getElementById('wizardWrapper'), radius: 2},
+    {el: document.getElementById('mushroom'), radius: 1},
+    {el: document.getElementById('goblin'), radius: 1.5},
+    {el: document.getElementById('fairies'), radius: 3},
+    {el: document.getElementById('ghost'), radius: 1.5},
+    {el: document.getElementById('ghostChoices'), radius: 2},
+    {el: document.getElementById('sisters'), radius: 2},
+    {el: document.getElementById('sistersHiBtn'), radius: 1},
+    {el: document.getElementById('sistersIgnoreBtn'), radius: 1},
+    {el: document.getElementById('dwarf'), radius: 2},
+    {el: document.getElementById('dwarfText'), radius: 1},
+    {el: document.getElementById('dwarfTextShadow'), radius: 1}
+  ];
 
-  // cross-section near fork
-  if (x > -5.5 && x < 5.5 && z > 11 && z < 12.5) return true;
+  function inPath(x, z) {
+    if (x > -1.2 && x < 1.2 && z > 10 && z < 30.5) return true;
+    if (x > -5.5 && x < 5.5 && z > 11 && z < 12.5) return true;
+    if (x > -5 && x < -1 && z > -7 && z < 10) return true; // left
+    if (x > -1.2 && x < 1 && z > -7 && z < 10) return true; // middle
+    if (x > 1.25 && x < 5 && z > -7 && z < 10) return true; // right
+    if (x > -4.5 && x < 4.5 && z > -8.5 && z < -7) return true;
+    if (x > -1.3 && x < 1.3 && z > -16 && z < -7.25) return true;
+    if (x > -3.3 && x < 3.8 && z > 27.5 && z < 33.7) return true; // house
+    if (x > -8 && x < 7.5 && z > -30 && z < -12) return true; // castle
+    if (x > 1 && x < 4 && z > 3 && z < 6) return true; // witch
+    if (x > 2 && x < 4 && z > -6 && z < -2) return true; // goblin
+    if (x > 2 && x < 5 && z > 6 && z < 8) return true; // fairies
+    if (x > 2 && x < 4 && z > -1 && z < 1) return true; // mushroom
+    return false;
+  }
 
-  // branches
-if (x > -5 && x < -1 && z > -7 && z < 10) return true; // left
-if (x > -1.2 && x < 1 && z > -7 && z < 10) return true; // middle
-if (x > 1.25 && x < 5 && z > -7 && z < 10) return true; // right
+  function isNearEntity(x, z) {
+    return avoidEntities.some(obj => {
+      if (!obj.el) return false;
+      const pos = new THREE.Vector3();
+      obj.el.object3D.getWorldPosition(pos);
+      const dx = pos.x - x;
+      const dz = pos.z - z;
+      const distance = Math.sqrt(dx*dx + dz*dz);
+      return distance < obj.radius;
+    });
+  }
 
-  // other paths
-  if (x > -4.5 && x < 4.5 && z > -8.5 && z < -7) return true;
-  if (x > -1.3 && x < 1.3 && z > -16 && z < -7.25) return true;
-
-  // other special areas (house, castle, etc.)
-  if (x > -3.3 && x < 3.8 && z > 27.5 && z < 33.7) return true;
-
-// Castle exclusion
-if (x > -8 && x < 7.5 && z > -30 && z < -12) return true;
-
-
-  // Witch exclusion
-  if (x > 1 && x < 4 && z > 3 && z < 6) return true;
-
-  // Goblin exclusion
-  if (x > 2 && x < 4 && z > -6 && z < -2) return true;
-
-  // Fairies exclusion
-  if (x > 2 && x < 5 && z > 6 && z < 8) return true;
-
-  // Mushroom exclusion
-  if (x > 2 && x < 4 && z > -1 && z < 1) return true;
-  return false;
-}
-
-
-
-  for(let i=0;i<600;i++){
+  // Main scatter loop
+  for(let i=0;i<700;i++){
     let x=(Math.random()-0.5)*70, z=(Math.random()-0.5)*70;
-    if(inPath(x,z)) continue;
+    if(inPath(x,z) || isNearEntity(x,z)) continue;
+
     const type=treeTypes[Math.floor(Math.random()*treeTypes.length)];
     if (type === 'tree4' && z > -7 && z < 9) continue;
+
     let scale=0.01+Math.random()*0.01;
-    if(type==='tree4') scale*=35; if(type==='tree3') scale*=3.5;
+    if(type==='tree4') scale*=35; 
+    if(type==='tree3') scale*=3.5;
     const rotY=Math.random()*360;
     let tree=document.createElement('a-entity');
     tree.setAttribute('gltf-model',`#${type}`);
@@ -1149,11 +1165,15 @@ if (x > -8 && x < 7.5 && z > -30 && z < -12) return true;
     trees.appendChild(tree);
   }
 
-  for(let i=0;i<80;i++){
+  // Branch trees
+  for(let i=0;i<100;i++){
     const z=-6+Math.random()*14;
     let x = Math.random()<0.5 ? -2.0+(Math.random()*1.0) : 1.0+(Math.random()*1.0);
+    if(isNearEntity(x, z)) continue;
+
     const type=branchTreeTypes[Math.floor(Math.random()*branchTreeTypes.length)];
-    let scale=0.01+Math.random()*0.01; if(type==='tree3') scale*=3.5;
+    let scale=0.01+Math.random()*0.01; 
+    if(type==='tree3') scale*=3.5;
     const rotY=Math.random()*360;
     let tree=document.createElement('a-entity');
     tree.setAttribute('gltf-model',`#${type}`);
@@ -1163,6 +1183,72 @@ if (x > -8 && x < 7.5 && z > -30 && z < -12) return true;
     trees.appendChild(tree);
   }
 })();
+
+AFRAME.registerComponent('house-interact', {
+  schema: {
+    triggerDistance: {type: 'number', default: 2},
+    displayTime: {type: 'number', default: 10000} // 10 seconds
+  },
+
+  init: function() {
+    this.camera = document.querySelector('[camera]');
+    this.choices = document.getElementById('houseChoices');
+    this.resultText = document.getElementById('houseResultText');
+    this.resultTextShadow = document.getElementById('houseResultTextShadow');
+    this.activated = false;
+
+    // Click handlers for options
+    this.choices.querySelectorAll('.house-choice').forEach(box => {
+      box.addEventListener('click', (evt) => {
+        const choice = evt.target.getAttribute('data-choice');
+        this.choices.setAttribute('visible', false);
+
+        if (choice === 'leaveMessage') {
+          this.showResult("You left the message at a commoner's house. You lose!");
+        }
+        // if choice is "ignore", do nothing else
+      });
+    });
+  },
+
+  tick: function() {
+    if (!this.camera) return;
+
+    const camPos = new THREE.Vector3();
+    const housePos = new THREE.Vector3();
+    this.camera.object3D.getWorldPosition(camPos);
+    this.el.object3D.getWorldPosition(housePos);
+
+    const distance = camPos.distanceTo(housePos);
+
+    if (distance < this.data.triggerDistance) {
+      if (!this.activated) {
+        this.choices.setAttribute('visible', true);
+        this.activated = true; // only trigger once when entering radius
+      }
+    } else {
+      // Hide options if player walks away
+      if (this.choices.getAttribute('visible')) {
+        this.choices.setAttribute('visible', false);
+        this.activated = false; // allow retrigger if player comes back
+      }
+    }
+  },
+
+  showResult: function(message) {
+    this.resultText.setAttribute('value', message);
+    this.resultTextShadow.setAttribute('value', message);
+    this.resultText.setAttribute('visible', true);
+    this.resultTextShadow.setAttribute('visible', true);
+
+    setTimeout(() => {
+      this.resultText.setAttribute('visible', false);
+      this.resultTextShadow.setAttribute('visible', false);
+    }, this.data.displayTime);
+  }
+});
+
+
 
 </script>
 </a-scene>
