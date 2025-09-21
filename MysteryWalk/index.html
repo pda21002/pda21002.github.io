@@ -667,10 +667,8 @@ AFRAME.registerComponent('creepygirl-behavior', {
     playLoop: function(animName) {
   if (!this.actions[animName]) return;
 
-  // Stop all current animations
   Object.values(this.actions).forEach(a => a.stop());
 
-  // Play the new one in loop
   const action = this.actions[animName];
   action.reset();
   action.setLoop(THREE.LoopRepeat);
@@ -830,14 +828,13 @@ AFRAME.registerComponent('house-behavior', {
     this.choices = document.querySelector('#houseChoices');
     this.choicesShown = false;
 
-    // Make sure each clickable box has its own click listener
     this.choices.querySelectorAll('.clickable').forEach(box => {
       box.addEventListener('click', (evt) => {
         const choice = box.getAttribute('data-choice');
         if (choice === 'leaveMessage') {
           alert("You left the message at a commoner's house! You lose!");
         }
-        // hide choices after click
+          
         this.choices.setAttribute('visible', false);
       });
     });
