@@ -73,7 +73,7 @@
   </a-entity>
 
   <!-- House -->
-  <a-entity gltf-model="#house" position="-0.16089 0 30.2737" scale="0.15 0.18 0.15" rotation="0 180 0"></a-entity>
+  <a-entity gltf-model="#house" position="-0.16089 0 30.2737" scale="0.15 0.18 0.15" rotation="0 180 0" house-behavior></a-entity>
   <a-entity id="houseChoices" visible="false" position="0 1 30.2737">
   <a-box class="house-choice clickable" data-choice="leaveMessage" color="red" width="1" height="0.5" depth="0.2" position="-0.8 0 0" 
          text="align: center; color: white; value: Leave Message; width: 4"></a-box>
@@ -1184,35 +1184,32 @@ AFRAME.registerComponent('sisters-behavior', {
   }
 })();
 
-AFRAME.registerComponent('house-interact', {
+AFRAME.registerComponent('house-behavior', {
   schema: {
-    triggerDistance: {type: 'number', default: 2},
-    displayTime: {type: 'number', default: 10000} // 10 seconds
+    triggerDistance: { type: 'number', default: 2 }
   },
 
-  init: function() {
+  init: function () {
     this.camera = document.querySelector('[camera]');
     this.choices = document.getElementById('houseChoices');
-    this.resultText = document.getElementById('houseResultText');
-    this.resultTextShadow = document.getElementById('houseResultTextShadow');
-    this.activated = false;
+    this.leaveMessage = document.getElementById('leaveMessage');
+    this.ignore = document.getElementById('ignore');
+    this.triggered = false;
 
-    // Click handlers for options
-    this.choices.querySelectorAll('.house-choice').forEach(box => {
-      box.addEventListener('click', (evt) => {
-        const choice = evt.target.getAttribute('data-choice');
-        this.choices.setAttribute('visible', false);
+    this.leaveMessage.addEventListener('click', () => {
+      console.log("You left the message at a commoner's house. You lose!");
+      this.choices.setAttribute('visible', false);
+      // You can also add any “disable player” logic here if needed
+    });
 
-        if (choice === 'leaveMessage') {
-          this.showResult("You left the message at a commoner's house. You lose!");
-        }
-        // if choice is "ignore", do nothing else
-      });
+    this.ignore.addEventListener('click', () => {
+      this.choices.setAttribute('visible', false);
+      // Do nothing else
     });
   },
 
-  tick: function() {
-    if (!this.camera) return;
+  tick: function () {
+    if (this.triggered || !this.camera) return;
 
     const camPos = new THREE.Vector3();
     const housePos = new THREE.Vector3();
@@ -1220,34 +1217,12 @@ AFRAME.registerComponent('house-interact', {
     this.el.object3D.getWorldPosition(housePos);
 
     const distance = camPos.distanceTo(housePos);
-
     if (distance < this.data.triggerDistance) {
-      if (!this.activated) {
-        this.choices.setAttribute('visible', true);
-        this.activated = true; // only trigger once when entering radius
-      }
-    } else {
-      // Hide options if player walks away
-      if (this.choices.getAttribute('visible')) {
-        this.choices.setAttribute('visible', false);
-        this.activated = false; // allow retrigger if player comes back
-      }
+      this.choices.setAttribute('visible', true);
+      this.triggered = true; // so it only shows once
     }
-  },
-
-  showResult: function(message) {
-    this.resultText.setAttribute('value', message);
-    this.resultTextShadow.setAttribute('value', message);
-    this.resultText.setAttribute('visible', true);
-    this.resultTextShadow.setAttribute('visible', true);
-
-    setTimeout(() => {
-      this.resultText.setAttribute('visible', false);
-      this.resultTextShadow.setAttribute('visible', false);
-    }, this.data.displayTime);
   }
 });
-
 
 
 </script>
