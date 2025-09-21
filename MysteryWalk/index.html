@@ -1084,19 +1084,22 @@ AFRAME.registerComponent('sisters-behavior', {
   }
 });
   
-  AFRAME.registerComponent('house-behavior', {
+AFRAME.registerComponent('house-behavior', {
   init: function () {
     this.player = document.querySelector('#rig');
     this.choices = document.querySelector('#houseChoices');
     this.choicesShown = false;
 
-    // click handling
-    this.choices.addEventListener('click', (evt) => {
-      const choice = evt.target.getAttribute('data-choice');
-      if (choice === 'leaveMessage') {
-        console.log("You left the message at a commoner's house! You lose!");
-      }
-      this.choices.setAttribute('visible', false); // hide choices after click
+    // Make sure each box is clickable
+    this.choices.querySelectorAll('.clickable').forEach(box => {
+      box.addEventListener('click', (evt) => {
+        const choice = evt.target.getAttribute('data-choice');
+        if (choice === 'leaveMessage') {
+          console.log("You left the message at a commoner's house! You lose!");
+        }
+        // hide all choices after any click
+        this.choices.setAttribute('visible', false);
+      });
     });
   },
 
@@ -1124,13 +1127,13 @@ document.querySelector('a-scene').addEventListener('loaded', () => {
 
     // Entities to avoid (add radius in meters)
     const avoidEntities = [
- { el: document.getElementById('dwarf'), radius: 2 },
-  { el: document.getElementById('dwarfText'), radius: 1.5 },
-  { el: document.getElementById('dwarfTextShadow'), radius: 1.5 },
-  { el: document.getElementById('ghostChoices'), radius: 1.5 },
+ { el: document.getElementById('dwarf'), radius: 1 },
+  { el: document.getElementById('dwarfText'), radius: 1 },
+  { el: document.getElementById('dwarfTextShadow'), radius: 1 },
+  { el: document.getElementById('ghostChoices'), radius: 1 },
   { el: document.getElementById('sisters'), radius: 1.5 },
-  { el: document.getElementById('sistersHiBtn'), radius: 0.8 }, // smaller radius
-  { el: document.getElementById('sistersIgnoreBtn'), radius: 0.8 } // smaller radius
+  { el: document.getElementById('sistersHiBtn'), radius: 0.3 }, // smaller radius
+  { el: document.getElementById('sistersIgnoreBtn'), radius: 0.3 } // smaller radius
 ];
 
 
