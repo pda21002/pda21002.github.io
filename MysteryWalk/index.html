@@ -59,13 +59,13 @@
   <!-- Fork menu -->
  <a-entity id="forkMenu" visible="false" position="0 1.5 6">
     <a-box class="fork-menu-button" data-choice="left" position="-2 0 0" width="1" height="0.5" depth="0.2" color="red">
-      <a-text value="LEFT" align="center" color="white" width="4" side="double" wrap-count="12" baseline="center" position="0 0 0.11"></a-text>
+      <a-text value="LEFT" align="center" color="white" width="1" side="double" wrap-count="8" baseline="center" position="0 0 0.11"></a-text>
     </a-box>
     <a-box class="fork-menu-button" data-choice="middle" width="1" height="0.5" depth="0.2" color="yellow">
-         <a-text value="MIDDLE" align="center" color="white" width="4" side="double" wrap-count="12" baseline="center" position="0 0 0.11"></a-text>
+         <a-text value="MIDDLE" align="center" color="white" width="1" side="double" wrap-count="8" baseline="center" position="0 0 0.11"></a-text>
    </a-box>
     <a-box class="fork-menu-button" data-choice="right" position="2 0 0" width="1" height="0.5" depth="0.2" color="blue">
-     <a-text value="RIGHT" align="center" color="white" width="4" side="double" wrap-count="12" baseline="center" position="0 0 0.11"></a-text>
+     <a-text value="RIGHT" align="center" color="white" width="1" side="double" wrap-count="8" baseline="center" position="0 0 0.11"></a-text>
     </a-box>
   </a-entity>
 
@@ -81,10 +81,10 @@
 <a-entity gltf-model="#house" position="-0.16089 0 30.2737" scale="0.15 0.18 0.15" rotation="0 180 0" house-behavior></a-entity> 
 <a-entity id="houseChoices" visible="false" position="-0.02045 0.75 29.066" scale="0.33 0.3 1"> 
 <a-box class="house-choice clickable" data-choice="leaveMessage" color="red" width="1" height="0.5" depth="0.2" position="-0.8 0 0">
- <a-text value="Leave Message" align="center" color="white" width="4" side="double" wrap-count="12" baseline="center" position="0 0 -0.11" rotation="0 180 0" scale="0.3 0.3 0.3"></a-text>
+ <a-text value="Leave message here." align="center" color="white" width="1" side="double" wrap-count="12" baseline="center" position="0 0 -0.11" rotation="0 180 0"></a-text>
 </a-box> 
 <a-box class="house-choice clickable" data-choice="ignore" color="green" width="1" height="0.5" depth="0.2" position="0.8 0 0">
- <a-text value="Ignore" align="center" color="white" width="4" side="double" wrap-count="12" baseline="center" position="0 0 -0.11" rotation="0 180 0" scale="0.3 0.3 0.3"></a-text>
+ <a-text value="Ignore this place." align="center" color="white" width="1" side="double" wrap-count="12" baseline="center" position="0 0 -0.11" rotation="0 180 0"></a-text>
 </a-box> 
 </a-entity>
 
@@ -146,13 +146,16 @@
 </a-entity>
 
 <a-entity id="wizardChoices" visible="false" position="0 0.35 -1.71145" scale="0.44 0.43 0.23">
-  <a-box class="wizard-choice clickable" data-choice="ignore" color="red" width="1" height="0.5" depth="0.2" position="-1 1 0" text="align: center; color: white; value: Ignore; width: 4">
+  <a-box class="wizard-choice clickable" data-choice="ignore" color="red" width="1" height="0.5" depth="0.2" position="-1 1 0">
+         <a-text value="Ignore him." align="center" color="white" width="1" side="double" wrap-count="8" baseline="center" position="0 0 0.11"></a-text>
   </a-box>
 
-  <a-box class="wizard-choice clickable" data-choice="explain" color="green" width="1" height="0.5" depth="0.2" position="0 1 0" text="align: center; color: white; value: Explain; width: 4">
+  <a-box class="wizard-choice clickable" data-choice="explain" color="green" width="1" height="0.5" depth="0.2" position="0 1 0">
+         <a-text value="Explain your purpose." align="center" color="white" width="1" side="double" wrap-count="8" baseline="center" position="0 0 0.11"></a-text>
   </a-box>
 
-  <a-box class="wizard-choice clickable" data-choice="getOut" color="blue" width="1" height="0.5" depth="0.2" position="1 1 0" text="align: center; color: white; value: Get Out; width: 4">
+  <a-box class="wizard-choice clickable" data-choice="getOut" color="blue" width="1" height="0.5" depth="0.2" position="1 1 0">
+         <a-text value="Tell him to get out of your way!" align="center" color="white" width="1" side="double" wrap-count="8" baseline="center" position="0 0 0.11"></a-text>
   </a-box>
 </a-entity>
 
@@ -169,9 +172,11 @@
   <a-entity gltf-model="#ghost" position="-2.8142 0.08774 -3.2995" scale="0.2 0.2 0.2" ghost-behavior></a-entity>
 
  <a-entity id="ghostChoices" visible="false" position="-2.8142 1.04864 -3.21153" scale="0.24 0.19 0.3">
-    <a-box class="ghost-choice" data-choice="kill" color="red" width="1" height="0.5" depth="0.2" position="-1 0 0" text="align: center; color: white; value: Kill Him; width: 4">
+    <a-box class="ghost-choice" data-choice="kill" color="red" width="1" height="0.5" depth="0.2" position="-1 0 0">
+           <a-text value="Kill him." align="center" color="white" width="1" side="double" wrap-count="8" baseline="center" position="0 0 0.11"></a-text>
     </a-box>
-    <a-box class="ghost-choice" data-choice="ignore" color="blue" width="1" height="0.5" depth="0.2" position="1 0 0" text="align: center; color: white; value: Ignore Him; width: 4">
+    <a-box class="ghost-choice" data-choice="ignore" color="blue" width="1" height="0.5" depth="0.2" position="1 0 0">
+           <a-text value="Ignore him." align="center" color="white" width="1" side="double" wrap-count="8" baseline="center" position="0 0 0.11"></a-text>
     </a-box>
   </a-entity>
 
@@ -212,6 +217,7 @@
        width="0.5" height="0.2" depth="0.15" 
        rotation="-22"
        color="green">
+         <a-text value="Greet them!" align="center" color="white" width="0.5" side="double" wrap-count="4" baseline="center" position="0 0 0.11"></a-text>
 </a-box>
 
 <!-- Ignore button -->
@@ -221,6 +227,7 @@
        width="0.5" height="0.2" depth="0.15" 
        rotation="-22"
        color="red">
+       <a-text value="Ignore them." align="center" color="white" width="1" side="double" wrap-count="8" baseline="center" position="0 0 0.11"></a-text>
 </a-box>
 
 <!-- Say hi texts -->
