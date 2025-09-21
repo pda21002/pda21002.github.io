@@ -151,7 +151,7 @@
 
 <a-entity gltf-model="#creepygirl" position="-3.20252 0.04765 5.73719" scale="0.0007 0.0007 0.0007" rotation="0 25 0"></a-entity>
   <a-entity gltf-model="#sisters" position="-2.60894 0.58665 1.29681" scale="0.08 0.08 0.08" rotation="0 -110 0"></a-entity>
-  <a-entity gltf-model="#dwarf" position="-0.29412 0.05046 4.64215" scale="0.008 0.008 0.008" rotation="0 20 0"></a-entity>
+  <a-entity gltf-model="#dwarf" position="-0.29412 0.05046 4.64215" scale="0.008 0.008 0.008" rotation="0 20 0" animation-mixer="clip: 'Take 001'; loop: repeat" dwarf-behavior></a-entity>
   <a-entity gltf-model="#fox" position="0.33427 0.05 7.18987" scale="0.045 0.045 0.045" rotation="0 70 0" fox-behavior="idleAnim:Sleeping"></a-entity>
   <a-entity gltf-model="#butterflies" position="-0.16089 0 30.2737" scale="1 1 1" rotation="0 0 0"></a-entity>
   <a-entity gltf-model="#ghost" position="-2.8142 0.08774 -3.2995" scale="0.2 0.2 0.2" ghost-behavior></a-entity>
@@ -162,6 +162,29 @@
     <a-box class="ghost-choice" data-choice="ignore" color="blue" width="1" height="0.5" depth="0.2" position="1 0 0" text="align: center; color: white; value: Ignore Him; width: 4">
     </a-box>
   </a-entity>
+
+<!-- Shadow text -->
+<a-text id="dwarfTextShadow"
+        value="Hey there. Beware of the little man ahead..."
+        position="-0.29312 1 4.64115"  <!-- slightly offset for shadow -->
+        color="#000"
+        align="center"
+        side="double"
+        scale="0.25 0.25 0.25"
+        visible="false">
+</a-text>
+
+<!-- Foreground text -->
+<a-text id="dwarfText"
+        value="Hey there. Beware of the little man ahead..."
+        position="-0.29412 1 4.64215"  <!-- main position -->
+        color="#fff"
+        align="center"
+        side="double"
+        scale="0.25 0.25 0.25"
+        visible="false">
+</a-text>
+
   
 <script>
 /* -----------------------
@@ -441,6 +464,7 @@ this.textEl = this.el.parentNode.querySelector('#witchTextWrapper');
 
 
 
+
   
   AFRAME.registerComponent('fairy-behavior', {
   schema: {
@@ -523,6 +547,7 @@ AFRAME.registerComponent('mushroom-behavior', {
 });
 
 
+
 AFRAME.registerComponent('fox-behavior', {
   schema: {
     idleAnim: {type: 'string', default: 'Sleeping'}
@@ -547,6 +572,43 @@ AFRAME.registerComponent('fox-behavior', {
     if (this.mixer) this.mixer.update(dt/1000);
   }
 });
+
+   AFRAME.registerComponent('dwarf-behavior', {
+    schema: {
+      textId: {type: 'string', default: 'dwarfText'},
+      shadowId: {type: 'string', default: 'dwarfTextShadow'},
+      triggerDistance: {type: 'number', default: 1.5},
+      displayTime: {type: 'number', default: 12000} // in ms
+    },
+
+    init: function () {
+      this.camera = document.querySelector('[camera]');
+      this.textEl = document.getElementById(this.data.textId);
+      this.shadowEl = document.getElementById(this.data.shadowId);
+      this.textTimeout = null;
+    },
+
+    tick: function () {
+      if (!this.camera) return;
+
+      const dwarfPos = this.el.object3D.position;
+      const camPos = this.camera.object3D.position;
+      const distance = dwarfPos.distanceTo(camPos);
+
+      if (distance < this.data.triggerDistance && !this.textEl.getAttribute('visible')) {
+        // Show text
+        this.textEl.setAttribute('visible', true);
+        this.shadowEl.setAttribute('visible', true);
+
+        // Hide after displayTime
+        clearTimeout(this.textTimeout);
+        this.textTimeout = setTimeout(() => {
+          this.textEl.setAttribute('visible', false);
+          this.shadowEl.setAttribute('visible', false);
+        }, this.data.displayTime);
+      }
+    }
+  });
   
   
 AFRAME.registerComponent('wizard-interact', {
